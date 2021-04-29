@@ -1,0 +1,51 @@
+{
+    "name": "ATDG",
+
+    "tree": {
+        "$className": "DataModel",
+        "$ignoreUnknownInstances": true,
+
+        "ReplicatedStorage": {
+            "$className": "ReplicatedStorage",
+
+            "Nevermore": {
+                "$path": "Nevermore/loader/ReplicatedStorage/Nevermore"
+            },
+
+            "Shared": {
+                "$path": "game/ReplicatedStorage/Shared",
+
+                "t": {
+                    "$path": "t/lib"
+                }
+            },
+
+            "UnitData": {
+                "$path": "game/ReplicatedStorage/UnitData"
+            }
+        },
+
+        "ServerScriptService": {
+            "$className": "ServerScriptService",
+            "$path": "game/ServerScriptService",
+
+            "Nevermore": {
+                "$path": "Nevermore/Modules"
+            }
+        },
+
+        "StarterGui": {
+            "$className": "StarterGui",
+            "$path": "game/StarterGui"
+        },
+
+        "StarterPlayer": {
+            "$className": "StarterPlayer",
+            
+            "StarterPlayerScripts": {
+                "$className": "StarterPlayerScripts",
+                "$path": "game/StarterPlayer/StarterPlayerScripts"
+            }
+        }
+    }
+}

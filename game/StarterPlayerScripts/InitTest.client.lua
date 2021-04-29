@@ -1,0 +1,5 @@
+require(script.Parent:WaitForChild("GameModules"):WaitForChild("Game"))
+require(script.Parent:WaitForChild("GameModules"):WaitForChild("PlayerData"))
+require(script.Parent:WaitForChild("GameModules"):WaitForChild("StatusEffects"))
+require(script.Parent:WaitForChild("GameModules"):WaitForChild("Unit"))
+require(script.Parent:WaitForChild("GameModules"):WaitForChild("Placement"))

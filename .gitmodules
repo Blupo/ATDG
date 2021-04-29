@@ -1,0 +1,7 @@
+[submodule "Nevermore"]
+	branch = version2
+	path = Nevermore
+	url = https://github.com/Quenty/NevermoreEngine
+[submodule "t"]
+	path = t
+	url = https://github.com/osyrisrblx/t
