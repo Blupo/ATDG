@@ -3,7 +3,6 @@
 
     "tree": {
         "$className": "DataModel",
-        "$ignoreUnknownInstances": true,
 
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
@@ -14,9 +13,10 @@
 
             "Shared": {
                 "$path": "game/ReplicatedStorage/Shared",
+                "$ignoreUnknownInstances": true,
 
                 "t": {
-                    "$path": "t/lib"
+                    "$path": "t"
                 }
             },
 
@@ -28,6 +28,7 @@
         "ServerScriptService": {
             "$className": "ServerScriptService",
             "$path": "game/ServerScriptService",
+            "$ignoreUnknownInstances": true,
 
             "Nevermore": {
                 "$path": "Nevermore/Modules"
@@ -36,15 +37,29 @@
 
         "StarterGui": {
             "$className": "StarterGui",
-            "$path": "game/StarterGui"
+            "$path": "game/StarterGui",
+            "$ignoreUnknownInstances": true
         },
 
         "StarterPlayer": {
             "$className": "StarterPlayer",
+            "$ignoreUnknownInstances": true,
             
             "StarterPlayerScripts": {
                 "$className": "StarterPlayerScripts",
-                "$path": "game/StarterPlayer/StarterPlayerScripts"
+                "$path": "game/StarterPlayer/StarterPlayerScripts",
+
+                "GameUI": {
+                    "$path": "GameUI",
+
+                    "Otter": {
+                        "$path": "otter"
+                    },
+
+                    "Roact": {
+                        "$path": "roact"
+                    }
+                }
             }
         }
     }

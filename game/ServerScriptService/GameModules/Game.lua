@@ -607,7 +607,6 @@ RoundEndedEvent.Event:Connect(function(...)
 end)
 
 CentralTowerHealthChangedEvent.Event:Connect(function(...)
-	print(...)
 	CentralTowerHealthChangedRemoteEvent:FireAllClients(...)
 end)
 
@@ -616,7 +615,6 @@ CentralTowerDestroyedEvent.Event:Connect(function(...)
 end)
 
 PhaseChangedEvent.Event:Connect(function(...)
-	print(...)
 	PhaseChangedRemoteEvent:FireAllClients(...)
 end)
 
