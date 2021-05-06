@@ -1,5 +1,3 @@
--- todo: PhaseChanged should send more info (length and start time)
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -91,7 +89,7 @@ type Challenge = {
 type GameData = {
 	Difficulty: string,
 	CurrentChallenge: string?,
-	CentralTowersHP: dictionary<number, number>,
+	CentralTowersHealth: dictionary<number, number>,
 	GameMode: string,
 	GamePhase: string,
 	CurrentRound: number,
@@ -104,7 +102,7 @@ type DerivedGameState = {
 	CurrentPhaseLength: number?,
 	CurrentPhaseStartTime: number?,
 	GamePhase: string,
-	CentralTowersHP: dictionary<number, number>,
+	CentralTowersHealth: dictionary<number, number>,
 	Difficulty: string,
 	CurrentChallenge: string?,
 }
@@ -414,7 +412,7 @@ Game.LoadData = function(mapName: string, fieldUnitSetName: string, gameMode: st
 	
 	currentGameData = {
 		Difficulty = difficulty,
-		CentralTowersHP = { [0] = 100 },
+		CentralTowersHealth = { [0] = 100 },
 		GameMode = GameEnums.GameMode.TowerDefense,
 		GamePhase = GameEnums.GamePhase.NotStarted,
 		CurrentRound = 0,
@@ -440,7 +438,7 @@ Game.LoadDataFromChallenge = function(mapName: string, challengeName: string)
 	currentGameData = {
 		Difficulty = GameEnums.Difficulty.Normal,
 		CurrentChallenge = challengeName,
-		CentralTowersHP = { [0] = 100 },
+		CentralTowersHealth = { [0] = 100 },
 		GameMode = GameEnums.GameMode.TowerDefense,
 		GamePhase = GameEnums.GamePhase.NotStarted,
 		CurrentRound = 0,
@@ -467,7 +465,7 @@ Game.GetDerivedGameState = function(): DerivedGameState?
 		CurrentPhaseLength = TIMED_PHASES[currentPhase] and phaseLength or nil,
 		CurrentPhaseStartTime = TIMED_PHASES[currentPhase] and phaseStartTime or nil,
 		GamePhase = currentGameData.GamePhase,
-		CentralTowersHP = currentGameData.CentralTowersHP,
+		CentralTowersHealth = currentGameData.CentralTowersHealth,
 		Difficulty = currentGameData.Difficulty,
 		CurrentChallenge = currentGameData.CurrentChallenge,
 	}
@@ -493,9 +491,10 @@ Game.Revive = function()
 	
 	currentGameData.RevivesRemaining = currentGameData.RevivesRemaining - 1
 	currentGameData.CurrentRound = currentGameData.CurrentRound - 1
-	currentGameData.CentralTowersHP[0] = 100
+	currentGameData.CentralTowersHealth[0] = 100
 	currentGameData.GamePhase = GameEnums.GamePhase.Intermission
 	
+	CentralTowerHealthChangedEvent:Fire(0, 100)
 	PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
 end
 
@@ -543,9 +542,9 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
 			return
 		end
 		
-		local newCentralTowerHP = currentGameData.CentralTowersHP[0] - unit:GetAttribute("HP")
+		local newCentralTowerHP = currentGameData.CentralTowersHealth[0] - unit:GetAttribute("HP")
 		newCentralTowerHP = (newCentralTowerHP >= 0) and newCentralTowerHP or 0
-		currentGameData.CentralTowersHP[0] = newCentralTowerHP
+		currentGameData.CentralTowersHealth[0] = newCentralTowerHP
 		CentralTowerHealthChangedEvent:Fire(0, newCentralTowerHP)
 		
 		if (newCentralTowerHP == 0) then

@@ -14,6 +14,8 @@ local Ended = GameCommunicators:WaitForChild("Ended")
 local RoundStarted = GameCommunicators:WaitForChild("RoundStarted")
 local RoundEnded = GameCommunicators:WaitForChild("RoundEnded")
 local PhaseChanged = GameCommunicators:WaitForChild("PhaseChanged")
+local CentralTowerHealthChanged = GameCommunicators:WaitForChild("CentralTowerHealthChanged")
+local CentralTowerDestroyed = GameCommunicators:WaitForChild("CentralTowerDestroyed")
 
 ---
 
@@ -29,6 +31,8 @@ local Game = {
 	RoundStarted = RoundStarted.OnClientEvent,
 	RoundEnded = RoundEnded.OnClientEvent,
 	PhaseChanged = PhaseChanged.OnClientEvent,
+	CentralTowerHealthChanged = CentralTowerHealthChanged.OnClientEvent,
+	CentralTowerDestroyed = CentralTowerDestroyed.OnClientEvent,
 }
 
 Game.HasStarted = function(): boolean

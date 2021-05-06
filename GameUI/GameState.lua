@@ -1,3 +1,5 @@
+-- todo: ui lerps colors
+
 local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -5,15 +7,18 @@ local RunService = game:GetService("RunService")
 ---
 
 local root = script.Parent
+local PlayerScripts = root.Parent
+
+local Animator = require(root:WaitForChild("Animator"))
 local Otter = require(root:WaitForChild("Otter"))
 local Roact = require(root:WaitForChild("Roact"))
 local Padding = require(root:WaitForChild("Padding"))
 
-local PlayerScripts = root.Parent
 local GameModules = PlayerScripts:WaitForChild("GameModules")
-local Util = PlayerScripts:WaitForChild("Util")
-
 local Game = require(GameModules:WaitForChild("Game"))
+local Unit = require(GameModules:WaitForChild("Unit"))
+
+local Util = PlayerScripts:WaitForChild("Util")
 local TimeSyncService = require(Util:WaitForChild("TimeSyncService"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
@@ -25,7 +30,39 @@ local Promise = require(SharedModules:WaitForChild("Promise"))
 local FONT = Enum.Font.FredokaOne
 local HINT_TEXT_SIZE = 8
 local MAIN_TEXT_SIZE = 80
+local TIMER_TEXT_SIZE = 32
+local STAT_TEXT_SIZE = 24
 local CORNER_RADIUS_PX = 12
+
+local BKG_COLORS = {
+    [GameEnums.GamePhase.Intermission] = {
+        CurrentRoundPrimaryBkg = Color3.new(1, 1, 1),
+        CurrentRoundSecondaryBkg = Color3.new(0.5, 0.5, 0.5),
+        TotalRoundsPrimaryBkg = Color3.new(1, 1, 1),
+        TotalRoundsSecondaryBkg = Color3.new(0.5, 0.5, 0.5),
+    },
+
+    [GameEnums.GamePhase.FinalIntermission] = {
+        CurrentRoundPrimaryBkg = Color3.new(0.4, 0.4, 0.4),
+        CurrentRoundSecondaryBkg = Color3.new(0.5, 0.5, 0.5),
+        TotalRoundsPrimaryBkg = Color3.new(0.4, 0.4, 0.4),
+        TotalRoundsSecondaryBkg = Color3.new(0.5, 0.5, 0.5),
+    },
+
+    [GameEnums.GamePhase.Round] = {
+        CurrentRoundPrimaryBkg = Color3.new(1, 1, 0),
+        CurrentRoundSecondaryBkg = Color3.new(1, 0, 1),
+        TotalRoundsPrimaryBkg = Color3.fromRGB(255, 85, 127),
+        TotalRoundsSecondaryBkg = Color3.fromRGB(255, 128, 85),
+    },
+
+    [GameEnums.GamePhase.Preparation] = {
+        CurrentRoundPrimaryBkg = Color3.new(1, 1, 1),
+        CurrentRoundSecondaryBkg = Color3.new(1, 1, 1),
+        TotalRoundsPrimaryBkg = Color3.new(1, 1, 1),
+        TotalRoundsSecondaryBkg = Color3.new(1, 1, 1),
+    },
+}
 
 local cornerRadiusScale = CORNER_RADIUS_PX / 100
 
@@ -76,59 +113,102 @@ end
 
 ---
 
+local StatIndicator = Roact.PureComponent:extend("StatIndicator")
+
+StatIndicator.render = function(self)
+    return Roact.createElement("Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+
+        LayoutOrder = self.props.LayoutOrder,
+    }, {
+        StatIconBkg = Roact.createElement("Frame", {
+            AnchorPoint = Vector2.new(0, 0.5),
+            Size = UDim2.new(0, 30, 0, 30),
+            Position = UDim2.new(0, 5, 0.5, 0),
+            BorderSizePixel = 0,
+
+            BackgroundColor3 = Color3.new(1, 1, 1),
+        }, roundedCornersChildren(0, 6, {
+            StatIcon = Roact.createElement("ImageLabel", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(1, -6, 1, -6),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                BorderSizePixel = 0,
+                BackgroundTransparency = 1,
+
+                Image = self.props.Image,
+                ImageColor3 = self.props.ImageColor3
+            })
+        })),
+
+        StatText = Roact.createElement("TextLabel", {
+            AnchorPoint = Vector2.new(1, 0.5),
+            Size = UDim2.new(1, -50, 1, 0),
+            Position = UDim2.new(1, 0, 0.5, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+
+            Text = self.props.Text,
+            Font = FONT,
+            TextSize = STAT_TEXT_SIZE,
+            TextStrokeTransparency = 0.7,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Center,
+
+            BackgroundColor3 = Color3.new(1, 1, 1),
+            TextColor3 = Color3.new(0, 0, 0),
+            TextStrokeColor3 = Color3.new(1, 1, 1),
+        })
+    })
+end
+
+---
+
 local GameState = Roact.Component:extend("GameState")
 
 GameState.init = function(self)
     self.phaseTransitionAnimators = {}
     self.time, self.updateTime = Roact.createBinding(0)
-    
+
     for i = 1, 4 do
-        local initialXOffset, initialYOffset = randomValueInRange(-100, 100), randomValueInRange(-100, 100)
-
-        local animationMotor = Otter.createGroupMotor({
+        self.phaseTransitionAnimators[i] = Animator.new({
             rotation = 0,
             size = 0,
-            xOffset = initialXOffset,
-            yOffset = initialYOffset,
+            xOffset = randomValueInRange(-100, 100),
+            yOffset = randomValueInRange(-100, 100),
         })
+    end
 
-        local animationBinding, updateAnimationBinding = Roact.createBinding({
+    self.phaseTransitionAnimators["PhaseLabel"] = Animator.new({
+        position = -1,
+        transparency = 1,
+        textStrokeTransparency = 1,
+    })
+
+    self.bkgAnimators = {
+        CurrentRoundPrimaryBkg = Animator.new({
+            rotation = -90
+        }),
+
+        TotalRoundsPrimaryBkg = Animator.new({
+            rotation = 90
+        }),
+
+        CurrentRoundSecondaryBkg = Animator.new({
             rotation = 0,
-            size = 0,
-            xOffset = initialXOffset,
-            yOffset = initialYOffset,
-        })
+            xOffset = 0,
+            yOffset = 0
+        }),
 
-        local disconnectOnStep = animationMotor:onStep(updateAnimationBinding)
-
-        self.phaseTransitionAnimators[i] = {
-            Motor = animationMotor,
-            Binding = animationBinding,
-            Update = updateAnimationBinding,
-            Disconnect = disconnectOnStep,
-        }
-    end
-
-    do
-        local animationMotor = Otter.createGroupMotor({
-            position = -1,
-            transparency = 1,
-            textStrokeTransparency = 1,
-        })
-
-        local animationBinding, updateAnimationBinding = Roact.createBinding({
-            position = -1,
-            transparency = 1,
-            textStrokeTransparency = 1,
-        })
-
-        animationMotor:onStep(updateAnimationBinding)
-        self.phaseTransitionAnimators["PhaseLabel"] = {
-            Motor = animationMotor,
-            Binding = animationBinding,
-            Update = updateAnimationBinding
-        }
-    end
+        TotalRoundsSecondaryBkg = Animator.new({
+            rotation = 0,
+            xOffset = 0,
+            yOffset = 0
+        }),
+    }
 
     self.makeTimerLoop = function(startTime, length)
         if (not (self.clock and startTime and length)) then return end
@@ -159,6 +239,18 @@ GameState.init = function(self)
         currentRound = 0,
         totalRounds = 0,
         phaseText = "",
+        enemiesRemaining = 0,
+        centralTowerHP = 0,
+
+        phaseTransitionContainerRotation = randomValueInRange(-8, 8),
+        bkgColors = BKG_COLORS[GameEnums.GamePhase.Preparation],
+
+        phaseTransitionChildrenColors = {
+            Color3.fromHSV(math.random(), 1, 1),
+            Color3.fromHSV(math.random(), 1, 1),
+            Color3.fromHSV(math.random(), 1, 1),
+            Color3.fromHSV(math.random(), 1, 1),
+        },
     })
 end
 
@@ -190,6 +282,34 @@ GameState.didMount = function(self)
         end
     end)
 
+    self.unitAddedConnection = Unit.UnitAdded:Connect(function(unitId)
+        local unit = Unit.fromId(unitId)
+        if (unit.Owner ~= 0) then return end
+        if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return false end
+
+        self:setState({
+            enemiesRemaining = self.state.enemiesRemaining + 1
+        })
+    end)
+
+    self.unitRemovingConnection = Unit.UnitRemoving:Connect(function(unitId)
+        local unit = Unit.fromId(unitId)
+        if (unit.Owner ~= 0) then return end
+        if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return false end
+
+        self:setState({
+            enemiesRemaining = self.state.enemiesRemaining - 1
+        })
+    end)
+
+    self.centralTowerHealthChangedConnection = Game.CentralTowerHealthChanged:Connect(function(owner, newHealth)
+        if (owner ~= 0) then return end
+
+        self:setState({
+            centralTowerHP = newHealth
+        })
+    end)
+
     self.phaseChangedConnection = Game.PhaseChanged:Connect(function(phase, phaseStartTime, phaseLength)
         if (not (phaseStartTime and phaseLength)) then return end
 
@@ -212,15 +332,11 @@ GameState.didMount = function(self)
             end
         end
 
-        do
-            local labelAnimator = self.phaseTransitionAnimators.PhaseLabel
-
-            labelAnimator.Motor:setGoal({
-                position = Otter.instant(-1),
-                transparency = Otter.instant(1),
-                textStrokeTransparency = Otter.instant(1),
-            })
-        end
+        self.phaseTransitionAnimators.PhaseLabel.Motor:setGoal({
+            position = Otter.instant(-1),
+            transparency = Otter.instant(1),
+            textStrokeTransparency = Otter.instant(1),
+        })
 
         -- animate
         for k, animator in pairs(self.phaseTransitionAnimators) do
@@ -237,15 +353,31 @@ GameState.didMount = function(self)
             end
         end
 
-        do
-            local labelAnimator = self.phaseTransitionAnimators.PhaseLabel
+        self.phaseTransitionAnimators.PhaseLabel.Motor:setGoal({
+            position = Otter.spring(0),
+            transparency = Otter.spring(0),
+            textStrokeTransparency = Otter.instant(0.7),
+        })
 
-            labelAnimator.Motor:setGoal({
-                position = Otter.spring(0),
-                transparency = Otter.spring(0),
-                textStrokeTransparency = Otter.instant(0.7),
-            })
-        end
+        self.bkgAnimators.CurrentRoundPrimaryBkg.Motor:setGoal({
+            rotation = Otter.spring(randomValueInRange(-90, -45))
+        })
+
+        self.bkgAnimators.TotalRoundsPrimaryBkg.Motor:setGoal({
+            rotation = Otter.spring(randomValueInRange(0, 90))
+        })
+
+        self.bkgAnimators.CurrentRoundSecondaryBkg.Motor:setGoal({
+            rotation = Otter.spring(randomValueInRange(-360, 360)),
+            xOffset = Otter.spring(randomValueInRange(-5, 5)),
+            yOffset = Otter.spring(randomValueInRange(-5, 5))
+        })
+
+        self.bkgAnimators.TotalRoundsSecondaryBkg.Motor:setGoal({
+            rotation = Otter.spring(randomValueInRange(-360, 360)),
+            xOffset = Otter.spring(randomValueInRange(-5, 5)),
+            yOffset = Otter.spring(randomValueInRange(-5, 5))
+        })
 
         self.animationPromise = Promise.delay(3):andThen(function()
             for k, animator in pairs(self.phaseTransitionAnimators) do
@@ -303,7 +435,17 @@ GameState.didMount = function(self)
         end
 
         self:setState({
-            phaseText = phaseText
+            phaseText = phaseText,
+
+            phaseTransitionContainerRotation = randomValueInRange(-8, 8),
+            bkgColors = BKG_COLORS[phase],
+
+            phaseTransitionChildrenColors = {
+                Color3.fromHSV(math.random(), 1, 1),
+                Color3.fromHSV(math.random(), 1, 1),
+                Color3.fromHSV(math.random(), 1, 1),
+                Color3.fromHSV(math.random(), 1, 1),
+            },
         })
     end)
 
@@ -313,7 +455,15 @@ GameState.didMount = function(self)
 
     self:setState({
         totalRounds = gameState.TotalRounds,
-        pheaseText = gameState.GamePhase,
+        phaseText = gameState.GamePhase,
+        centralTowerHP = gameState.CentralTowersHealth["0"], -- for some reason the index gets turned into a string
+
+        enemiesRemaining = #Unit.GetUnits(function(unit)
+            if (unit.Owner ~= 0) then return false end
+            if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return false end
+
+            return true
+        end)
     })
 end
 
@@ -323,22 +473,24 @@ GameState.willUnmount = function(self)
         animator.Motor:destroy()
     end
 
+    for _, animator in pairs(self.bkgAnimators) do
+        animator.DisconnectOnStep()
+        animator.Motor:destroy()
+    end
+
     self.roundStartedConnection:Disconnect()
     self.roundEndedConnection:Disconnect()
     self.phaseChangedConnection:Disconnect()
+    self.unitAddedConnection:Disconnect()
+    self.unitRemovingConnection:Disconnect()
+    self.centralTowerHealthChangedConnection:Disconnect()
 
     if (self.timerLoop) then
         self.timerLoop:Disconnect()
     end
 end
 
-GameState.render = function(self)
-    local bkgColor = Color3.fromHSV(math.random(), 1, 1)
-    local invertedBkgColor = Color3.new(1 - bkgColor.R, 1 - bkgColor.G, 1 - bkgColor.B)
-
-    local secondBkgColor = Color3.fromHSV(math.random(), 1, 1)
-    local secondInvertedBkgColor = Color3.new(1 - secondBkgColor.R, 1 - secondBkgColor.G, 1 - secondBkgColor.B)
-    
+GameState.render = function(self)    
     local phaseTransitionChildren = {}
 
     for i = 1, 4 do
@@ -362,7 +514,7 @@ GameState.render = function(self)
                 return values.rotation
             end),
 
-            BackgroundColor3 = Color3.new(math.random(), math.random(), math.random())
+            BackgroundColor3 = self.state.phaseTransitionChildrenColors[i]
         }, roundedCornersChildren(cornerRadiusScale))
     end
 
@@ -411,14 +563,17 @@ GameState.render = function(self)
         Padding = Roact.createElement(Padding, {16}),
 
         CurrentRoundPrimaryBkg = Roact.createElement("Frame", {
-            AnchorPoint = Vector2.new(0, 1),
+            AnchorPoint = Vector2.new(0.5, 0.5),
             Size = UDim2.new(0, 100, 0, 100),
-            Position = UDim2.new(0, 25, 1, -100),
+            Position = UDim2.new(0, 75, 1, -150),
             BorderSizePixel = 0,
-            Rotation = randomValueInRange(-90, -45),
             ZIndex = -1,
 
-            BackgroundColor3 = bkgColor,
+            Rotation = self.bkgAnimators.CurrentRoundPrimaryBkg.Binding:map(function(values)
+                return values.rotation
+            end),
+
+            BackgroundColor3 = self.state.bkgColors.CurrentRoundPrimaryBkg,
         }, roundedCornersChildren(cornerRadiusScale, 0,  {
                 CurrentRoundHintLabel = Roact.createElement(HintTextLabel, {
                     Text = "CURRENT"
@@ -427,14 +582,17 @@ GameState.render = function(self)
         ),
 
         TotalRoundsPrimaryBkg = Roact.createElement("Frame", {
-            AnchorPoint = Vector2.new(0, 1),
+            AnchorPoint = Vector2.new(0.5, 0.5),
             Size = UDim2.new(0, 80, 0, 80),
-            Position = UDim2.new(0, 100, 1, -60),
+            Position = UDim2.new(0, 140, 1, -100),
             BorderSizePixel = 0,
-            Rotation = randomValueInRange(0, 90),
             ZIndex = -2,
 
-            BackgroundColor3 = secondBkgColor,
+            Rotation = self.bkgAnimators.TotalRoundsPrimaryBkg.Binding:map(function(values)
+                return values.rotation
+            end),
+
+            BackgroundColor3 = self.state.bkgColors.TotalRoundsPrimaryBkg,
         }, roundedCornersChildren(cornerRadiusScale, 0,  {
                 TotalRoundsHintLabel = Roact.createElement(HintTextLabel, {
                     Text = "TOTAL"
@@ -443,25 +601,38 @@ GameState.render = function(self)
         ),
 
         CurrentRoundSecondaryBkg = Roact.createElement("Frame", {
-            AnchorPoint = Vector2.new(0, 1),
+            AnchorPoint = Vector2.new(0.5, 0.5),
             Size = UDim2.new(0, 100, 0, 100),
-            Position = UDim2.new(0, 25, 1, -100),
             BorderSizePixel = 0,
             Rotation = math.random() * 360,
             ZIndex = -3,
 
-            BackgroundColor3 = invertedBkgColor,
+            Position = self.bkgAnimators.CurrentRoundSecondaryBkg.Binding:map(function(values)
+                return UDim2.new(0, 75 + values.xOffset, 1, -150 + values.yOffset)
+            end),
+
+            Rotation = self.bkgAnimators.CurrentRoundSecondaryBkg.Binding:map(function(values)
+                return values.rotation
+            end),
+
+            BackgroundColor3 = self.state.bkgColors.CurrentRoundSecondaryBkg,
         }, roundedCornersChildren(cornerRadiusScale, 0)),
 
         TotalRoundsSecondaryBkg = Roact.createElement("Frame", {
-            AnchorPoint = Vector2.new(0, 1),
+            AnchorPoint = Vector2.new(0.5, 0.5),
             Size = UDim2.new(0, 80, 0, 80),
-            Position = UDim2.new(0, 100, 1, -60),
             BorderSizePixel = 0,
-            Rotation = math.random() * 360,
             ZIndex = -4,
 
-            BackgroundColor3 = secondInvertedBkgColor,
+            Position = self.bkgAnimators.TotalRoundsSecondaryBkg.Binding:map(function(values)
+                return UDim2.new(0, 140 + values.xOffset, 1, -100 + values.yOffset)
+            end),
+
+            Rotation = self.bkgAnimators.TotalRoundsSecondaryBkg.Binding:map(function(values)
+                return values.rotation
+            end),
+
+            BackgroundColor3 = self.state.bkgColors.TotalRoundsSecondaryBkg,
         }, roundedCornersChildren(cornerRadiusScale, 0)),
 
         CurrentRoundLabel = Roact.createElement("TextLabel", {
@@ -509,7 +680,7 @@ GameState.render = function(self)
             BorderSizePixel = 0,
             ZIndex = 0,
             BackgroundTransparency = 1,
-            Rotation = randomValueInRange(-8, 8),
+            Rotation = self.state.phaseTransitionContainerRotation,
         }, phaseTransitionChildren),
 
         TimerLabel = Roact.createElement("TextLabel", {
@@ -528,13 +699,43 @@ GameState.render = function(self)
                 end),
 
             Font = FONT,
-            TextSize = (MAIN_TEXT_SIZE / 2) - (MAIN_TEXT_SIZE / 10),
+            TextSize = TIMER_TEXT_SIZE,
             TextStrokeTransparency = 0.7,
             TextXAlignment = Enum.TextXAlignment.Center,
             TextYAlignment = Enum.TextYAlignment.Center,
     
             TextColor3 = Color3.new(0, 0, 0),
             TextStrokeColor3 = Color3.new(1, 1, 1),
+        }),
+
+        StatsContainer = Roact.createElement("Frame", {
+            AnchorPoint = Vector2.new(0, 1),
+            Size = UDim2.new(0, 100, 0, 200),
+            Position = UDim2.new(0, 205, 1, -50),
+            BorderSizePixel = 0,
+            ZIndex = 0,
+            BackgroundTransparency = 1,
+        }, {
+            UIListLayout = Roact.createElement("UIListLayout", {
+                Padding = UDim.new(0, 0),
+                FillDirection = Enum.FillDirection.Vertical,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+            }),
+
+            RemainingEnemiesIndicator = Roact.createElement(StatIndicator, {
+                LayoutOrder = 0,
+                Image = "rbxassetid://3414659960",
+                Text = self.state.enemiesRemaining,
+            }),
+
+            CentralTowerHPIndicator = Roact.createElement(StatIndicator, {
+                LayoutOrder = 1,
+                Image = "rbxassetid://6711444602",
+                ImageColor3 = Color3.new(1, 0, 0),
+                Text = self.state.centralTowerHP,
+            })
         })
     })
 end

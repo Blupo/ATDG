@@ -1,6 +1,10 @@
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
+
+local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local Promise = require(SharedModules:WaitForChild("Promise"))
 
 local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
@@ -93,7 +97,7 @@ local constructUnit = function(unitModel)
 	end)
 	
 	units[unit.Id] = unit
-	UnitAddedEvent:Fire(unit)
+	UnitAddedEvent:Fire(unit.Id)
 end
 
 local destroyUnit = function(unit)
@@ -102,7 +106,11 @@ local destroyUnit = function(unit)
 	unit.__diedEvent:Destroy()
 	unit.__attributeChangedEvent:Destroy()
 	
-	units[unit.Id] = nil
+	-- defer so that subscriptions have a chance to obtain the Unit for cleanup
+	Promise.defer(function(resolve)
+		units[unit.Id] = nil
+		resolve()
+	end)
 end
 
 ---
