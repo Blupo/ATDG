@@ -499,6 +499,8 @@ Game.Revive = function()
 end
 
 Game.SkipToNextRound = function()
+	-- todo: can only be called if all the enemies from previous rounds have been eliminated
+
 	if (not currentGameData) then return end
 	if (currentGameData.GamePhase ~= GameEnums.GamePhase.Round) then return end
 	if (#currentRoundSpawnPromises > 0) then return end
