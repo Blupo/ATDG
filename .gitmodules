@@ -3,8 +3,11 @@
 	path = Nevermore
 	url = https://github.com/Quenty/NevermoreEngine
 [submodule "t"]
-	path = t
+	path = game/ReplicatedStorage/Shared/t
 	url = https://github.com/osyrisrblx/t
 [submodule "roact"]
-	path = roact
+	path = game/StarterPlayer/StarterPlayerScripts/GameUI/Roact
 	url = https://github.com/Roblox/roact
+[submodule "ProfileService"]
+	path = ProfileService
+	url = https://github.com/MadStudioRoblox/ProfileService/

@@ -27,6 +27,7 @@ local Promise = require(SharedModules:WaitForChild("Promise"))
 
 local FONT = Enum.Font.FredokaOne
 local HINT_TEXT_SIZE = 8
+local TITLE_TEXT_SIZE = 50
 local MAIN_TEXT_SIZE = 80
 local TIMER_TEXT_SIZE = 32
 local STAT_TEXT_SIZE = 24
@@ -108,7 +109,7 @@ HintTextLabel.render = function(self)
 
         Text = self.props.Text,
         Font = FONT,
-        TextSize = HINT_TEXT_SIZE,
+        TextSize = self.props.TextSize or HINT_TEXT_SIZE,
         TextStrokeTransparency = 0.7,
         TextXAlignment = Enum.TextXAlignment.Right,
         TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -121,6 +122,48 @@ end
 ---
 
 local StatIndicator = Roact.PureComponent:extend("StatIndicator")
+
+StatIndicator.init = function(self)
+    self.animator = Animator.new({
+        rotation = 0,
+        xOffset = 0,
+        yOffset = 0,
+    })
+
+    self.scheduleCallback = function()
+        local newPromise = Promise.delay(3)
+
+        newPromise:andThen(function()
+            self.animator.Motor:setGoal({
+                rotation = Otter.spring(randomValueInRange(-180, 180), {
+                    frequency = 0.25,
+                }),
+
+                xOffset = Otter.spring(randomValueInRange(-5, 5)),
+                yOffset = Otter.spring(randomValueInRange(-5, 5)),
+            })
+        end):andThen(self.scheduleCallback)
+
+        self.animationPromise = newPromise
+    end
+
+    self.animator.Motor:setGoal({
+        rotation = Otter.spring(randomValueInRange(-180, 180), {
+            frequency = 0.25,
+        }),
+
+        xOffset = Otter.spring(randomValueInRange(-5, 5)),
+        yOffset = Otter.spring(randomValueInRange(-5, 5)),
+    })
+
+    self.scheduleCallback()
+end
+
+StatIndicator.willUnmount = function(self)
+    if (self.animtionPromise) then
+        self.animationPromise:cancel()
+    end
+end
 
 StatIndicator.render = function(self)
     return Roact.createElement("Frame", {
@@ -148,7 +191,24 @@ StatIndicator.render = function(self)
 
                 Image = self.props.Image,
                 ImageColor3 = self.props.ImageColor3
-            })
+            }),
+
+            RotatingBkg = Roact.createElement("Frame", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(0, 30, 0, 30),
+                BorderSizePixel = 0,
+                ZIndex = -1,
+
+                Position = self.animator.Binding:map(function(values)
+                    return UDim2.new(0.5, values.xOffset, 0.5, values.yOffset)
+                end),
+
+                Rotation = self.animator.Binding:map(function(values)
+                    return values.rotation
+                end),
+    
+                BackgroundColor3 = self.props.BkgColor or Color3.new(1, 1, 1),
+            }, roundedCornersChildren(0, 6)),
         })),
 
         StatText = Roact.createElement("TextLabel", {
@@ -182,14 +242,14 @@ GameState.init = function(self)
 
     for i = 1, 4 do
         self.phaseTransitionAnimators[i] = Animator.new({
-            rotation = 0,
+            rotation = randomValueInRange(-360, 360),
             size = 0,
             xOffset = randomValueInRange(-100, 100),
             yOffset = randomValueInRange(-100, 100),
         })
     end
 
-    self.phaseTransitionAnimators["PhaseLabel"] = Animator.new({
+    self.phaseTransitionAnimators.PhaseLabel = Animator.new({
         position = -1,
         transparency = 1,
         textStrokeTransparency = 1,
@@ -235,13 +295,16 @@ GameState.init = function(self)
         return phaseText
     end
 
+    self.stopTimerLoop = function()
+        if (not self.timerLoop) then return end
+
+        self.timerLoop:Disconnect()
+        self.timerLoop = nil
+    end
+    
     self.makeTimerLoop = function(startTime, length)
         if (not (self.clock and startTime and length)) then return end
-
-        if (self.timerLoop) then
-            self.timerLoop:Disconnect()
-            self.timerLoop = nil
-        end
+        self.stopTimerLoop()
 
         self.timerLoop = RunService.Heartbeat:Connect(function()
             local elapsed = self.clock:GetTime() - startTime
@@ -258,17 +321,6 @@ GameState.init = function(self)
     end
 
     self.resetPhaseTransitionAnimators = function()
-        for k, animator in pairs(self.phaseTransitionAnimators) do
-            if (k ~= "PhaseLabel") then
-                animator.Motor:setGoal({
-                    rotation = Otter.instant(0),
-                    size = Otter.instant(0),
-                    xOffset = Otter.instant(randomValueInRange(-100, 100)),
-                    yOffset = Otter.instant(randomValueInRange(-100, 100))
-                })
-            end
-        end
-
         self.phaseTransitionAnimators.PhaseLabel.Motor:setGoal({
             position = Otter.instant(-1),
             transparency = Otter.instant(1),
@@ -310,7 +362,7 @@ GameState.init = function(self)
                         frequency = randomValueInRange(0.1, 0.5)
                     }),
 
-                    size = Otter.spring(50),
+                    size = Otter.spring(TITLE_TEXT_SIZE * 1.5),
                     xOffset = Otter.spring(0),
                     yOffset = Otter.spring(0)
                 })
@@ -365,7 +417,7 @@ GameState.init = function(self)
                 end
             end)
         end):andThen(function()
-            return Promise.delay(3)
+            return Promise.delay(1)
         end):andThen(function()
             return Promise.new(function(resolve, _, onCancel)
                 local disconnectOnComplete
@@ -443,10 +495,7 @@ GameState.didMount = function(self)
     self.clock = TimeSyncService:WaitForSyncedClock()
 
     self.endedConnection = Game.Ended:Connect(function()
-        if (self.timerLoop) then
-            self.timerLoop:Disconnect()
-            self.timerLoop = nil
-        end
+        self.stopTimerLoop()
 
         self:setState({
             ended = true
@@ -459,12 +508,7 @@ GameState.didMount = function(self)
         })
     end)
 
-    self.roundEndedConnection = Game.RoundEnded:Connect(function()
-        if (self.timerLoop) then
-            self.timerLoop:Disconnect()
-            self.timerLoop = nil
-        end
-    end)
+    self.roundEndedConnection = Game.RoundEnded:Connect(self.stopTimerLoop)
 
     self.unitAddedConnection = Unit.UnitAdded:Connect(function(unitId)
         local unit = Unit.fromId(unitId)
@@ -495,6 +539,7 @@ GameState.didMount = function(self)
     end)
 
     self.phaseChangedConnection = Game.PhaseChanged:Connect(function(phase, phaseStartTime, phaseLength)
+        self.stopTimerLoop()
         if (not (phaseStartTime and phaseLength)) then return end
 
         self:setState({
@@ -587,10 +632,10 @@ GameState.render = function(self)
             end),
 
             BackgroundColor3 = self.state.phaseTransitionChildrenColors[i]
-        }, roundedCornersChildren(0, 6))
+        }, roundedCornersChildren(0.12, 0))
     end
 
-    phaseTransitionChildren["PhaseLabel"] = Roact.createElement("TextLabel", {
+    phaseTransitionChildren.PhaseLabel = Roact.createElement("TextLabel", {
         AnchorPoint = Vector2.new(0, 0.5),
         Size = UDim2.new(1, 0, 1, 0),
         BorderSizePixel = 0,
@@ -603,7 +648,7 @@ GameState.render = function(self)
 
         Text = self.state.phaseText,
         Font = FONT,
-        TextSize = (MAIN_TEXT_SIZE / 2) - (MAIN_TEXT_SIZE / 10),
+        TextSize = TITLE_TEXT_SIZE,
         TextXAlignment = Enum.TextXAlignment.Center,
         TextYAlignment = Enum.TextYAlignment.Center,
 
@@ -652,7 +697,8 @@ GameState.render = function(self)
             end)
         }, roundedCornersChildren(cornerRadiusScale, 0,  {
                 CurrentRoundHintLabel = Roact.createElement(HintTextLabel, {
-                    Text = "CURRENT"
+                    Text = "ROUND",
+                    TextSize = 18,
                 })
             })
         ),
@@ -750,7 +796,7 @@ GameState.render = function(self)
             ZIndex = 0,
             BackgroundTransparency = 1,
     
-            Text = self.state.totalRounds,
+            Text = "/ " .. self.state.totalRounds,
             Font = FONT,
             TextSize = MAIN_TEXT_SIZE / 2,
             TextStrokeTransparency = 0.7,
@@ -762,9 +808,9 @@ GameState.render = function(self)
         }),
 
         PhaseTransitionContainer = Roact.createElement("Frame", {
-            AnchorPoint = Vector2.new(0, 1),
-            Size = UDim2.new(0, 205, 0, 50),
-            Position = UDim2.new(0, 0, 1, -230),
+            AnchorPoint = Vector2.new(0.5, 1),
+            Size = UDim2.new(1, 0, 0, TITLE_TEXT_SIZE),
+            Position = UDim2.new(0.5, 0, 1, -96),
             BorderSizePixel = 0,
             ZIndex = 0,
             BackgroundTransparency = 1,
@@ -816,6 +862,8 @@ GameState.render = function(self)
                 LayoutOrder = 0,
                 Image = "rbxassetid://3414659960",
                 Text = self.state.enemiesRemaining,
+
+                BkgColor = Color3.fromRGB(255, 128, 85),
             }),
 
             CentralTowerHPIndicator = Roact.createElement(StatIndicator, {
@@ -823,6 +871,8 @@ GameState.render = function(self)
                 Image = "rbxassetid://6711444602",
                 ImageColor3 = Color3.new(1, 0, 0),
                 Text = self.state.centralTowerHP,
+
+                BkgColor = Color3.new(1, 0, 0),
             })
         })
     })

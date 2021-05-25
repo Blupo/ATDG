@@ -13,11 +13,7 @@
 
             "Shared": {
                 "$path": "game/ReplicatedStorage/Shared",
-                "$ignoreUnknownInstances": true,
-
-                "t": {
-                    "$path": "t"
-                }
+                "$ignoreUnknownInstances": true
             },
 
             "UnitData": {
@@ -32,6 +28,10 @@
 
             "Nevermore": {
                 "$path": "Nevermore/Modules"
+            },
+
+            "ProfileService": {
+                "$path": "ProfileService/ProfileService.lua"
             }
         },
 
@@ -43,24 +43,7 @@
 
         "StarterPlayer": {
             "$className": "StarterPlayer",
-            "$ignoreUnknownInstances": true,
-            
-            "StarterPlayerScripts": {
-                "$className": "StarterPlayerScripts",
-                "$path": "game/StarterPlayer/StarterPlayerScripts",
-
-                "GameUI": {
-                    "$path": "GameUI",
-
-                    "Otter": {
-                        "$path": "otter"
-                    },
-
-                    "Roact": {
-                        "$path": "roact"
-                    }
-                }
-            }
+            "$ignoreUnknownInstances": true
         }
     }
 }
