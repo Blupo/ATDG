@@ -110,7 +110,7 @@ HintTextLabel.render = function(self)
         Text = self.props.Text,
         Font = FONT,
         TextSize = self.props.TextSize or HINT_TEXT_SIZE,
-        TextStrokeTransparency = 0.7,
+        TextStrokeTransparency = 0.5,
         TextXAlignment = Enum.TextXAlignment.Right,
         TextYAlignment = Enum.TextYAlignment.Bottom,
 
@@ -221,13 +221,13 @@ StatIndicator.render = function(self)
             Text = self.props.Text,
             Font = FONT,
             TextSize = STAT_TEXT_SIZE,
-            TextStrokeTransparency = 0.7,
+            TextStrokeTransparency = 0.5,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextYAlignment = Enum.TextYAlignment.Center,
 
             BackgroundColor3 = Color3.new(1, 1, 1),
             TextColor3 = Color3.new(0, 0, 0),
-            TextStrokeColor3 = Color3.new(1, 1, 1),
+            TextStrokeColor3 = self.props.StrokeColor or Color3.new(1, 1, 1),
         })
     })
 end
@@ -372,7 +372,7 @@ GameState.init = function(self)
         self.phaseTransitionAnimators.PhaseLabel.Motor:setGoal({
             position = Otter.spring(0),
             transparency = Otter.spring(0),
-            textStrokeTransparency = Otter.instant(0.7),
+            textStrokeTransparency = Otter.instant(0.5),
         })
 
         self.bkgAnimators.CurrentRoundPrimaryBkg.Motor:setGoal({
@@ -467,9 +467,6 @@ GameState.init = function(self)
     end
 
     self:setState({
-        isTenFoot = GuiService:IsTenFootInterface(),
-        screenSize = Vector2.new(),
-
         currentRound = 0,
         totalRounds = 0,
         phaseText = "",
@@ -670,15 +667,7 @@ GameState.render = function(self)
         Position = UDim2.new(0.5, 0, 0.5, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-
-        [Roact.Change.AbsoluteSize] = function(obj)
-            self:setState({
-                screenSize = obj.AbsoluteSize
-            })
-        end,
     }, {
-        Padding = Roact.createElement(Padding, {16}),
-
         CurrentRoundPrimaryBkg = Roact.createElement("Frame", {
             AnchorPoint = Vector2.new(0.5, 0.5),
             Size = UDim2.new(0, 100, 0, 100),
@@ -730,7 +719,6 @@ GameState.render = function(self)
             AnchorPoint = Vector2.new(0.5, 0.5),
             Size = UDim2.new(0, 100, 0, 100),
             BorderSizePixel = 0,
-            Rotation = math.random() * 360,
             ZIndex = -3,
 
             Position = self.bkgAnimators.CurrentRoundSecondaryBkg.Binding:map(function(values)
@@ -780,7 +768,7 @@ GameState.render = function(self)
             Text = self.state.currentRound,
             Font = FONT,
             TextSize = MAIN_TEXT_SIZE,
-            TextStrokeTransparency = 0.7,
+            TextStrokeTransparency = 0.5,
             TextXAlignment = Enum.TextXAlignment.Center,
             TextYAlignment = Enum.TextYAlignment.Center,
     
@@ -799,7 +787,7 @@ GameState.render = function(self)
             Text = "/ " .. self.state.totalRounds,
             Font = FONT,
             TextSize = MAIN_TEXT_SIZE / 2,
-            TextStrokeTransparency = 0.7,
+            TextStrokeTransparency = 0.5,
             TextXAlignment = Enum.TextXAlignment.Center,
             TextYAlignment = Enum.TextYAlignment.Center,
     
@@ -810,7 +798,7 @@ GameState.render = function(self)
         PhaseTransitionContainer = Roact.createElement("Frame", {
             AnchorPoint = Vector2.new(0.5, 1),
             Size = UDim2.new(1, 0, 0, TITLE_TEXT_SIZE),
-            Position = UDim2.new(0.5, 0, 1, -96),
+            Position = UDim2.new(0.5, 0, 1, -200),
             BorderSizePixel = 0,
             ZIndex = 0,
             BackgroundTransparency = 1,
@@ -834,7 +822,7 @@ GameState.render = function(self)
 
             Font = FONT,
             TextSize = TIMER_TEXT_SIZE,
-            TextStrokeTransparency = 0.7,
+            TextStrokeTransparency = 0.5,
             TextXAlignment = Enum.TextXAlignment.Center,
             TextYAlignment = Enum.TextYAlignment.Center,
     

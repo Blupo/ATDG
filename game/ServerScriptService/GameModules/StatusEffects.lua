@@ -152,8 +152,6 @@ StatusEffects.ClearEffects = function(unit)
 end
 
 ---
-local UnitHasEffectRemoteFunctionParameters = t.tuple(t.string, t.string)
-local GetUnitEffectsRemoteFunctionParameters = t.string
 
 Unit.UnitRemoving:Connect(function(unitId)
 	if (not unitEffectPromises[unitId]) then return end
@@ -170,23 +168,19 @@ EffectRemovedEvent.Event:Connect(function(unit, effectName: string)
 	EffectRemovedRemoteEvent:FireAllClients(unit.Id, effectName)
 end)
 
-UnitHasEffectRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(function(_: Player, unitId: string, effectName: string): boolean
-	if (not UnitHasEffectRemoteFunctionParameters(unitId, effectName)) then return false end
-	
+UnitHasEffectRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(_: Player, unitId: string, effectName: string): boolean
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return false end
 	
 	return StatusEffects.UnitHasEffect(unit, effectName)
-end)
+end, t.tuple(t.instanceOf("Player"), t.string, t.string)))
 
-GetUnitEffectsRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(function(_: Player, unitId: string): {string}
-	if (not GetUnitEffectsRemoteFunctionParameters(unitId)) then return {} end
-	
+GetUnitEffectsRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(_: Player, unitId: string): {string}
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return {} end
 	
 	return StatusEffects.GetUnitEffects(unit)
-end)
+end, t.tuple(t.instanceOf("Player"), t.string)))
 
 EffectAppliedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
 EffectRemovedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)

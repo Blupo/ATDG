@@ -22,6 +22,7 @@ local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
 
 local SetAttributeRemoteFunction = Instance.new("RemoteFunction")
+local GetUnitPersistentUpgradeLevelRemoteFunction = Instance.new("RemoteFunction")
 
 ---
 
@@ -356,7 +357,7 @@ Unit.Upgrade = function(self)
 	end
 end
 
-Unit.UpgradeUnitType = function(unitName: string, owner: number)
+Unit.DoUnitPersistentUpgrade = function(unitName: string, owner: number)
 	local progressionData = unitProgressionData[owner]
 
 	if (not progressionData) then
@@ -369,6 +370,17 @@ Unit.UpgradeUnitType = function(unitName: string, owner: number)
 	if (not nextLevelProgression) then return end
 
 	progressionData[unitName] = currentLevel + 1
+end
+
+Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): number?
+	local progressionData = unitProgressionData[owner]
+
+	if (not progressionData) then
+		unitProgressionData[owner] = {}
+		progressionData = unitProgressionData[owner]
+	end
+
+	return progressionData[unitName] or 1
 end
 
 ---
@@ -384,7 +396,7 @@ for _, unitDataScript in pairs(UnitData:GetChildren()) do
 end
 
 -- Players can only change the targeting on tower units for now
-SetAttributeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(function(_: Player, unitId: string, attributeName: string, newValue: any)
+SetAttributeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(_: Player, unitId: string, attributeName: string, newValue: any)
 	if (not SetAttributeRemoteFunctionParameters(unitId, attributeName, newValue)) then return end
 	
 	local unit = Unit.fromId(unitId)
@@ -393,9 +405,16 @@ SetAttributeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(fu
 	if (attributeName ~= "UnitTargeting") then return end
 	
 	unit:SetAttribute(attributeName, newValue)
-end)
+end, t.tuple(t.instanceOf("Player"), t.string, t.string, t.any)))
+
+GetUnitPersistentUpgradeLevelRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, unitName: string)
+	return Unit.GetUnitPersistentUpgradeLevel(player.UserId, unitName)
+end, t.tuple(t.instanceOf("Player"), t.string)))
 
 SetAttributeRemoteFunction.Name = "SetAttribute"
 SetAttributeRemoteFunction.Parent = UnitCommunicators
+
+GetUnitPersistentUpgradeLevelRemoteFunction.Name = "GetUnitPersistentUpgradeLevel"
+GetUnitPersistentUpgradeLevelRemoteFunction.Parent = UnitCommunicators
 
 return Unit

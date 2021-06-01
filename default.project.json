@@ -43,7 +43,11 @@
 
         "StarterPlayer": {
             "$className": "StarterPlayer",
-            "$ignoreUnknownInstances": true
+            
+            "StarterPlayerScripts": {
+                "$className": "StarterPlayerScripts",
+                "$path": "game/StarterPlayer/StarterPlayerScripts"
+            }
         }
     }
 }

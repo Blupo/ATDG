@@ -621,8 +621,11 @@ end)
 
 HasStartedRemoteFunction.OnServerInvoke = Game.HasStarted
 GetDerivedGameStateRemoteFunction.OnServerInvoke = Game.GetDerivedGameState
+
+-- todo: REMOVE
 TEST_ReviveRemoteFunction.OnServerInvoke = Game.Revive
 TEST_SkipToNextRoundRemoteFunction.OnServerInvoke = Game.SkipToNextRound
+--
 
 StartedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
 EndedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)

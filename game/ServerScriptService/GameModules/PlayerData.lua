@@ -6,9 +6,26 @@ local ServerScriptService = game:GetService("ServerScriptService")
 ---
 
 local ProfileService = require(ServerScriptService:FindFirstChild("ProfileService"))
+local GameModules = ServerScriptService:FindFirstChild("GameModules")
+
+local Communicators = ReplicatedStorage:FindFirstChild("Communicators"):WaitForChild("PlayerData")
+
+local Path = require(GameModules:FindFirstChild("Path"))
+local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
+local t = require(SharedModules:FindFirstChild("t"))
+
+local CurrencyDepositedEvent = Instance.new("BindableEvent")
+local CurrencyWithdrawnEvent = Instance.new("BindableEvent")
+
+local GetPlayerInventoryRemoteFunction = Instance.new("RemoteFunction")
+local PlayerHasUnitGrantRemoteFunction = Instance.new("RemoteFunction")
+local GetPlayerAllCurrencyBalancesRemoteFunction = Instance.new("RemoteFunction")
+local GetPlayerCurrencyBalanceRemoteFunction = Instance.new("RemoteFunction")
+local CurrencyDepositedRemoteEvent = Instance.new("RemoteEvent")
+local CurrencyWithdrawnRemoteEvent = Instance.new("RemoteEvent")
 
 ---
 
@@ -118,6 +135,8 @@ end
 ---
 
 local PlayerData = {}
+PlayerData.CurrencyDeposited = CurrencyDepositedEvent.Event
+PlayerData.CurrencyWithdrawn = CurrencyWithdrawnEvent.Event
 
 -- This is an internal function
 PlayerData.GetPlayerProfile = function(player: Player)
@@ -276,5 +295,49 @@ end
 
 Players.PlayerAdded:Connect(playerAdded)
 Players.PlayerRemoving:Connect(playerRemoving)
+
+CurrencyDepositedEvent.Event:Connect(function(player, ...)
+    CurrencyDepositedRemoteEvent:FireClient(player, ...)
+end)
+
+CurrencyWithdrawnEvent.Event:Connect(function(player, ...)
+    CurrencyWithdrawnRemoteEvent:FireClient(player, ...)
+end)
+
+GetPlayerInventoryRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(function(player: Player)
+    return PlayerData.GetPlayerInventory(player)
+end)
+
+PlayerHasUnitGrantRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, player: Player, unitName: string): boolean?
+    if (callingPlayer ~= player) then return end
+
+    return PlayerData.PlayerHasUnitGrant(player, unitName)
+end, t.tuple(t.instanceOf("Player"), t.instanceOf("Player"), t.string)))
+
+GetPlayerAllCurrencyBalancesRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, player: Player)
+    if (callingPlayer ~= player) then return end
+
+    return PlayerData.GetPlayerAllCurrenciesBalances(player)
+end, t.tuple(t.instanceOf("Player"), t.instanceOf("Player"))))
+
+GetPlayerCurrencyBalanceRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, player: Player, currencyType: string): number?
+    if (callingPlayer ~= player) then return end
+
+    return PlayerData.GetPlayerCurrencyBalance(player, currencyType)
+end, t.tuple(t.instanceOf("Player"), t.instanceOf("Player"), t.string)))
+
+GetPlayerInventoryRemoteFunction.Name = "GetPlayerInventory"
+PlayerHasUnitGrantRemoteFunction.Name = "PlayerHasUnitGrant"
+GetPlayerAllCurrencyBalancesRemoteFunction.Name = "GetPlayerAllCurrenciesBalances"
+GetPlayerCurrencyBalanceRemoteFunction.Name = "GetPlayerCurrencyBalance"
+CurrencyDepositedRemoteEvent.Name = "CurrencyDeposited"
+CurrencyWithdrawnRemoteEvent.Name = "CurrencyWithdrawn"
+
+GetPlayerInventoryRemoteFunction.Parent = Communicators
+PlayerHasUnitGrantRemoteFunction.Parent = Communicators
+GetPlayerAllCurrencyBalancesRemoteFunction.Parent = Communicators
+GetPlayerCurrencyBalanceRemoteFunction.Parent = Communicators
+CurrencyDepositedRemoteEvent.Parent = Communicators
+CurrencyWithdrawnRemoteEvent.Parent = Communicators
 
 return PlayerData

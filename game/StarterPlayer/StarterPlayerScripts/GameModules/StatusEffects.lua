@@ -15,9 +15,9 @@ local EffectRemoved = StatusEffectsCommunicators:WaitForChild("EffectRemoved")
 ---
 
 -- temp: prevent invocation queue errors
-
 EffectApplied.OnClientEvent:Connect(function() end)
 EffectRemoved.OnClientEvent:Connect(function() end)
+--
 
 return {
 	UnitHasEffect = RemoteFunctionWrapper(UnitHasEffect),

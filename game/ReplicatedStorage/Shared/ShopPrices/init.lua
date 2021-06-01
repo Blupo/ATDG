@@ -1,4 +1,4 @@
-local root = script.Parent
+local root = script
 
 local ItemPrices = require(root:WaitForChild("ItemPrices"))
 local ObjectPlacementPrices = require(root:WaitForChild("ObjectPlacementPrices"))

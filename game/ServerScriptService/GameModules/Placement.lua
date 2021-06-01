@@ -270,19 +270,9 @@ Workspace.ChildRemoved:Connect(function(child)
 	raycastParams.FilterDescendantsInstances = {}
 end)
 
-local PlaceObjectRemoteFunctionParameters = t.tuple(t.string, t.string, t.Vector3, t.number)
-
-PlaceObjectRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(function(
-	player: Player,
-	objType: string,
-	objName: string,
-	position: Vector3,
-	rotation: number
-)
-	if (not PlaceObjectRemoteFunctionParameters(objType, objName, position, rotation)) then return end
-	
+PlaceObjectRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, objType: string, objName: string, position: Vector3, rotation: number)
 	Placement.PlaceObject(player, objType, objName, position, rotation)
-end)
+end, t.tuple(t.instanceOf("Player"), t.string, t.string, t.Vector3, t.number)))
 
 do
 	local world = Workspace:FindFirstChild("World")
