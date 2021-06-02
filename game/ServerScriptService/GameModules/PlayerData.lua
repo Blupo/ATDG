@@ -6,13 +6,11 @@ local ServerScriptService = game:GetService("ServerScriptService")
 ---
 
 local ProfileService = require(ServerScriptService:FindFirstChild("ProfileService"))
+
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
-
-local Communicators = ReplicatedStorage:FindFirstChild("Communicators"):WaitForChild("PlayerData")
-
-local Path = require(GameModules:FindFirstChild("Path"))
 local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 
+local Communicators = ReplicatedStorage:FindFirstChild("Communicators"):WaitForChild("PlayerData")
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
 local t = require(SharedModules:FindFirstChild("t"))
@@ -21,8 +19,8 @@ local CurrencyDepositedEvent = Instance.new("BindableEvent")
 local CurrencyWithdrawnEvent = Instance.new("BindableEvent")
 
 local GetPlayerInventoryRemoteFunction = Instance.new("RemoteFunction")
-local PlayerHasUnitGrantRemoteFunction = Instance.new("RemoteFunction")
-local GetPlayerAllCurrencyBalancesRemoteFunction = Instance.new("RemoteFunction")
+local PlayerHasObjectGrantRemoteFunction = Instance.new("RemoteFunction")
+local GetPlayerAllCurrenciesBalancesRemoteFunction = Instance.new("RemoteFunction")
 local GetPlayerCurrencyBalanceRemoteFunction = Instance.new("RemoteFunction")
 local CurrencyDepositedRemoteEvent = Instance.new("RemoteEvent")
 local CurrencyWithdrawnRemoteEvent = Instance.new("RemoteEvent")
@@ -93,16 +91,16 @@ copy = function(t)
 end
 
 local playerAdded = function(player: Player)
-    local playerId = player.UserId
+    local userId = player.UserId
     local ephemeralCurrenciesBalance = {}
-    local profile = ProfileStore:LoadProfileAsync(tostring(playerId), "ForceLoad")
+    local profile = ProfileStore:LoadProfileAsync(tostring(userId), "ForceLoad")
 
     if (profile) then
         -- todo: provide a mechanism for merging old data versions
-        playerProfiles[playerId] = profile
+        playerProfiles[userId] = profile
 
         profile:ListenToRelease(function()
-            playerProfiles[playerId] = nil
+            playerProfiles[userId] = nil
             -- todo: come up with a better message than this
             player:Kick("User profile was released")
         end)
@@ -112,8 +110,8 @@ local playerAdded = function(player: Player)
                 ephemeralCurrenciesBalance[currencyType] = 0
             end
 
-            playerProfiles[playerId] = profile
-            ephemeralCurrenciesBalances[playerId] = ephemeralCurrenciesBalance
+            playerProfiles[userId] = profile
+            ephemeralCurrenciesBalances[userId] = ephemeralCurrenciesBalance
         else
             profile:Release()
         end
@@ -124,12 +122,12 @@ local playerAdded = function(player: Player)
 end
 
 local playerRemoving = function(player: Player)
-    local playerId = player.UserId
-    local profile = playerProfiles[playerId]
+    local userId = player.UserId
+    local profile = playerProfiles[userId]
     if (not profile) then return end
 
     profile:Release()
-    ephemeralCurrenciesBalances[playerId] = nil
+    ephemeralCurrenciesBalances[userId] = nil
 end
 
 ---
@@ -138,13 +136,20 @@ local PlayerData = {}
 PlayerData.CurrencyDeposited = CurrencyDepositedEvent.Event
 PlayerData.CurrencyWithdrawn = CurrencyWithdrawnEvent.Event
 
--- This is an internal function
-PlayerData.GetPlayerProfile = function(player: Player)
-    return playerProfiles[player.UserId]
+PlayerData.GetPlayerProfile = function(userId: number)
+    return playerProfiles[userId]
 end
 
-PlayerData.GetPlayerInventory = function(player: Player): PlayerInventory?
-    local profile = playerProfiles[player.UserId]
+PlayerData.WaitForPlayerProfile = function(userId: number)
+    while (not playerProfiles[userId]) do
+        RunService.Heartbeat:Wait()
+    end
+
+    return playerProfiles[userId]
+end
+
+PlayerData.GetPlayerInventory = function(userId: number): PlayerInventory?
+    local profile = playerProfiles[userId]
     if (not profile) then return end
 
     local inventoryCopy = copy(profile.Data.Inventory)
@@ -160,80 +165,96 @@ PlayerData.GetPlayerInventory = function(player: Player): PlayerInventory?
     return inventoryCopy
 end
 
-PlayerData.PlayerHasObjectGrant = function(player: Player, objectType: string, objectName: string): boolean
+PlayerData.PlayerHasObjectGrant = function(userId: number, objectType: string, objectName: string): boolean
     -- check perma grants
     if (PERMA_GRANTS[objectType][objectName]) then return true end
 
-    local profile = playerProfiles[player.UserId]
+    local profile = playerProfiles[userId]
     if (not profile) then return false end
 
     return profile.Data.Inventory[objectType][objectName] and true or false
 end
 
-PlayerData.GetPlayerAllCurrencyBalances = function(player: Player): dictionary<string, number>
-    local profile = playerProfiles[player.UserId]
+PlayerData.GetPlayerAllCurrenciesBalances = function(userId: number): dictionary<string, number>
+    local profile = playerProfiles[userId]
     if (not profile) then return {} end
 
-    return copy(profile.Data.Currencies)
+    local currenciesBalances = {}
+
+    for currency in pairs(GameEnum.CurrencyType) do
+        if (EPHEMERAL_CURRENCIES[currency]) then
+            currenciesBalances[currency] = ephemeralCurrenciesBalances[userId][currency] or 0
+        else
+            currenciesBalances[currency] = profile.Data.Currencies[currency] or 0
+        end
+    end
+
+    return currenciesBalances
 end
 
-PlayerData.GetPlayerCurrencyBalance = function(player: Player, currencyType: string): number?
-    local profile = playerProfiles[player.UserId]
+PlayerData.GetPlayerCurrencyBalance = function(userId: number, currencyType: string): number?
+    local profile = playerProfiles[userId]
     if (not profile) then return end
 
-    return profile.Data.Currencies[currencyType]
+    return profile.Data.Currencies[currencyType] or 0
 end
 
-PlayerData.DepositCurrencyToPlayer = function(player: Player, currencyType: string, amount: number)
-    local playerId = player.UserId
-    local profile = playerProfiles[playerId]
+PlayerData.DepositCurrencyToPlayer = function(userId: number, currencyType: string, amount: number)
+    if (amount <= 0) then return end
+
+    local profile = playerProfiles[userId]
     if (not profile) then return end
 
-    local currenciesBalance
+    local currenciesBalances
 
     if (EPHEMERAL_CURRENCIES[currencyType]) then
-        currenciesBalance = ephemeralCurrenciesBalances[playerId]
+        currenciesBalances = ephemeralCurrenciesBalances[userId]
     else
-        currenciesBalance = profile.Data.Currencies
+        currenciesBalances = profile.Data.Currencies
     end
 
-    if (currenciesBalance[currencyType]) then
-        currenciesBalance[currencyType] = currenciesBalance[currencyType] + amount
+    if (currenciesBalances[currencyType]) then
+        currenciesBalances[currencyType] = currenciesBalances[currencyType] + amount
     else
-        currenciesBalance[currencyType] = amount
+        currenciesBalances[currencyType] = amount
     end
+
+    CurrencyDepositedEvent:Fire(userId, currencyType, amount, currenciesBalances[currencyType])
 end
 
 PlayerData.DepositCurrencyToAllPlayers = function(currencyType: string, amount: number)
     local players = Players:GetPlayers()
 
     for i = 1, #players do
-        PlayerData.DepositCurrencyToPlayer(players[i], currencyType, amount)
+        PlayerData.DepositCurrencyToPlayer(players[i].UserId, currencyType, amount)
     end
 end
 
-PlayerData.WithdrawCurrencyFromPlayer = function(player: Player, currencyType: string, amount: number)
-    local playerId = player.UserId
-    local profile = playerProfiles[playerId]
+PlayerData.WithdrawCurrencyFromPlayer = function(userId: number, currencyType: string, amount: number)
+    if (amount <= 0) then return end
+
+    local profile = playerProfiles[userId]
     assert(profile, "profile is missing")
 
-    local currenciesBalance
+    local currenciesBalances
 
     if (EPHEMERAL_CURRENCIES[currencyType]) then
-        currenciesBalance = ephemeralCurrenciesBalances[playerId]
+        currenciesBalances = ephemeralCurrenciesBalances[userId]
     else
-        currenciesBalance = profile.Data.Currencies
+        currenciesBalances = profile.Data.Currencies
     end
 
-    if (currenciesBalance[currencyType]) then
-        currenciesBalance[currencyType] = currenciesBalance[currencyType] + amount
+    if (currenciesBalances[currencyType]) then
+        currenciesBalances[currencyType] = currenciesBalances[currencyType] + amount
     else
-        currenciesBalance[currencyType] = amount
+        currenciesBalances[currencyType] = amount
     end
+
+    CurrencyWithdrawnEvent:Fire(userId, currencyType, amount, currenciesBalances[currencyType])
 end
 
-PlayerData.GrantObjectToPlayer = function(player: Player, objectType: string, objectName: string)
-    local profile = playerProfiles[player.UserId]
+PlayerData.GrantObjectToPlayer = function(userId: number, objectType: string, objectName: string)
+    local profile = playerProfiles[userId]
     if (not profile) then return end
 
     local inventory = profile.Data.Inventory
@@ -250,8 +271,8 @@ PlayerData.GrantObjectToPlayer = function(player: Player, objectType: string, ob
     inventory[objectName] = true
 end
 
-PlayerData.RevokeObjectFromPlayer = function(player: Player, objectType: string, objectName: string)
-    local profile = playerProfiles[player.UserId]
+PlayerData.RevokeObjectFromPlayer = function(userId: number, objectType: string, objectName: string)
+    local profile = playerProfiles[userId]
     if (not profile) then return end
 
     local inventory = profile.Data.Inventory
@@ -268,10 +289,10 @@ PlayerData.RevokeObjectFromPlayer = function(player: Player, objectType: string,
     inventory[objectName] = nil
 end
 
-PlayerData.GiveSpecialActionToken = function(player: Player, actionName: string, amount: number?)
+PlayerData.GiveSpecialActionToken = function(userId: number, actionName: string, amount: number?)
     amount = amount or 1
     
-    local profile = playerProfiles[player.UserId]
+    local profile = playerProfiles[userId]
     if (not profile) then return end
 
     local specialActions = profile.Data.Inventory.SpecialActions
@@ -296,46 +317,52 @@ end
 Players.PlayerAdded:Connect(playerAdded)
 Players.PlayerRemoving:Connect(playerRemoving)
 
-CurrencyDepositedEvent.Event:Connect(function(player, ...)
-    CurrencyDepositedRemoteEvent:FireClient(player, ...)
+CurrencyDepositedEvent.Event:Connect(function(userId, ...)
+    local player = Players:GetPlayerByUserId(userId)
+    if (not player) then return end
+
+    CurrencyDepositedRemoteEvent:FireClient(player, userId, ...)
 end)
 
-CurrencyWithdrawnEvent.Event:Connect(function(player, ...)
-    CurrencyWithdrawnRemoteEvent:FireClient(player, ...)
+CurrencyWithdrawnEvent.Event:Connect(function(userId, ...)
+    local player = Players:GetPlayerByUserId(userId)
+    if (not player) then return end
+    
+    CurrencyWithdrawnRemoteEvent:FireClient(player, userId, ...)
 end)
 
 GetPlayerInventoryRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(function(player: Player)
     return PlayerData.GetPlayerInventory(player)
 end)
 
-PlayerHasUnitGrantRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, player: Player, unitName: string): boolean?
-    if (callingPlayer ~= player) then return end
+PlayerHasObjectGrantRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number, unitName: string): boolean?
+    if (callingPlayer.UserId ~= userId) then return end
 
-    return PlayerData.PlayerHasUnitGrant(player, unitName)
-end, t.tuple(t.instanceOf("Player"), t.instanceOf("Player"), t.string)))
+    return PlayerData.PlayerHasObjectGrant(userId, unitName)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
 
-GetPlayerAllCurrencyBalancesRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, player: Player)
-    if (callingPlayer ~= player) then return end
+GetPlayerAllCurrenciesBalancesRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number)
+    if (callingPlayer.UserId ~= userId) then return end
 
-    return PlayerData.GetPlayerAllCurrenciesBalances(player)
-end, t.tuple(t.instanceOf("Player"), t.instanceOf("Player"))))
+    return PlayerData.GetPlayerAllCurrenciesBalances(userId)
+end, t.tuple(t.instanceOf("Player"), t.number)))
 
-GetPlayerCurrencyBalanceRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, player: Player, currencyType: string): number?
-    if (callingPlayer ~= player) then return end
+GetPlayerCurrencyBalanceRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number, currencyType: string): number?
+    if (callingPlayer.UserId ~= userId) then return end
 
-    return PlayerData.GetPlayerCurrencyBalance(player, currencyType)
-end, t.tuple(t.instanceOf("Player"), t.instanceOf("Player"), t.string)))
+    return PlayerData.GetPlayerCurrencyBalance(userId, currencyType)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
 
 GetPlayerInventoryRemoteFunction.Name = "GetPlayerInventory"
-PlayerHasUnitGrantRemoteFunction.Name = "PlayerHasUnitGrant"
-GetPlayerAllCurrencyBalancesRemoteFunction.Name = "GetPlayerAllCurrenciesBalances"
+PlayerHasObjectGrantRemoteFunction.Name = "PlayerHasObjectGrant"
+GetPlayerAllCurrenciesBalancesRemoteFunction.Name = "GetPlayerAllCurrenciesBalances"
 GetPlayerCurrencyBalanceRemoteFunction.Name = "GetPlayerCurrencyBalance"
 CurrencyDepositedRemoteEvent.Name = "CurrencyDeposited"
 CurrencyWithdrawnRemoteEvent.Name = "CurrencyWithdrawn"
 
 GetPlayerInventoryRemoteFunction.Parent = Communicators
-PlayerHasUnitGrantRemoteFunction.Parent = Communicators
-GetPlayerAllCurrencyBalancesRemoteFunction.Parent = Communicators
+PlayerHasObjectGrantRemoteFunction.Parent = Communicators
+GetPlayerAllCurrenciesBalancesRemoteFunction.Parent = Communicators
 GetPlayerCurrencyBalanceRemoteFunction.Parent = Communicators
 CurrencyDepositedRemoteEvent.Parent = Communicators
 CurrencyWithdrawnRemoteEvent.Parent = Communicators

@@ -22,6 +22,7 @@ local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
 
 local SetAttributeRemoteFunction = Instance.new("RemoteFunction")
+local GetUnitBaseAttributesRemoteFunction = Instance.new("RemoteFunction")
 local GetUnitPersistentUpgradeLevelRemoteFunction = Instance.new("RemoteFunction")
 
 ---
@@ -82,6 +83,16 @@ Unit.fromId = function(id: string)
 	return units[id]
 end
 
+Unit.DoesUnitExist = function(unitName: string): boolean
+	local unitData = unitDataCache[unitName]
+	if (not unitData) then return false end
+	
+	local unitModel = UnitModels:FindFirstChild(unitName)
+	if (not unitModel) then return false end
+
+	return true
+end
+
 Unit.GetUnits = function(filterCallback: (any) -> boolean)
 	local unitList = {}
 
@@ -96,13 +107,10 @@ end
 
 Unit.new = function(unitName: string, owner: number?)
 	owner = owner or 0
-	
+	assert(Unit.DoesUnitExist(unitName), unitName .. " is not a valid unit")
+
 	local unitData = unitDataCache[unitName]
-	if (not unitData) then return end
-	
 	local unitModel = UnitModels:FindFirstChild(unitName)
-	if (not unitModel) then return end
-	
 	local newUnitLevel = 1
 	
 	if (unitProgressionData[owner]) then
@@ -227,14 +235,6 @@ Unit.SetAttribute = function(self, attributeName: string, newValue: any)
 	local oldValue = self:GetAttribute(attributeName)
 	if (type(oldValue) ~= type(newValue)) then return end
 	
-	-- HP has special handling
-	if (attributeName == "HP") then
-		-- minimum 0
-		-- integer
-		newValue = (newValue >= 0) and newValue or 0
-		newValue = math.floor(newValue + 0.5)
-	end
-	
 	if (oldValue == newValue) then return end
 	self.__baseAttributes[attributeName] = newValue
 	self.__attributeChangedEvent:Fire(attributeName, self:GetAttribute(attributeName))
@@ -358,6 +358,8 @@ Unit.Upgrade = function(self)
 end
 
 Unit.DoUnitPersistentUpgrade = function(unitName: string, owner: number)
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
 	local progressionData = unitProgressionData[owner]
 
 	if (not progressionData) then
@@ -373,6 +375,8 @@ Unit.DoUnitPersistentUpgrade = function(unitName: string, owner: number)
 end
 
 Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): number?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
 	local progressionData = unitProgressionData[owner]
 
 	if (not progressionData) then
@@ -383,9 +387,26 @@ Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): 
 	return progressionData[unitName] or 1
 end
 
----
+Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>
+	if (not Unit.DoesUnitExist(unitName)) then return {} end
 
-local SetAttributeRemoteFunctionParameters = t.tuple(t.string, t.string, t.any)
+	local unitData = unitDataCache[unitName]
+	local attributes = {}
+
+	for i = 1, level do
+		local progressionDataAttributes = unitData.Progression[i].Attributes
+
+		if (progressionDataAttributes) then
+			for attributeName, baseValue in pairs(progressionDataAttributes) do
+				attributes[attributeName] = baseValue
+			end
+		end
+	end
+
+	return attributes
+end
+
+---
 
 for _, abilityDataScript in pairs(AbilityData:GetChildren()) do
 	abilitiesCache[abilityDataScript.Name] = require(abilityDataScript)
@@ -396,25 +417,30 @@ for _, unitDataScript in pairs(UnitData:GetChildren()) do
 end
 
 -- Players can only change the targeting on tower units for now
-SetAttributeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(_: Player, unitId: string, attributeName: string, newValue: any)
-	if (not SetAttributeRemoteFunctionParameters(unitId, attributeName, newValue)) then return end
-	
+SetAttributeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, unitId: string, attributeName: string, newValue: any)
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return end
+	if (unit.Owner ~= player.UserId) then return end
 	if (unit.Type ~= GameEnums.UnitType.TowerUnit) then return end
 	if (attributeName ~= "UnitTargeting") then return end
 	
 	unit:SetAttribute(attributeName, newValue)
 end, t.tuple(t.instanceOf("Player"), t.string, t.string, t.any)))
 
+GetUnitBaseAttributesRemoteFunction.OnServerInvoke = t.wrap(function(_: Player, unitName: string, level: number)
+	return Unit.GetUnitBaseAttributes(unitName, level)
+end, t.tuple(t.instanceOf("Player"), t.string, t.number))
+
 GetUnitPersistentUpgradeLevelRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, unitName: string)
 	return Unit.GetUnitPersistentUpgradeLevel(player.UserId, unitName)
 end, t.tuple(t.instanceOf("Player"), t.string)))
 
 SetAttributeRemoteFunction.Name = "SetAttribute"
-SetAttributeRemoteFunction.Parent = UnitCommunicators
-
+GetUnitBaseAttributesRemoteFunction.Name = "GetUnitBaseAttributes"
 GetUnitPersistentUpgradeLevelRemoteFunction.Name = "GetUnitPersistentUpgradeLevel"
+
+SetAttributeRemoteFunction.Parent = UnitCommunicators
+GetUnitBaseAttributesRemoteFunction.Parent = UnitCommunicators
 GetUnitPersistentUpgradeLevelRemoteFunction.Parent = UnitCommunicators
 
 return Unit

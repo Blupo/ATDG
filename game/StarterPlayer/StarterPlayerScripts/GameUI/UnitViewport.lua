@@ -108,12 +108,17 @@ UnitViewport.render = function(self)
         BackgroundTransparency = 0,
         BorderSizePixel = 0,
         AutoButtonColor = false,
+        LayoutOrder = self.props.LayoutOrder,
 
         Text = "",
         TextTransparency = 1,
         TextStrokeTransparency = 1,
 
         BackgroundColor3 = Color3.new(1, 1, 1),
+
+        [Roact.Event.Activated] = function(_)
+            self.props.onActivated()
+        end,
 
         [Roact.Event.MouseEnter] = function(_)
             self.props.onMouseEnter()

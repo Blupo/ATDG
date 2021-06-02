@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -11,13 +12,14 @@ local MapData = ServerStorage:FindFirstChild("MapData")
 local Paths = Workspace:FindFirstChild("Paths")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local TimeSyncService = require(SharedModules:FindFirstChild("Nevermore"))("TimeSyncService")
 TimeSyncService:Init()
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Path = require(GameModules:FindFirstChild("Path"))
+local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
 local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 local StatusEffects = require(GameModules:FindFirstChild("StatusEffects"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
@@ -114,24 +116,24 @@ local INTERMISSION_TIME = 10
 local FINAL_INTERMISSION_TIME = 30
 
 local MAX_REVIVES = {
-	[GameEnums.GameMode.TowerDefense] = {
-		[GameEnums.Difficulty.Easy] = 3,
-		[GameEnums.Difficulty.Normal] = 2,
-		[GameEnums.Difficulty.Hard] = 2,
+	[GameEnum.GameMode.TowerDefense] = {
+		[GameEnum.Difficulty.Easy] = 3,
+		[GameEnum.Difficulty.Normal] = 2,
+		[GameEnum.Difficulty.Hard] = 2,
 	},
 	
-	[GameEnums.GameMode.Endless] = {
-		[GameEnums.Difficulty.Easy] = 6,
-		[GameEnums.Difficulty.Normal] = 6,
-		[GameEnums.Difficulty.Hard] = 2,
+	[GameEnum.GameMode.Endless] = {
+		[GameEnum.Difficulty.Easy] = 6,
+		[GameEnum.Difficulty.Normal] = 6,
+		[GameEnum.Difficulty.Hard] = 2,
 	},
 }
 
 local TIMED_PHASES = {
-	[GameEnums.GamePhase.FinalIntermission] = true,
-	[GameEnums.GamePhase.Preparation] = true,
-	[GameEnums.GamePhase.Intermission] = true,
-	[GameEnums.GamePhase.Round] = true,
+	[GameEnum.GamePhase.FinalIntermission] = true,
+	[GameEnum.GamePhase.Preparation] = true,
+	[GameEnum.GamePhase.Intermission] = true,
+	[GameEnum.GamePhase.Round] = true,
 }
 
 local syncedClock = TimeSyncService:GetSyncedClock()
@@ -203,7 +205,7 @@ local getPointsAllowance = function()
 	local pointsAllowance = challengeData.PointsAllowance[currentRound]
 	
 	while (not pointsAllowance) do
-		if (currentRound == 1) then
+		if (currentRound <= 1) then
 			pointsAllowance = 0
 			break
 		end
@@ -221,16 +223,16 @@ advanceGamePhase = function()
 	
 	local currentPhase = currentGameData.GamePhase
 	
-	if (currentPhase == GameEnums.GamePhase.NotStarted) then
+	if (currentPhase == GameEnum.GamePhase.NotStarted) then
 		phaseStartTime = syncedClock:GetTime()
 		phaseLength = PREPARATION_TIME
-		
+
 		gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
-		currentGameData.GamePhase = GameEnums.GamePhase.Preparation
-		
+		currentGameData.GamePhase = GameEnum.GamePhase.Preparation
+
 		PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
 		StartedEvent:Fire()
-	elseif ((currentPhase == GameEnums.GamePhase.Preparation) or (currentPhase == GameEnums.GamePhase.Intermission)) then		
+	elseif ((currentPhase == GameEnum.GamePhase.Preparation) or (currentPhase == GameEnum.GamePhase.Intermission)) then		
 		local currentRound = currentGameData.CurrentRound + 1
 		currentGameData.CurrentRound = currentRound 
 		calculateUnitRoundData()
@@ -240,6 +242,7 @@ advanceGamePhase = function()
 		local roundData = challengeData.Rounds[currentRound]
 		
 		-- award points
+		PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Points, pointsToAward)
 		
 		-- spawn Field units
 		table.clear(currentRoundUnits)
@@ -259,28 +262,28 @@ advanceGamePhase = function()
 							newUnit.Model.Parent = Workspace
 							newUnit.Model.PrimaryPart:SetNetworkOwner(nil)
 							
-							if (difficulty == GameEnums.Difficulty.Easy) then
-								newUnit:ApplyAttributeModifier("Difficulty", "HP", GameEnums.AttributeModifierType.Multiplicative, function(stat)
+							if (difficulty == GameEnum.Difficulty.Easy) then
+								newUnit:ApplyAttributeModifier("Difficulty", "HP", GameEnum.AttributeModifierType.Multiplicative, function(stat)
 									return stat - (stat * (1/2))
 								end)
 								
-								newUnit:ApplyAttributeModifier("Difficulty", "DEF", GameEnums.AttributeModifierType.Multiplicative, function(stat)
+								newUnit:ApplyAttributeModifier("Difficulty", "DEF", GameEnum.AttributeModifierType.Multiplicative, function(stat)
 									return stat - (stat * (1/2))
 								end)
 								
-								newUnit:ApplyAttributeModifier("Difficulty", "SPD", GameEnums.AttributeModifierType.Multiplicative, function(stat)
+								newUnit:ApplyAttributeModifier("Difficulty", "SPD", GameEnum.AttributeModifierType.Multiplicative, function(stat)
 									return stat - (stat * (1/2))
 								end)
-							elseif (difficulty == GameEnums.Difficulty.Hard) then
-								newUnit:ApplyAttributeModifier("Difficulty", "HP", GameEnums.AttributeModifierType.Multiplicative, function(stat)
+							elseif (difficulty == GameEnum.Difficulty.Hard) then
+								newUnit:ApplyAttributeModifier("Difficulty", "HP", GameEnum.AttributeModifierType.Multiplicative, function(stat)
 									return stat * 2
 								end)
 
-								newUnit:ApplyAttributeModifier("Difficulty", "DEF", GameEnums.AttributeModifierType.Multiplicative, function(stat)
+								newUnit:ApplyAttributeModifier("Difficulty", "DEF", GameEnum.AttributeModifierType.Multiplicative, function(stat)
 									return stat * 2
 								end)
 
-								newUnit:ApplyAttributeModifier("Difficulty", "SPD", GameEnums.AttributeModifierType.Multiplicative, function(stat)
+								newUnit:ApplyAttributeModifier("Difficulty", "SPD", GameEnum.AttributeModifierType.Multiplicative, function(stat)
 									return stat * 2
 								end)
 							end
@@ -328,17 +331,17 @@ advanceGamePhase = function()
 		phaseLength = roundData.Length
 		
 		gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
-		currentGameData.GamePhase = GameEnums.GamePhase.Round
+		currentGameData.GamePhase = GameEnum.GamePhase.Round
 		
 		RoundStartedEvent:Fire(currentRound)
 		PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
-	elseif (currentPhase == GameEnums.GamePhase.FinalIntermission) then
+	elseif (currentPhase == GameEnum.GamePhase.FinalIntermission) then
 		-- reviving is handled by Game.Revive
-		currentGameData.GamePhase = GameEnums.GamePhase.Ended
+		currentGameData.GamePhase = GameEnum.GamePhase.Ended
 
 		PhaseChangedEvent:Fire(currentGameData.GamePhase)
 		EndedEvent:Fire(false)
-	elseif (currentPhase == GameEnums.GamePhase.Round) then
+	elseif (currentPhase == GameEnum.GamePhase.Round) then
 		local currentRound = currentGameData.CurrentRound
 		local nextRoundData = challengeData.Rounds[currentRound + 1]
 		RoundEndedEvent:Fire(currentRound)
@@ -348,11 +351,11 @@ advanceGamePhase = function()
 			phaseLength = INTERMISSION_TIME
 			
 			gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
-			currentGameData.GamePhase = GameEnums.GamePhase.Intermission
+			currentGameData.GamePhase = GameEnum.GamePhase.Intermission
 			
 			PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
 		else
-			currentGameData.GamePhase = GameEnums.GamePhase.Ended
+			currentGameData.GamePhase = GameEnum.GamePhase.Ended
 			
 			PhaseChangedEvent:Fire(currentGameData.GamePhase)
 			EndedEvent:Fire(true)
@@ -377,6 +380,13 @@ local loadMap = function(mapData)
 	end
 
 	world.Parent = Workspace
+end
+
+local playerAdded = function(player)
+	local userId = player.UserId
+
+	PlayerData.WaitForPlayerProfile(userId)
+	PlayerData.DepositCurrencyToPlayer(userId, GameEnum.CurrencyType.Points, challengeData.PointsAllowance[0])
 end
 
 ---
@@ -413,8 +423,8 @@ Game.LoadData = function(mapName: string, fieldUnitSetName: string, gameMode: st
 	currentGameData = {
 		Difficulty = difficulty,
 		CentralTowersHealth = { [0] = 100 },
-		GameMode = GameEnums.GameMode.TowerDefense,
-		GamePhase = GameEnums.GamePhase.NotStarted,
+		GameMode = GameEnum.GameMode.TowerDefense,
+		GamePhase = GameEnum.GamePhase.NotStarted,
 		CurrentRound = 0,
 		RevivesRemaining = revives,
 	}
@@ -436,20 +446,20 @@ Game.LoadDataFromChallenge = function(mapName: string, challengeName: string)
 	challengeData = newChallengeData
 	
 	currentGameData = {
-		Difficulty = GameEnums.Difficulty.Normal,
+		Difficulty = GameEnum.Difficulty.Normal,
 		CurrentChallenge = challengeName,
 		CentralTowersHealth = { [0] = 100 },
-		GameMode = GameEnums.GameMode.TowerDefense,
-		GamePhase = GameEnums.GamePhase.NotStarted,
+		GameMode = GameEnum.GameMode.TowerDefense,
+		GamePhase = GameEnum.GamePhase.NotStarted,
 		CurrentRound = 0,
-		RevivesRemaining = MAX_REVIVES[GameEnums.GameMode.TowerDefense][GameEnums.Difficulty.Normal],
+		RevivesRemaining = MAX_REVIVES[GameEnum.GameMode.TowerDefense][GameEnum.Difficulty.Normal],
 	}
 end
 
 Game.HasStarted = function(): boolean
 	if (not currentGameData) then return false end
 	
-	return (currentGameData.GamePhase ~= GameEnums.GamePhase.NotStarted)
+	return (currentGameData.GamePhase ~= GameEnum.GamePhase.NotStarted)
 end
 
 Game.GetDerivedGameState = function(): DerivedGameState?
@@ -473,14 +483,14 @@ end
 
 Game.Start = function()
 	if (not currentGameData) then return end
-	if (currentGameData.GamePhase ~= GameEnums.GamePhase.NotStarted) then return end
+	if (currentGameData.GamePhase ~= GameEnum.GamePhase.NotStarted) then return end
 	
 	advanceGamePhase()
 end
 
 Game.Revive = function()
 	if (not currentGameData) then return end
-	if (currentGameData.GamePhase ~= GameEnums.GamePhase.FinalIntermission) then return end
+	if (currentGameData.GamePhase ~= GameEnum.GamePhase.FinalIntermission) then return end
 	if (currentGameData.RevivesRemaining <= 0) then return end
 	
 	gamePhasePromise:cancel()
@@ -492,7 +502,7 @@ Game.Revive = function()
 	currentGameData.RevivesRemaining = currentGameData.RevivesRemaining - 1
 	currentGameData.CurrentRound = currentGameData.CurrentRound - 1
 	currentGameData.CentralTowersHealth[0] = 100
-	currentGameData.GamePhase = GameEnums.GamePhase.Intermission
+	currentGameData.GamePhase = GameEnum.GamePhase.Intermission
 	
 	CentralTowerHealthChangedEvent:Fire(0, 100)
 	PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
@@ -502,7 +512,7 @@ Game.SkipToNextRound = function()
 	-- todo: can only be called if all the enemies from previous rounds have been eliminated
 
 	if (not currentGameData) then return end
-	if (currentGameData.GamePhase ~= GameEnums.GamePhase.Round) then return end
+	if (currentGameData.GamePhase ~= GameEnum.GamePhase.Round) then return end
 	if (#currentRoundSpawnPromises > 0) then return end
 	if (currentGameData.CurrentRound == #challengeData.Rounds) then return end
 	
@@ -512,13 +522,23 @@ end
 
 ---
 
+do
+	local players = Players:GetPlayers()
+
+	for i = 1, #players do
+		playerAdded(players[i])
+	end
+end
+
+Players.PlayerAdded:Connect(playerAdded)
+
 Unit.UnitRemoving:Connect(function(unitId)
 	if (not currentGameData) then return end
-	if (currentGameData.GamePhase ~= GameEnums.GamePhase.Round) then return end
+	if (currentGameData.GamePhase ~= GameEnum.GamePhase.Round) then return end
 	
 	local unit = Unit.fromId(unitId)
 	if (unit.Owner ~= 0) then return end
-	if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return end
+	if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
 	
 	local index = table.find(currentRoundUnits, unitId)
 	if (not index) then return end
@@ -538,8 +558,8 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return end
 	
-	if (currentGameData.GameMode == GameEnums.GameMode.TowerDefense) then
-		if (direction ~= GameEnums.PursuitDirection.Forward) then
+	if (currentGameData.GameMode == GameEnum.GameMode.TowerDefense) then
+		if (direction ~= GameEnum.PursuitDirection.Forward) then
 			unit:Destroy()
 			return
 		end
@@ -557,7 +577,7 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
 			end
 
 			local units = Unit.GetUnits(function(testUnit)
-				return (testUnit.Owner == 0) and (testUnit.Type == GameEnums.UnitType.FieldUnit)
+				return (testUnit.Owner == 0) and (testUnit.Type == GameEnum.UnitType.FieldUnit)
 			end)
 
 			for i = 1, #units do
@@ -574,13 +594,13 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
 				phaseLength = FINAL_INTERMISSION_TIME
 				gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
 				
-				currentGameData.GamePhase = GameEnums.GamePhase.FinalIntermission
+				currentGameData.GamePhase = GameEnum.GamePhase.FinalIntermission
 				RoundEndedEvent:Fire(currentGameData.CurrentRound)
 				PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
 			else
 				gamePhasePromise:cancel()
 				
-				currentGameData.GamePhase = GameEnums.GamePhase.Ended
+				currentGameData.GamePhase = GameEnum.GamePhase.Ended
 				PhaseChangedEvent:Fire(currentGameData.GamePhase)
 			end
 		end

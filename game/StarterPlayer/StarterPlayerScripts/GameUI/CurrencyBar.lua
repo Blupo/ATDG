@@ -1,6 +1,20 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+---
+
 local root = script.Parent
+local PlayerScripts = root.Parent
+
+local LocalPlayer = Players.LocalPlayer
 
 local Roact = require(root:WaitForChild("Roact"))
+
+local GameModules = PlayerScripts:WaitForChild("GameModules")
+local PlayerData = require(GameModules:WaitForChild("PlayerData"))
+
+local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 
 ---
 
@@ -21,6 +35,7 @@ CurrencyItem.render = function(self)
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             Image = self.props.Image or "rbxasset://textures/ui/GuiImagePlaceholder.png",
+
             ImageColor3 = self.props.ImageColor3
         }),
 
@@ -31,16 +46,76 @@ CurrencyItem.render = function(self)
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
 
-            Text = self.props.Text or "###",
+            Text = self.props.Text,
             Font = Enum.Font.GothamBold,
             TextSize = 16,
-            TextStrokeColor3 = Color3.new(1, 1, 1),
             TextStrokeTransparency = 0.5,
+
+            TextColor3 = Color3.new(0, 0, 0),
+            TextStrokeColor3 = Color3.new(1, 1, 1),
         })
     })
 end
 
 local CurrencyBar = Roact.PureComponent:extend("CurrencyBar")
+
+CurrencyBar.init = function(self)
+    self:setState({
+        currencies = {
+            [GameEnum.CurrencyType.Tickets] = 0,
+            [GameEnum.CurrencyType.Points] = 0,
+        }
+    })
+end
+
+CurrencyBar.didMount = function(self)
+    self.currencyDeposited = PlayerData.CurrencyDeposited:Connect(function(userId, currencyType, amount, newBalance)
+        if (userId ~= LocalPlayer.UserId) then return end
+
+        self:setState(function(state)
+            local newCurrencies = {}
+
+            for currency, balance in pairs(state.currencies) do
+                newCurrencies[currency] = balance
+            end
+
+            newCurrencies[currencyType] = newBalance
+
+            return {
+                currencies = newCurrencies
+            }
+        end)
+    end)
+
+    self.currencyWithdrawn = PlayerData.CurrencyWithdrawn:Connect(function(userId, currencyType, amount, newBalance)
+        if (userId ~= LocalPlayer.UserId) then return end
+
+        self:setState(function(state)
+            local newCurrencies = {}
+
+            for currency, balance in pairs(state.currencies) do
+                newCurrencies[currency] = balance
+            end
+
+            newCurrencies[currencyType] = newBalance
+
+            return {
+                currencies = newCurrencies
+            }
+        end)
+    end)
+
+    local currencies = PlayerData.GetPlayerAllCurrenciesBalances(LocalPlayer.UserId)
+
+    self:setState({
+        currencies = currencies
+    })
+end
+
+CurrencyBar.willUnmount = function(self)
+    self.currencyDeposited:Disconnect()
+    self.currencyWithdrawn:Disconnect()
+end
 
 CurrencyBar.render = function(self)
     return Roact.createElement("Frame", {
@@ -63,6 +138,8 @@ CurrencyBar.render = function(self)
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 0,
+
+            Text = self.state.currencies[GameEnum.CurrencyType.Tickets]
         }),
 
         Points = Roact.createElement(CurrencyItem, {
@@ -70,6 +147,8 @@ CurrencyBar.render = function(self)
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1,
+
+            Text = self.state.currencies[GameEnum.CurrencyType.Points]
         })
     })
 end

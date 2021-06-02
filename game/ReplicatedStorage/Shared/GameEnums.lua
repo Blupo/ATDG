@@ -1,3 +1,5 @@
+-- todo: replace this with a more Roblox-like Enum implementation (such as raphtalia/Enum or buildthomas/EnumExtender)
+
 local makeEnum = function(name, enumItems)
 	local enum = {}
 
