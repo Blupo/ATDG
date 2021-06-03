@@ -196,7 +196,11 @@ PlayerData.GetPlayerCurrencyBalance = function(userId: number, currencyType: str
     local profile = playerProfiles[userId]
     if (not profile) then return end
 
-    return profile.Data.Currencies[currencyType] or 0
+    if (EPHEMERAL_CURRENCIES[currencyType]) then
+        return ephemeralCurrenciesBalances[userId][currencyType] or 0
+    else
+        return profile.Data.Currencies[currencyType] or 0
+    end
 end
 
 PlayerData.DepositCurrencyToPlayer = function(userId: number, currencyType: string, amount: number)
@@ -245,9 +249,12 @@ PlayerData.WithdrawCurrencyFromPlayer = function(userId: number, currencyType: s
     end
 
     if (currenciesBalances[currencyType]) then
-        currenciesBalances[currencyType] = currenciesBalances[currencyType] + amount
+        local balance = currenciesBalances[currencyType]
+        if (amount > balance) then return end
+
+        currenciesBalances[currencyType] = balance - amount
     else
-        currenciesBalances[currencyType] = amount
+        return
     end
 
     CurrencyWithdrawnEvent:Fire(userId, currencyType, amount, currenciesBalances[currencyType])

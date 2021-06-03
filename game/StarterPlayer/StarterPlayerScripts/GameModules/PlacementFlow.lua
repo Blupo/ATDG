@@ -1,5 +1,7 @@
 -- handles the placement flow
+-- todo: cancel event
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
@@ -8,6 +10,7 @@ local Workspace = game:GetService("Workspace")
 
 local GameModules = script.Parent
 local Placement = require(GameModules:WaitForChild("Placement"))
+local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
@@ -19,6 +22,7 @@ local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 local StartedEvent = Instance.new("BindableEvent")
 local StoppedEvent = Instance.new("BindableEvent")
 
+local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
 local PointerPart = Instance.new("Part")
@@ -49,6 +53,7 @@ RadiusPart.Shape = Enum.PartType.Ball
 
 local mouseMovementEvent
 local rotateEvent
+local cancelEvent
 local activatedEvent
 
 local objModel
@@ -70,28 +75,22 @@ PlacementFlow.Start = function(objType: string, objName: string)
     if (objType == GameEnum.ObjectType.Unit) then
         if (not Unit.DoesUnitExist(objName)) then return end
 
+		if (Unit.GetUnitType(objName) == GameEnum.UnitType.TowerUnit) then
+			local baseAttributes = Unit.GetUnitBaseAttributes(objName, Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, objName))
+
+			RadiusPart.Size = Vector3.new(baseAttributes.RANGE, baseAttributes.RANGE, baseAttributes.RANGE) * 2
+		else
+			RadiusPart.Size = Vector3.new(0, 0, 0)
+		end
+
         objModel = UnitModels:FindFirstChild(objName):Clone()
     else
         -- todo: roadblocks
         return
     end
 
-    local PlacementArea = objModel:FindFirstChild("PlacementArea")
-
-    objModel.PrimaryPart.Anchored = true
-	objModel:SetPrimaryPartCFrame(CFrame.new(0, math.huge, 0))
-    PointerPart.Size = Vector3.new(PlacementArea.Size.X, 0, PlacementArea.Size.Z)
-
-    for _, obj in pairs(objModel:GetDescendants()) do
-        if (obj:IsA("BasePart")) then
-            obj.CanCollide = false
-            obj.CanTouch = false
-        end
-    end
-
     mouseMovementEvent = UserInputService.InputChanged:Connect(function(input)
 		if (input.UserInputType ~= Enum.UserInputType.MouseMovement) then return end
-		if (not (objType and objName)) then return end
 
 		local inputPosition = input.Position
 		local ray = CurrentCamera:ScreenPointToRay(inputPosition.X, inputPosition.Y, 0)
@@ -124,36 +123,58 @@ PlacementFlow.Start = function(objType: string, objName: string)
 		RadiusPart.CFrame = CFrame.new(raycastPosition)
 	end)
 	
+	-- todo: replace
 	rotateEvent = UserInputService.InputBegan:Connect(function(input)
 		if (input.UserInputType ~= Enum.UserInputType.Keyboard) then return end
 		if (input.KeyCode ~= Enum.KeyCode.R) then return end
-		if (not objModel) then return end
 		
 		objRotation = (objRotation + (math.pi / 2)) % (2 * math.pi)
 		objModel:SetPrimaryPartCFrame(objModel:GetPrimaryPartCFrame():ToWorldSpace(CFrame.Angles(0, math.pi / 2, 0)))
 	end)
 	
+	-- todo: replace
+	cancelEvent = UserInputService.InputBegan:Connect(function(input)
+		if (input.UserInputType ~= Enum.UserInputType.Keyboard) then return end
+		if (input.KeyCode ~= Enum.KeyCode.Q) then return end
+
+		PlacementFlow.Stop()
+	end)
+
 	activatedEvent = UserInputService.InputBegan:Connect(function(input)
 		if (input.UserInputType ~= Enum.UserInputType.MouseButton1) then return end
-		if (not (objType and objName)) then return end
 		
 		local inputPosition = input.Position
 		local ray = CurrentCamera:ScreenPointToRay(inputPosition.X, inputPosition.Y, 0)
 		local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 5000, raycastParams)
 		if (not raycastResult) then return end
 		
-		Placement.PlaceObject(objType, objName, raycastResult.Position, objRotation)
+		print(Shop.PurchaseObjectPlacement(LocalPlayer.UserId, objType, objName, raycastResult.Position, objRotation))
+		PlacementFlow.Stop()
 	end)
+
+	local PlacementArea = objModel:FindFirstChild("PlacementArea")
+
+    for _, obj in pairs(objModel:GetDescendants()) do
+        if (obj:IsA("BasePart")) then
+            obj.CanCollide = false
+            obj.CanTouch = false
+        end
+    end
+
+	PointerPart.Size = Vector3.new(PlacementArea.Size.X, 0, PlacementArea.Size.Z)
+	objModel.PrimaryPart.Anchored = true
+	objModel.Parent = CurrentCamera
 
     StartedEvent:Fire()
 end
 
 PlacementFlow.Stop = function()
+	objModel:Destroy()
+	objModel = nil
     objRotation = 0
 
     PointerPart.CFrame = CFrame.new(0, math.huge, 0)
 	RadiusPart.CFrame = CFrame.new(0, math.huge, 0)
-	objModel:SetPrimaryPartCFrame(CFrame.new(0, math.huge, 0))
 
 	if (mouseMovementEvent) then
 		mouseMovementEvent:Disconnect()
@@ -163,6 +184,11 @@ PlacementFlow.Stop = function()
 	if (rotateEvent) then
 		rotateEvent:Disconnect()
 		rotateEvent = nil
+	end
+
+	if (cancelEvent) then
+		cancelEvent:Disconnect()
+		cancelEvent = nil
 	end
 	
 	if (activatedEvent) then

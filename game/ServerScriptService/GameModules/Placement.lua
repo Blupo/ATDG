@@ -4,21 +4,15 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
-local PlacementCommunicators = ReplicatedStorage:FindFirstChild("Communicators"):FindFirstChild("Placement")
-
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
-local t = require(SharedModules:FindFirstChild("t"))
 local TowerUnitSurfaces = require(SharedModules:FindFirstChild("TowerUnitSurfaces"))
 
 local RoadblockModels = ReplicatedStorage:FindFirstChild("RoadblockModels")
 local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
 
 local GameModules = script.Parent
-local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
-
-local PlaceObjectRemoteFunction = Instance.new("RemoteFunction")
 
 ---
 
@@ -124,7 +118,7 @@ end
 
 local Placement = {}
 
-Placement.CanPlace = function(owner: Player, objType: string, objName: string, position: Vector3, rotation: number): PlacementResult
+Placement.CanPlace = function(owner: number, objType: string, objName: string, position: Vector3, rotation: number): PlacementResult
 	local thisObjModel
 	local thisObjPlacementArea
 
@@ -224,7 +218,7 @@ Placement.GetPlacementLimits = function()
 	
 end
 
-Placement.PlaceObject = function(owner: Player, objType: string, objName: string, position: Vector3, rotation: number)
+Placement.PlaceObject = function(owner: number, objType: string, objName: string, position: Vector3, rotation: number)
 	local placementResult = Placement.CanPlace(owner, objType, objName, position, rotation)
 	
 	if (not placementResult.CanPlace) then
@@ -256,7 +250,13 @@ end
 
 ---
 
+do
+	local world = Workspace:FindFirstChild("World")
 
+	if (world) then
+		raycastParams.FilterDescendantsInstances = {world}
+	end
+end
 
 Workspace.ChildAdded:Connect(function(child)
 	if (child.Name ~= "World") then return end
@@ -269,20 +269,5 @@ Workspace.ChildRemoved:Connect(function(child)
 
 	raycastParams.FilterDescendantsInstances = {}
 end)
-
-PlaceObjectRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, objType: string, objName: string, position: Vector3, rotation: number)
-	Placement.PlaceObject(player, objType, objName, position, rotation)
-end, t.tuple(t.instanceOf("Player"), t.string, t.string, t.Vector3, t.number)))
-
-do
-	local world = Workspace:FindFirstChild("World")
-
-	if (world) then
-		raycastParams.FilterDescendantsInstances = {world}
-	end
-end
-
-PlaceObjectRemoteFunction.Name = "PlaceObject"
-PlaceObjectRemoteFunction.Parent = PlacementCommunicators
 
 return Placement

@@ -105,6 +105,44 @@ Unit.GetUnits = function(filterCallback: (any) -> boolean)
 	return unitList
 end
 
+Unit.GetUnitType = function(unitName: string): string?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	return unitDataCache[unitName].Type
+end
+
+Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): number?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local progressionData = unitProgressionData[owner]
+
+	if (not progressionData) then
+		unitProgressionData[owner] = {}
+		progressionData = unitProgressionData[owner]
+	end
+
+	return progressionData[unitName] or 1
+end
+
+Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local unitData = unitDataCache[unitName]
+	local attributes = {}
+
+	for i = 1, level do
+		local progressionDataAttributes = unitData.Progression[i].Attributes
+
+		if (progressionDataAttributes) then
+			for attributeName, baseValue in pairs(progressionDataAttributes) do
+				attributes[attributeName] = baseValue
+			end
+		end
+	end
+
+	return attributes
+end
+
 Unit.new = function(unitName: string, owner: number?)
 	owner = owner or 0
 	assert(Unit.DoesUnitExist(unitName), unitName .. " is not a valid unit")
@@ -374,38 +412,6 @@ Unit.DoUnitPersistentUpgrade = function(unitName: string, owner: number)
 	progressionData[unitName] = currentLevel + 1
 end
 
-Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): number?
-	if (not Unit.DoesUnitExist(unitName)) then return end
-
-	local progressionData = unitProgressionData[owner]
-
-	if (not progressionData) then
-		unitProgressionData[owner] = {}
-		progressionData = unitProgressionData[owner]
-	end
-
-	return progressionData[unitName] or 1
-end
-
-Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>
-	if (not Unit.DoesUnitExist(unitName)) then return {} end
-
-	local unitData = unitDataCache[unitName]
-	local attributes = {}
-
-	for i = 1, level do
-		local progressionDataAttributes = unitData.Progression[i].Attributes
-
-		if (progressionDataAttributes) then
-			for attributeName, baseValue in pairs(progressionDataAttributes) do
-				attributes[attributeName] = baseValue
-			end
-		end
-	end
-
-	return attributes
-end
-
 ---
 
 for _, abilityDataScript in pairs(AbilityData:GetChildren()) do
@@ -431,9 +437,11 @@ GetUnitBaseAttributesRemoteFunction.OnServerInvoke = t.wrap(function(_: Player, 
 	return Unit.GetUnitBaseAttributes(unitName, level)
 end, t.tuple(t.instanceOf("Player"), t.string, t.number))
 
-GetUnitPersistentUpgradeLevelRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, unitName: string)
-	return Unit.GetUnitPersistentUpgradeLevel(player.UserId, unitName)
-end, t.tuple(t.instanceOf("Player"), t.string)))
+GetUnitPersistentUpgradeLevelRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, owner: number, unitName: string): number?
+	if (player.UserId ~= owner) then return end
+
+	return Unit.GetUnitPersistentUpgradeLevel(owner, unitName)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
 
 SetAttributeRemoteFunction.Name = "SetAttribute"
 GetUnitBaseAttributesRemoteFunction.Name = "GetUnitBaseAttributes"

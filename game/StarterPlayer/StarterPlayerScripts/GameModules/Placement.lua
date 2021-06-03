@@ -4,9 +4,6 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
-local PlacementCommunicators = ReplicatedStorage:WaitForChild("Communicators"):WaitForChild("Placement")
-local PlaceObject = PlacementCommunicators:WaitForChild("PlaceObject")
-
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnums = require(SharedModules:WaitForChild("GameEnums"))
 local TowerUnitSurfaces = require(SharedModules:WaitForChild("TowerUnitSurfaces"))
@@ -227,14 +224,15 @@ Placement.CanPlace = function(objType: string, objName: string, position: Vector
 	return makePlacementResult()
 end
 
-Placement.PlaceObject = function(objType: string, objName: string, position: Vector3, rotation: number)
-	local result = Placement.CanPlace(objType, objName, position, rotation)
-	if (not result.CanPlace) then return end
-	
-	PlaceObject:InvokeServer(objType, objName, position, (rotation + (math.pi / 2)) % (2 * math.pi))
-end
-
 ---
+
+do
+	local world = Workspace:FindFirstChild("World")
+	
+	if (world) then
+        raycastParams.FilterDescendantsInstances = {world}
+    end
+end
 
 Workspace.ChildAdded:Connect(function(child)
 	if (child.Name ~= "World") then return end
@@ -247,13 +245,5 @@ Workspace.ChildRemoved:Connect(function(child)
 
 	raycastParams.FilterDescendantsInstances = {}
 end)
-
-do
-	local world = Workspace:FindFirstChild("World")
-	
-	if (world) then
-        raycastParams.FilterDescendantsInstances = {world}
-    end
-end
 
 return Placement

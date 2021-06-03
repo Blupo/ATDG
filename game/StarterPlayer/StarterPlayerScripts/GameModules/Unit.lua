@@ -1,3 +1,5 @@
+-- todo: cache localplayer's persistent upgrade levels?
+
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -66,10 +68,6 @@ Unit.GetUnits = function(filterCallback: (any) -> boolean)
 	return unitList
 end
 
-Unit.SetAttribute = function(self, attributeName: string, newValue: any)
-	SetAttribute:InvokeServer(self.Id, attributeName, newValue)
-end
-
 Unit.DoesUnitExist = function(unitName: string): boolean
 	local unitData = unitDataCache[unitName]
 	if (not unitData) then return false end
@@ -80,8 +78,8 @@ Unit.DoesUnitExist = function(unitName: string): boolean
 	return true
 end
 
-Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>
-	if (not Unit.DoesUnitExist(unitName)) then return {} end
+Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
+	if (not Unit.DoesUnitExist(unitName)) then return end
 
 	local unitData = unitDataCache[unitName]
 	local attributes = {}
@@ -97,6 +95,16 @@ Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictiona
 	end
 
 	return attributes
+end
+
+Unit.GetUnitType = function(unitName: string): string?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	return unitDataCache[unitName].Type
+end
+
+Unit.SetAttribute = function(self, attributeName: string, newValue: any)
+	SetAttribute:InvokeServer(self.Id, attributeName, newValue)
 end
 
 local constructUnit = function(unitModel)

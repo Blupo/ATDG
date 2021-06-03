@@ -13,6 +13,7 @@ local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
+local PlacementFlow = require(GameModules:WaitForChild("PlacementFlow"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 ---
@@ -26,10 +27,32 @@ local Hotbar = Roact.PureComponent:extend("Hotbar")
 Hotbar.init = function(self)
     self:setState({
         hoverUnitName = nil,
+        placementFlowOpen = false,
     })
 end
 
+Hotbar.didMount = function(self)
+    self.placementFlowStarted = PlacementFlow.Started:Connect(function()
+        self:setState({
+            placementFlowOpen = true,
+        })
+    end)
+
+    self.placementFlowStopped = PlacementFlow.Stopped:Connect(function()
+        self:setState({
+            placementFlowOpen = false,
+        })
+    end)
+end
+
+Hotbar.willUnmount = function(self)
+    self.placementFlowStarted:Disconnect()
+    self.placementFlowStopped:Disconnect()
+end
+
 Hotbar.render = function(self)
+    if (self.state.placementFlowOpen) then return nil end
+
     local unitListChildren = {}
     local statPreviewChildren = {}
 
@@ -44,7 +67,7 @@ Hotbar.render = function(self)
             titleDisplayType = GameEnum.UnitViewportTitleType.PlacementPrice,
 
             onActivated = function()
-                print("e")
+                PlacementFlow.Start(GameEnum.ObjectType.Unit, "TestTowerUnit")
             end,
 
             onMouseEnter = function()
