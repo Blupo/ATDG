@@ -242,7 +242,7 @@ Placement.PlaceObject = function(owner: number, objType: string, objName: string
 	local primaryPartHeightOffset = (boundingBoxSize.Y / 2) + primaryPartCenterOffset.Y
 	
 	objModel:SetPrimaryPartCFrame(CFrame.new(position)
-		:ToWorldSpace(CFrame.new(0, primaryPartHeightOffset, 0) * CFrame.Angles(0, rotation, 0))
+		:ToWorldSpace(CFrame.Angles(0, rotation + (math.pi / 2), 0) * CFrame.new(0, primaryPartHeightOffset, 0) )
 	)
 	
 	objModel.Parent = Workspace

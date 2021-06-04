@@ -114,8 +114,7 @@ PlacementFlow.Start = function(objType: string, objName: string)
 		local placementResult = Placement.CanPlace(objType, objName, raycastPosition, objRotation)
 		
 		objModel:SetPrimaryPartCFrame(CFrame.lookAt(raycastPosition, raycastPosition + raycastResult.Normal)
-			:ToWorldSpace(CFrame.Angles(-math.pi / 2, objRotation, 0))
-			:ToWorldSpace(CFrame.new(0, primaryPartHeightOffset, 0))
+			:ToWorldSpace(CFrame.Angles(-math.pi / 2, objRotation, 0) * CFrame.new(0, primaryPartHeightOffset, 0))
 		)
 		
 		PointerPart.Color = placementResult.CanPlace and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
