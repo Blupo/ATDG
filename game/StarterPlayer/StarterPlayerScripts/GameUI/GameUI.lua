@@ -3,6 +3,7 @@ local root = script.Parent
 local Roact = require(root:WaitForChild("Roact"))
 local CurrencyBar = require(root:WaitForChild("CurrencyBar"))
 local Hotbar = require(root:WaitForChild("Hotbar"))
+local Inventory = require(root:WaitForChild("Inventory"))
 local GameState = require(root:WaitForChild("GameState"))
 local Padding = require(root:WaitForChild("Padding"))
 
@@ -64,6 +65,7 @@ GameUI.render = function(self)
                 
                 CurrencyBar = Roact.createElement(CurrencyBar),
                 Hotbar = Roact.createElement(Hotbar),
+                Inventory = Roact.createElement(Inventory),
                 State = Roact.createElement(GameState),
             })
         or nil

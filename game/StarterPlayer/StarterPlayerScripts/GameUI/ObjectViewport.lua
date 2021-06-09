@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
@@ -13,49 +14,67 @@ local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
-local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+-- local RoadblockModels = ReplicatedStorage:WaitForChild("RoadblocksModels")
 
+local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))
+
+local LocalPlayer = Players.LocalPlayer
 
 ---
 
 --[[
     props
 
-    unitName: string
-    titleDisplayType: UnitViewportTitleType
-    showLevel: boolean?
+    objectType: ObjectType
+    objectName: string
+
+    infoLeftDisplay: string
+
+    titleDisplayType: ObjectViewportTitleType
+    onActivated: () -> nil
     onMouseEnter: () -> nil
     onMouseLeave: () -> nil
+
+    hotkey: number?
+    showLevel: boolean?
 ]]
 
-local UnitViewport = Roact.PureComponent:extend("UnitViewport")
+local ObjectViewport = Roact.PureComponent:extend("ObjectViewport")
 
-UnitViewport.init = function(self)
+ObjectViewport.init = function(self)
     self.viewport = Roact.createRef()
     self.camera = Roact.createRef()
 
-    self.initUnitModel = function()
-        if (not self.props.unitName) then return end
+    self.initObjectModel = function()
+        if (not (self.props.objectType and self.props.objectName)) then return end
 
-        local unitModel = UnitModels:FindFirstChild(self.props.unitName)
-        if (not unitModel) then return end
+        local objectModel
 
-        unitModel = unitModel:Clone()
-        unitModel:SetPrimaryPartCFrame(CFrame.new(0, 0, 0))
+        if (self.props.objectType == GameEnum.ObjectType.Unit) then
+            objectModel = UnitModels:FindFirstChild(self.props.objectName)
+        else
+            -- todo
+            return
+        end
 
-        local primaryPart = unitModel.PrimaryPart
-        local _, boundingBoxSize = unitModel:GetBoundingBox()
+        if (not objectModel) then return end
+
+        objectModel = objectModel:Clone()
+        objectModel:SetPrimaryPartCFrame(CFrame.new(0, 0, 0))
+
+        local primaryPart = objectModel.PrimaryPart
+        local _, boundingBoxSize = objectModel:GetBoundingBox()
 
         local viewport = self.viewport:getValue()
 
         if (viewport) then
-            unitModel.Parent = viewport
+            objectModel.Parent = viewport
         end
 
         self:setState({
-            unitModel = unitModel,
+            objectModel = objectModel,
 
             -- todo: make this look better
             cameraCFrame = primaryPart.CFrame:ToWorldSpace(CFrame.new(0, 0, -boundingBoxSize.Z) * CFrame.Angles(0, math.pi, 0))
@@ -67,43 +86,66 @@ UnitViewport.init = function(self)
     })
 end
 
-UnitViewport.didMount = function(self)
-    self.initUnitModel()
+ObjectViewport.didMount = function(self)
+    self.initObjectModel()
 end
 
-UnitViewport.didUpdate = function(self, prevProps)
-    if (self.props.unitName == prevProps.unitName) then return end
-    self.initUnitModel()
+ObjectViewport.didUpdate = function(self, prevProps)
+    if (self.props.objectName == prevProps.objectName) then return end
+    self.initObjectModel()
 end
 
-UnitViewport.willUnmount = function(self)
-    if (self.state.unitModel) then
-        self.state.unitModel:Destroy()
+ObjectViewport.willUnmount = function(self)
+    if (self.state.objectModel) then
+        self.state.objectModel:Destroy()
     end
 end
 
-UnitViewport.render = function(self)
-    -- verify that the model exists first
-    local unitName = self.props.unitName
-    if (not unitName) then return end
+ObjectViewport.render = function(self)
+    local objectType = self.props.objectType
+    local objectName = self.props.objectName
+    local infoLeftDisplay = self.props.infoLeftDisplay
 
-    local unitModel = UnitModels:FindFirstChild(unitName)
-    if (not unitModel) then return nil end
+    -- check if the obj model exists
 
     local titleText
+    local infoLeft
 
     if (self.props.titleDisplayType == GameEnum.UnitViewportTitleType.PlacementPrice) then
-        titleText = ShopPrices.ObjectPlacementPrices[GameEnum.ObjectType.Unit][unitName] or "?"
+        titleText = ShopPrices.ObjectPlacementPrices[objectType][objectName] or "?"
     elseif (self.props.titleDisplayType == GameEnum.UnitViewportTitleType.UnitName) then
-        titleText = unitName
+        titleText = objectName
     else
         -- todo
         titleText = "?"
     end
 
+    if (infoLeftDisplay == "Hotkey") then
+        infoLeft = Roact.createElement("TextLabel", {
+            AnchorPoint = Vector2.new(0, 0),
+            Size = UDim2.new(0, 20, 0, 20),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = 2,
+
+            Text = self.props.hotkey,
+            Font = Style.Constants.MainFont,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            TextSize = 16,
+            TextStrokeTransparency = 0.5,
+
+            TextColor3 = Color3.new(0, 0, 0),
+            TextStrokeColor3 = Color3.new(1, 1, 1)
+        })
+    elseif (infoLeftDisplay == "HotbarButton") then
+        -- todo
+    end
+
     return Roact.createElement("TextButton", {
         AnchorPoint = self.props.AnchorPoint,
-        Size = UDim2.new(0, Style.Constants.UnitViewportFrameSize, 0, Style.Constants.UnitViewportFrameSize),
+        Size = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
         Position = self.props.Position,
         BackgroundTransparency = 0,
         BorderSizePixel = 0,
@@ -114,7 +156,7 @@ UnitViewport.render = function(self)
         TextTransparency = 1,
         TextStrokeTransparency = 1,
 
-        BackgroundColor3 = Color3.new(1, 1, 1),
+        BackgroundColor3 = Color3.new(0.85, 0.85, 0.85),
 
         [Roact.Event.Activated] = function(_)
             self.props.onActivated()
@@ -172,28 +214,9 @@ UnitViewport.render = function(self)
             TextStrokeColor3 = Color3.new(1, 1, 1)
         }),
 
-        Hotkey = self.props.showHotkey and
-            Roact.createElement("TextLabel", {
-                AnchorPoint = Vector2.new(0, 0),
-                Size = UDim2.new(0, 20, 0, 20),
-                Position = UDim2.new(0, 0, 0, 0),
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
-                ZIndex = 2,
+        InfoLeft = infoLeft,
 
-                Text = "#",
-                Font = Style.Constants.MainFont,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                TextYAlignment = Enum.TextYAlignment.Top,
-                TextSize = 16,
-                TextStrokeTransparency = 0.5,
-
-                TextColor3 = Color3.new(0, 0, 0),
-                TextStrokeColor3 = Color3.new(1, 1, 1)
-            })
-        or nil,
-
-        Level = self.props.showLevel and
+        Level = (self.props.showLevel and (objectType == GameEnum.ObjectType.Unit)) and
             Roact.createElement("TextLabel", {
                 AnchorPoint = Vector2.new(1, 0),
                 Size = UDim2.new(0, 20, 0, 20),
@@ -202,7 +225,7 @@ UnitViewport.render = function(self)
                 BorderSizePixel = 0,
                 ZIndex = 2,
 
-                Text = "#",
+                Text = Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, self.props.objectName) or "?",
                 Font = Style.Constants.MainFont,
                 TextSize = 16,
 
@@ -219,4 +242,4 @@ end
 
 ---
 
-return UnitViewport
+return ObjectViewport

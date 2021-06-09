@@ -385,8 +385,9 @@ end
 local playerAdded = function(player)
 	local userId = player.UserId
 
-	PlayerData.WaitForPlayerProfile(userId)
-	PlayerData.DepositCurrencyToPlayer(userId, GameEnum.CurrencyType.Points, challengeData.PointsAllowance[0])
+	PlayerData.WaitForPlayerProfile(userId):andThen(function()
+		PlayerData.DepositCurrencyToPlayer(userId, GameEnum.CurrencyType.Points, challengeData.PointsAllowance[0])
+	end)
 end
 
 ---

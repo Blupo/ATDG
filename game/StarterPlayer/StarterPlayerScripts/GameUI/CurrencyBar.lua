@@ -14,6 +14,7 @@ local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 
 ---
@@ -69,52 +70,22 @@ CurrencyBar.init = function(self)
 end
 
 CurrencyBar.didMount = function(self)
-    self.currencyDeposited = PlayerData.CurrencyDeposited:Connect(function(userId, currencyType, amount, newBalance)
-        if (userId ~= LocalPlayer.UserId) then return end
+    self.currencyBalanceChanged = PlayerData.CurrencyBalanceChanged:Connect(function(_, currencyType, newBalance)
+        local currenciesCopy = CopyTable(self.state.currencies)
+        currenciesCopy[currencyType] = newBalance
 
-        self:setState(function(state)
-            local newCurrencies = {}
-
-            for currency, balance in pairs(state.currencies) do
-                newCurrencies[currency] = balance
-            end
-
-            newCurrencies[currencyType] = newBalance
-
-            return {
-                currencies = newCurrencies
-            }
-        end)
+        self:setState({
+            currencies = currenciesCopy
+        })
     end)
-
-    self.currencyWithdrawn = PlayerData.CurrencyWithdrawn:Connect(function(userId, currencyType, amount, newBalance)
-        if (userId ~= LocalPlayer.UserId) then return end
-
-        self:setState(function(state)
-            local newCurrencies = {}
-
-            for currency, balance in pairs(state.currencies) do
-                newCurrencies[currency] = balance
-            end
-
-            newCurrencies[currencyType] = newBalance
-
-            return {
-                currencies = newCurrencies
-            }
-        end)
-    end)
-
-    local currencies = PlayerData.GetPlayerAllCurrenciesBalances(LocalPlayer.UserId)
 
     self:setState({
-        currencies = currencies
+        currencies = PlayerData.GetPlayerAllCurrenciesBalances(LocalPlayer.UserId)
     })
 end
 
 CurrencyBar.willUnmount = function(self)
-    self.currencyDeposited:Disconnect()
-    self.currencyWithdrawn:Disconnect()
+    self.currencyBalanceChanged:Disconnect()
 end
 
 CurrencyBar.render = function(self)

@@ -12,38 +12,77 @@ local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 
 local Communicators = ReplicatedStorage:FindFirstChild("Communicators"):WaitForChild("PlayerData")
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
+local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
+local Promise = require(SharedModules:FindFirstChild("Promise"))
 local t = require(SharedModules:FindFirstChild("t"))
 
-local CurrencyDepositedEvent = Instance.new("BindableEvent")
-local CurrencyWithdrawnEvent = Instance.new("BindableEvent")
+local CurrencyBalanceChangedEvent = Instance.new("BindableEvent")
+local ObjectGrantedEvent = Instance.new("BindableEvent")
+local InventoryChangedEvent = Instance.new("BindableEvent")
+local HotbarChangedEvent = Instance.new("BindableEvent")
 
 local GetPlayerInventoryRemoteFunction = Instance.new("RemoteFunction")
+local GetPlayerInventoryItemCountRemoteFunction = Instance.new("RemoteFunction")
+
+local GetPlayerObjectGrantsRemoteFunction = Instance.new("RemoteFunction")
 local PlayerHasObjectGrantRemoteFunction = Instance.new("RemoteFunction")
+
+local GetPlayerHotbarsRemoteFunction = Instance.new("RemoteFunction")
+local GetPlayerHotbarRemoteFunction = Instance.new("RemoteFunction")
+local SetPlayerHotbarRemoteFunction = Instance.new("RemoteFunction")
+
 local GetPlayerAllCurrenciesBalancesRemoteFunction = Instance.new("RemoteFunction")
 local GetPlayerCurrencyBalanceRemoteFunction = Instance.new("RemoteFunction")
-local CurrencyDepositedRemoteEvent = Instance.new("RemoteEvent")
-local CurrencyWithdrawnRemoteEvent = Instance.new("RemoteEvent")
+
+local CurrencyBalanceChangedRemoteEvent = Instance.new("RemoteEvent")
+local ObjectGrantedRemoteEvent = Instance.new("RemoteEvent")
+local InventoryChangedRemoteEvent = Instance.new("RemoteEvent")
+local HotbarChangedRemoteEvent = Instance.new("RemoteEvent")
 
 ---
 
 type dictionary<T, TT> = {[T]: TT}
 type array<T> = {[number]: T}
 
+type PlayerObjectGrants = {
+    Unit: dictionary<string, boolean>,
+    Roadblock: dictionary<string, boolean>
+}
+
 type PlayerInventory = {
-    Units: dictionary<string, boolean>,
-    Roadblocks: dictionary<string, boolean>,
-    SpecialActions: dictionary<string, number>
+    SpecialAction: dictionary<string, number>
+}
+
+type PlayerHotbars = {
+    Unit: {
+        TowerUnit: array<string>,
+        FieldUnit: array<string>
+    },
+
+    Roadblock: array<string>
 }
 
 type PlayerData = {
-    Currencies: dictionary<CurrencyType, number>,
+    Currencies: dictionary<string, number>,
+    ObjectGrants: PlayerObjectGrants,
     Inventory: PlayerInventory,
-    Hotbars: array<array<string>>,
+    Hotbars: PlayerHotbars,
     Transactions: dictionary<string, boolean>
 }
 
 ---
+
+local HOTBAR_SIZE = 5
+
+local DEFAULT_HOTBARS = {
+    Unit = {
+        TowerUnit = {"TestTowerUnit", "TestHeavyTowerUnit", "TestTowerUnit", "TestTowerUnit", "TestTowerUnit"},
+        FieldUnit = {"TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit"},
+    },
+
+    Roadblocks = {"", "", "", "", ""}
+}
 
 -- Perma-grants must not save to player data
 local PERMA_GRANTS = {
@@ -64,12 +103,15 @@ local EPHEMERAL_CURRENCIES = {
 local PlayerDataTemplate: PlayerData = {
     Currencies = {},
     Transactions = {},
-    Hotbars = {},
+    Hotbars = DEFAULT_HOTBARS,
+
+    ObjectGrants = {
+        Unit = {},
+        Roadblock = {},
+    },
     
     Inventory = {
-        Units = {},
-        Roadblocks = {},
-        SpecialActions = {},
+        SpecialAction = {},
     },
 }
 
@@ -78,17 +120,6 @@ ProfileService = RunService:IsStudio() and ProfileStore.Mock or ProfileStore
 
 local playerProfiles = {}
 local ephemeralCurrenciesBalances = {}
-
-local copy
-copy = function(t)
-    local tCopy = {}
-
-    for k, v in pairs(t) do
-        tCopy[k] = (type(v) == "table") and copy(v) or v
-    end
-
-    return tCopy
-end
 
 local playerAdded = function(player: Player)
     local userId = player.UserId
@@ -133,51 +164,168 @@ end
 ---
 
 local PlayerData = {}
-PlayerData.CurrencyDeposited = CurrencyDepositedEvent.Event
-PlayerData.CurrencyWithdrawn = CurrencyWithdrawnEvent.Event
-
-PlayerData.GetPlayerProfile = function(userId: number)
-    return playerProfiles[userId]
-end
+PlayerData.CurrencyBalanceChanged = CurrencyBalanceChangedEvent.Event
+PlayerData.ObjecctGranted = ObjectGrantedEvent.Event
+PlayerData.InventoryChanged = InventoryChangedEvent.Event
+PlayerData.HotbarChanged = HotbarChangedEvent.Event
 
 PlayerData.WaitForPlayerProfile = function(userId: number)
-    while (not playerProfiles[userId]) do
-        RunService.Heartbeat:Wait()
-    end
+    return Promise.new(function(resolve)
+        while (not playerProfiles[userId]) do
+            RunService.Heartbeat:Wait()
+        end
 
-    return playerProfiles[userId]
+        resolve(playerProfiles[userId])
+    end)
 end
 
 PlayerData.GetPlayerInventory = function(userId: number): PlayerInventory?
     local profile = playerProfiles[userId]
     if (not profile) then return end
 
-    local inventoryCopy = copy(profile.Data.Inventory)
-
-    for unitName in pairs(PERMA_GRANTS[GameEnum.ObjectType.Unit]) do
-        inventoryCopy.Units[unitName] = true
-    end
-
-    for roadblockName in pairs(PERMA_GRANTS[GameEnum.ObjectType.Roadblock]) do
-        inventoryCopy.Roadblocks[roadblockName] = true
-    end
-
-    return inventoryCopy
+    return CopyTable(profile.Data.Inventory)
 end
 
-PlayerData.PlayerHasObjectGrant = function(userId: number, objectType: string, objectName: string): boolean
-    -- check perma grants
-    if (PERMA_GRANTS[objectType][objectName]) then return true end
+PlayerData.GetPlayerInventoryItemCount = function(userId: number, itemType: string, itemName: string): number?
+    local profile = playerProfiles[userId]
+    if (not profile) then return end
 
+    local inventory = profile.Data.Inventory[itemType]
+    if (not inventory) then return end
+
+    return inventory[itemName] or 0
+end
+
+-- todo: validate that the item actually exists
+PlayerData.AddItemToPlayerInventory = function(userId: number, itemType: string, itemName: string, amount: number): boolean
     local profile = playerProfiles[userId]
     if (not profile) then return false end
 
-    return profile.Data.Inventory[objectType][objectName] and true or false
+    local inventory = profile.Data.Inventory[itemType]
+    if (not inventory) then return false end
+
+    local itemCount = inventory[itemName]
+    
+    if (itemCount) then
+        inventory[itemName] = itemCount + amount
+    else
+        inventory[itemName] = amount
+    end
+
+    InventoryChangedEvent:Fire(userId, itemType, itemName, inventory[itemName], amount)
+    return true
 end
 
-PlayerData.GetPlayerAllCurrenciesBalances = function(userId: number): dictionary<string, number>
+-- todo: validate that the item actually exists
+PlayerData.RemoveItemFromInventory = function(userId: number, itemType: string, itemName: string, amount: number): boolean
     local profile = playerProfiles[userId]
-    if (not profile) then return {} end
+    if (not profile) then return false end
+
+    local inventory = profile.Data.Inventory[itemType]
+    if (not inventory) then return false end
+
+    local itemCount = inventory[itemName] or 0
+    
+    if (itemCount >= amount) then
+        inventory[itemName] = itemCount - amount
+
+        InventoryChangedEvent:Fire(userId, itemType, itemName, inventory[itemName], -amount)
+        return true
+    else
+        return false
+    end
+end
+
+PlayerData.GetPlayerObjectGrants = function(userId: number): PlayerObjectGrants?
+    local profile = playerProfiles[userId]
+    if (not profile) then return end
+
+    local grants = CopyTable(profile.Data.ObjectGrants)
+
+    for objectType, permaGrants in pairs(PERMA_GRANTS) do
+        for objectName in pairs(permaGrants) do
+            grants[objectType][objectName] = true
+        end
+    end
+
+    return grants
+end
+
+PlayerData.PlayerHasObjectGrant = function(userId: number, objectType: string, objectName: string): boolean
+    local profile = playerProfiles[userId]
+    if (not profile) then return false end
+
+    local permaGrantStatus = PERMA_GRANTS[objectType][objectName]
+    if (permaGrantStatus) then return permaGrantStatus end
+
+    return profile.Data.ObjectGrants[objectType][objectName] and true or false
+end
+
+-- should we distinguish between success, fail, and already granted?
+PlayerData.GrantObjectToPlayer = function(userId: number, objectType: string, objectName: string): boolean
+    local profile = playerProfiles[userId]
+    if (not profile) then return false end
+
+    -- perma-granted items do not save to player data
+    local permaGrantStatus = PERMA_GRANTS[objectType][objectName]
+    if (permaGrantStatus) then return true end
+
+    local grants = profile.Data.ObjectGrants[objectType]
+
+    if (grants[objectName]) then
+        return true
+    else
+        grants[objectName] = true
+
+        ObjectGrantedEvent:Fire(userId, objectType, objectName)
+        return true
+    end
+end
+
+PlayerData.GetPlayerHotbars = function(userId: number): PlayerHotbars?
+    local profile = playerProfiles[userId]
+    if (not profile) then return end
+
+    return CopyTable(profile.Data.Hotbars)
+end
+
+PlayerData.GetPlayerHotbar = function(userId: number, objectType: string, subType: string?): array<string>?
+    local profile = playerProfiles[userId]
+    if (not profile) then return end
+
+    local hotbar = profile.Data.Hotbars[objectType]
+    if (not hotbar) then return end
+
+    if (subType) then
+        hotbar = hotbar[subType]
+        if (not hotbar) then return end
+    end
+
+    return CopyTable(hotbar)
+end
+
+PlayerData.SetPlayerHotbar = function(userId: number, objectType: string, subType: string?, newHotbar: array<string>): boolean
+    local profile = playerProfiles[userId]
+    if (not profile) then return false end
+
+    local hotbars = profile.Data.Hotbars
+
+    -- todo: validate hotbar items
+    newHotbar = CopyTable(newHotbar)
+
+    if (subType) then
+        hotbars[objectType][subType] = newHotbar
+    else
+        hotbars[objectType] = newHotbar
+    end
+
+    HotbarChangedEvent:Fire(userId, objectType, subType, newHotbar)
+    return true
+end
+
+PlayerData.GetPlayerAllCurrenciesBalances = function(userId: number): dictionary<string, number>?
+    local profile = playerProfiles[userId]
+    if (not profile) then return end
 
     local currenciesBalances = {}
 
@@ -203,11 +351,11 @@ PlayerData.GetPlayerCurrencyBalance = function(userId: number, currencyType: str
     end
 end
 
-PlayerData.DepositCurrencyToPlayer = function(userId: number, currencyType: string, amount: number)
-    if (amount <= 0) then return end
+PlayerData.DepositCurrencyToPlayer = function(userId: number, currencyType: string, amount: number): boolean
+    if (amount <= 0) then return false end
 
     local profile = playerProfiles[userId]
-    if (not profile) then return end
+    if (not profile) then return false end
 
     local currenciesBalances
 
@@ -223,7 +371,8 @@ PlayerData.DepositCurrencyToPlayer = function(userId: number, currencyType: stri
         currenciesBalances[currencyType] = amount
     end
 
-    CurrencyDepositedEvent:Fire(userId, currencyType, amount, currenciesBalances[currencyType])
+    CurrencyBalanceChangedEvent:Fire(userId, currencyType, currenciesBalances[currencyType], amount)
+    return true
 end
 
 PlayerData.DepositCurrencyToAllPlayers = function(currencyType: string, amount: number)
@@ -234,11 +383,11 @@ PlayerData.DepositCurrencyToAllPlayers = function(currencyType: string, amount: 
     end
 end
 
-PlayerData.WithdrawCurrencyFromPlayer = function(userId: number, currencyType: string, amount: number)
-    if (amount <= 0) then return end
+PlayerData.WithdrawCurrencyFromPlayer = function(userId: number, currencyType: string, amount: number): boolean
+    if (amount <= 0) then return false end
 
     local profile = playerProfiles[userId]
-    assert(profile, "profile is missing")
+    if (not profile) then return false end
 
     local currenciesBalances
 
@@ -250,66 +399,108 @@ PlayerData.WithdrawCurrencyFromPlayer = function(userId: number, currencyType: s
 
     if (currenciesBalances[currencyType]) then
         local balance = currenciesBalances[currencyType]
-        if (amount > balance) then return end
+        if (amount > balance) then return false end
 
         currenciesBalances[currencyType] = balance - amount
     else
-        return
+        return false
     end
 
-    CurrencyWithdrawnEvent:Fire(userId, currencyType, amount, currenciesBalances[currencyType])
+    CurrencyBalanceChangedEvent:Fire(userId, currencyType, currenciesBalances[currencyType], -amount)
+    return true
 end
 
-PlayerData.GrantObjectToPlayer = function(userId: number, objectType: string, objectName: string)
-    local profile = playerProfiles[userId]
-    if (not profile) then return end
+---
 
-    local inventory = profile.Data.Inventory
+Players.PlayerAdded:Connect(playerAdded)
+Players.PlayerRemoving:Connect(playerRemoving)
 
-    if (objectType == GameEnum.ObjectType.Unit) then
-        inventory = inventory.Units
-    elseif (objectType == GameEnum.ObjectType.Roadblock) then
-        inventory = inventory.Roadblocks
-    else
-        return
-    end
+CurrencyBalanceChangedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
+ObjectGrantedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
+InventoryChangedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
+HotbarChangedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
 
-    -- todo: check if the object actually exists
-    inventory[objectName] = true
-end
+CurrencyBalanceChangedEvent.Event:Connect(function(userId, ...)
+    local player = Players:GetPlayerByUserId(userId)
+    if (not player) then return end
 
-PlayerData.RevokeObjectFromPlayer = function(userId: number, objectType: string, objectName: string)
-    local profile = playerProfiles[userId]
-    if (not profile) then return end
+    CurrencyBalanceChangedRemoteEvent:FireClient(player, userId, ...)
+end)
 
-    local inventory = profile.Data.Inventory
+ObjectGrantedEvent.Event:Connect(function(userId, ...)
+    local player = Players:GetPlayerByUserId(userId)
+    if (not player) then return end
 
-    if (objectType == GameEnum.ObjectType.Unit) then
-        inventory = inventory.Units
-    elseif (objectType == GameEnum.ObjectType.Roadblock) then
-        inventory = inventory.Roadblocks
-    else
-        return
-    end
+    ObjectGrantedRemoteEvent:FireClient(player, userId, ...)
+end)
 
-    -- todo: check if the object actually exists
-    inventory[objectName] = nil
-end
+InventoryChangedEvent.Event:Connect(function(userId, ...)
+    local player = Players:GetPlayerByUserId(userId)
+    if (not player) then return end
 
-PlayerData.GiveSpecialActionToken = function(userId: number, actionName: string, amount: number?)
-    amount = amount or 1
-    
-    local profile = playerProfiles[userId]
-    if (not profile) then return end
+    InventoryChangedRemoteEvent:FireClient(player, userId, ...)
+end)
 
-    local specialActions = profile.Data.Inventory.SpecialActions
+HotbarChangedEvent.Event:Connect(function(userId, ...)
+    local player = Players:GetPlayerByUserId(userId)
+    if (not player) then return end
 
-    if (specialActions[actionName]) then
-        specialActions[actionName] = specialActions[actionName] + amount
-    else
-        specialActions[actionName] = amount
-    end
-end
+    HotbarChangedRemoteEvent:FireClient(player, userId, ...)
+end)
+
+GetPlayerInventoryRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number)
+    if (player.UserId ~= userId) then return end
+
+    return PlayerData.GetPlayerInventory(userId)
+end, t.tuple(t.instanceOf("Player"), t.number)))
+
+GetPlayerInventoryItemCountRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, itemType: string, itemName: string)
+    if (player.UserId ~= userId) then return end
+
+    return PlayerData.GetPlayerInventoryItemCount(userId, itemType, itemName)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string)))
+
+GetPlayerObjectGrantsRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number)
+    if (player.UserId ~= userId) then return end
+
+    return PlayerData.GetPlayerObjectGrants(userId)
+end, t.tuple(t.instanceOf("Player"), t.number)))
+
+PlayerHasObjectGrantRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, objectType: string, objectName: string)
+    if (player.UserId ~= userId) then return false end
+
+    return PlayerData.PlayerHasObjectGrant(userId, objectType, objectName)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string)))
+
+GetPlayerHotbarsRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number)
+    if (player.UserId ~= userId) then return end
+
+    return PlayerData.GetPlayerHotbars(userId)
+end, t.tuple(t.instanceOf("Player"), t.number)))
+
+GetPlayerHotbarRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, objectType: string, subType: string?)
+    if (player.UserId ~= userId) then return end
+
+    PlayerData.GetPlayerHotbar(userId, objectType, subType)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.optional(t.string))))
+
+SetPlayerHotbarRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, objectType: string, subType: string?, newHotbar: array<string>)
+    if (player.UserId ~= userId) then return false end
+
+    return PlayerData.SetPlayerHotbar(userId, objectType, subType, newHotbar)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.optional(t.string), t.array(t.string))))
+
+GetPlayerAllCurrenciesBalancesRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number)
+    if (player.UserId ~= userId) then return end
+
+    return PlayerData.GetPlayerAllCurrenciesBalances(userId)
+end, t.tuple(t.instanceOf("Player"), t.nubmer)))
+
+GetPlayerCurrencyBalanceRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, currencyType: string)
+    if (player.UserId ~= userId) then return end
+
+    return PlayerData.GetPlayerCurrencyBalance(userId, currencyType)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
 
 ---
 
@@ -321,57 +512,32 @@ do
     end
 end
 
-Players.PlayerAdded:Connect(playerAdded)
-Players.PlayerRemoving:Connect(playerRemoving)
-
-CurrencyDepositedEvent.Event:Connect(function(userId, ...)
-    local player = Players:GetPlayerByUserId(userId)
-    if (not player) then return end
-
-    CurrencyDepositedRemoteEvent:FireClient(player, userId, ...)
-end)
-
-CurrencyWithdrawnEvent.Event:Connect(function(userId, ...)
-    local player = Players:GetPlayerByUserId(userId)
-    if (not player) then return end
-    
-    CurrencyWithdrawnRemoteEvent:FireClient(player, userId, ...)
-end)
-
-GetPlayerInventoryRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(function(player: Player)
-    return PlayerData.GetPlayerInventory(player)
-end)
-
-PlayerHasObjectGrantRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number, unitName: string): boolean?
-    if (callingPlayer.UserId ~= userId) then return end
-
-    return PlayerData.PlayerHasObjectGrant(userId, unitName)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
-
-GetPlayerAllCurrenciesBalancesRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number)
-    if (callingPlayer.UserId ~= userId) then return end
-
-    return PlayerData.GetPlayerAllCurrenciesBalances(userId)
-end, t.tuple(t.instanceOf("Player"), t.number)))
-
-GetPlayerCurrencyBalanceRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number, currencyType: string): number?
-    if (callingPlayer.UserId ~= userId) then return end
-
-    return PlayerData.GetPlayerCurrencyBalance(userId, currencyType)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
-
 GetPlayerInventoryRemoteFunction.Name = "GetPlayerInventory"
+GetPlayerInventoryItemCountRemoteFunction.Name = "GetPlayerInventoryItemCount"
+GetPlayerObjectGrantsRemoteFunction.Name = "GetPlayerObjectGrants"
 PlayerHasObjectGrantRemoteFunction.Name = "PlayerHasObjectGrant"
+GetPlayerHotbarsRemoteFunction.Name = "GetPlayerHotbars"
+GetPlayerHotbarRemoteFunction.Name = "GetPlayerHotbar"
+SetPlayerHotbarRemoteFunction.Name = "SetPlayerHotbar"
 GetPlayerAllCurrenciesBalancesRemoteFunction.Name = "GetPlayerAllCurrenciesBalances"
 GetPlayerCurrencyBalanceRemoteFunction.Name = "GetPlayerCurrencyBalance"
-CurrencyDepositedRemoteEvent.Name = "CurrencyDeposited"
-CurrencyWithdrawnRemoteEvent.Name = "CurrencyWithdrawn"
+CurrencyBalanceChangedRemoteEvent.Name = "CurrencyBalanceChanged"
+ObjectGrantedRemoteEvent.Name = "ObjectGranted"
+InventoryChangedRemoteEvent.Name = "InventoryChanged"
+HotbarChangedRemoteEvent.Name = "HotbarChanged"
 
 GetPlayerInventoryRemoteFunction.Parent = Communicators
+GetPlayerInventoryItemCountRemoteFunction.Parent = Communicators
+GetPlayerObjectGrantsRemoteFunction.Parent = Communicators
 PlayerHasObjectGrantRemoteFunction.Parent = Communicators
+GetPlayerHotbarsRemoteFunction.Parent = Communicators
+GetPlayerHotbarRemoteFunction.Parent = Communicators
+SetPlayerHotbarRemoteFunction.Parent = Communicators
 GetPlayerAllCurrenciesBalancesRemoteFunction.Parent = Communicators
 GetPlayerCurrencyBalanceRemoteFunction.Parent = Communicators
-CurrencyDepositedRemoteEvent.Parent = Communicators
-CurrencyWithdrawnRemoteEvent.Parent = Communicators
+CurrencyBalanceChangedRemoteEvent.Parent = Communicators
+ObjectGrantedRemoteEvent.Parent = Communicators
+InventoryChangedRemoteEvent.Parent = Communicators
+HotbarChangedRemoteEvent.Parent = Communicators
 
 return PlayerData

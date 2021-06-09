@@ -9,7 +9,7 @@ local Style = {
         StandardCornerRadius = 12,
         SmallCornerRadius = 6,
 
-        UnitViewportFrameSize = 80,
+        ObjectViewportFrameSize = 80,
         ButtonIconPaddingRight = 4,
         MajorElementPadding = 16,
         MinorElementPadding = 8,

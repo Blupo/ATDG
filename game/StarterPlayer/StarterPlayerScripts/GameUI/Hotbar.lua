@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
@@ -5,20 +6,31 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local root = script.Parent
 local PlayerScripts = root.Parent
 
+local ObjectViewport = require(root:WaitForChild("ObjectViewport"))
 local Roact = require(root:WaitForChild("Roact"))
 local Style = require(root:WaitForChild("Style"))
-local UnitViewport = require(root:WaitForChild("UnitViewport"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlacementFlow = require(GameModules:WaitForChild("PlacementFlow"))
+local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 local Unit = require(GameModules:WaitForChild("Unit"))
+
+local LocalPlayer = Players.LocalPlayer
 
 ---
 
-local HOTBAR_ITEMS = 5 -- replace this later
+local HOTBAR_ATTRIBUTES = {
+    [GameEnum.ObjectType.Unit] = {
+        [GameEnum.UnitType.TowerUnit] = {"DMG", "RANGE", "CD", "PathType"},
+        [GameEnum.UnitType.FieldUnit] = {"HP", "DEF", "SPD", "PathType"}
+    },
+
+    [GameEnum.ObjectType.Roadblock] = {} -- todo
+}
 
 local attr = {"DMG", "RANGE", "CD", "PathType"}
 
@@ -26,6 +38,18 @@ local Hotbar = Roact.PureComponent:extend("Hotbar")
 
 Hotbar.init = function(self)
     self:setState({
+        hotbars = {
+            [GameEnum.ObjectType.Unit] = {
+                [GameEnum.UnitType.TowerUnit] = {},
+                [GameEnum.UnitType.FieldUnit] = {},
+            },
+
+            [GameEnum.ObjectType.Roadblock] = {},
+        },
+
+        hotbarObjectType = GameEnum.ObjectType.Unit,
+        hotbarObjectSubtype = GameEnum.UnitType.TowerUnit,
+
         hoverUnitName = nil,
         placementFlowOpen = false,
     })
@@ -43,6 +67,24 @@ Hotbar.didMount = function(self)
             placementFlowOpen = false,
         })
     end)
+
+    self.hotbarChanged = PlayerData.HotbarChanged:Connect(function(_, objectType, subType, newHotbar)
+        local hotbarsCopy = CopyTable(self.state.hotbars)
+
+        if (subType) then
+            hotbarsCopy[objectType][subType] = newHotbar
+        else
+            hotbarsCopy[objectType] = newHotbar
+        end
+
+        self:setState({
+            hotbars = hotbarsCopy
+        })
+    end)
+
+    self:setState({
+        hotbars = PlayerData.GetPlayerHotbars(LocalPlayer.UserId)
+    })
 end
 
 Hotbar.willUnmount = function(self)
@@ -53,36 +95,46 @@ end
 Hotbar.render = function(self)
     if (self.state.placementFlowOpen) then return nil end
 
-    local unitListChildren = {}
+    local hotbars = self.state.hotbars
+    local objectType = self.state.hotbarObjectType
+    local subType = self.state.hotbarObjectSubtype
+        
+    local hotbarListChildren = {}
     local statPreviewChildren = {}
 
-    for i = 1, HOTBAR_ITEMS do
-        unitListChildren[i] = Roact.createElement(UnitViewport, {
+    local hotbar
+    local hotbarItemCount
+
+    if (subType) then
+        hotbar = hotbars[objectType][subType]
+    else
+        hotbar = hotbars[objectType]
+    end
+
+    hotbarItemCount = #hotbar
+
+    for i = 1, hotbarItemCount do
+        local objectName = hotbar[i]
+
+        hotbarListChildren[i] = Roact.createElement(ObjectViewport, {
             LayoutOrder = i,
 
             -- todo
-            unitName = "TestTowerUnit",
+            objectType = objectType,
+            objectName = objectName,
+
+            infoLeftDisplay = "Hotkey",
+            hotkey = i,
+
             showLevel = false,
-            showHotkey = true,
             titleDisplayType = GameEnum.UnitViewportTitleType.PlacementPrice,
 
             onActivated = function()
-                PlacementFlow.Start(GameEnum.ObjectType.Unit, "TestTowerUnit")
+                PlacementFlow.Start(objectType, objectName)
             end,
 
-            onMouseEnter = function()
-                -- todo
-                self:setState({
-                    hoverUnitName = "TestTowerUnit",
-                })
-            end,
-
-            onMouseLeave = function()
-                -- todo
-                self:setState({
-                    hoverUnitName = Roact.None,
-                })
-            end
+            onMouseEnter = function() end,
+            onMouseLeave = function() end
         })
     end
 
@@ -138,7 +190,7 @@ Hotbar.render = function(self)
         })
     end
 
-    unitListChildren["UIListLayout"] = Roact.createElement("UIListLayout", {
+    hotbarListChildren["UIListLayout"] = Roact.createElement("UIListLayout", {
         Padding = UDim.new(0, Style.Constants.MinorElementPadding),
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -148,7 +200,7 @@ Hotbar.render = function(self)
 
     return Roact.createElement("Frame", {
         AnchorPoint = Vector2.new(0.5, 1),
-        Size = UDim2.new(0, (Style.Constants.UnitViewportFrameSize * HOTBAR_ITEMS) + (Style.Constants.MinorElementPadding * (HOTBAR_ITEMS - 1)), 0, Style.Constants.UnitViewportFrameSize + Style.Constants.MajorElementPadding + 32),
+        Size = UDim2.new(0, (Style.Constants.ObjectViewportFrameSize * hotbarItemCount) + (Style.Constants.MinorElementPadding * (hotbarItemCount - 1)), 0, Style.Constants.ObjectViewportFrameSize + Style.Constants.MajorElementPadding + 32),
         Position = UDim2.new(0.5, 0, 1, -(32 + Style.Constants.MajorElementPadding)),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -165,13 +217,13 @@ Hotbar.render = function(self)
             }, statPreviewChildren)
         or nil,
 
-        UnitList = Roact.createElement("Frame", {
+        HotbarList = Roact.createElement("Frame", {
             AnchorPoint = Vector2.new(0.5, 1),
-            Size = UDim2.new(1, 0, 0, Style.Constants.UnitViewportFrameSize),
+            Size = UDim2.new(1, 0, 0, Style.Constants.ObjectViewportFrameSize),
             Position = UDim2.new(0.5, 0, 1, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-        }, unitListChildren)
+        }, hotbarListChildren)
     })
 end
 
