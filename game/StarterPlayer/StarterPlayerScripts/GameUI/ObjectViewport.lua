@@ -111,9 +111,9 @@ ObjectViewport.render = function(self)
     local titleText
     local infoLeft
 
-    if (self.props.titleDisplayType == GameEnum.UnitViewportTitleType.PlacementPrice) then
+    if (self.props.titleDisplayType == GameEnum.ObjectViewportTitleType.PlacementPrice) then
         titleText = ShopPrices.ObjectPlacementPrices[objectType][objectName] or "?"
-    elseif (self.props.titleDisplayType == GameEnum.UnitViewportTitleType.UnitName) then
+    elseif (self.props.titleDisplayType == GameEnum.ObjectViewportTitleType.ObjectName) then
         titleText = objectName
     else
         -- todo

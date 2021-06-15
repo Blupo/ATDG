@@ -127,9 +127,11 @@ Hotbar.render = function(self)
             hotkey = i,
 
             showLevel = false,
-            titleDisplayType = GameEnum.UnitViewportTitleType.PlacementPrice,
+            titleDisplayType = GameEnum.ObjectViewportTitleType.PlacementPrice,
 
             onActivated = function()
+                -- check for available funds first
+                
                 PlacementFlow.Start(objectType, objectName)
             end,
 
@@ -168,7 +170,7 @@ Hotbar.render = function(self)
                     BorderSizePixel = 0,
         
                     Text = hoverUnitAttributes[attr[i]],
-                    Font = Enum.Font.GothamBold,
+                    Font = Style.Constants.MainFont,
                     TextSize = 16,
                     TextStrokeTransparency = 1,
 

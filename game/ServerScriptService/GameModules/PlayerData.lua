@@ -87,7 +87,8 @@ local DEFAULT_HOTBARS = {
 -- Perma-grants must not save to player data
 local PERMA_GRANTS = {
     [GameEnum.ObjectType.Unit] = {
-
+        TestTowerUnit = true,
+        TestHeavyTowerUnit = true,
     },
 
     [GameEnum.ObjectType.Roadblock] = {
