@@ -147,6 +147,8 @@ local constructUnit = function(unitModel)
 			if (newHP <= 0) then
 				unit.__diedEvent:Fire()
 			end
+		elseif (attributeName == "Level") then
+			unit.Level = unitModel:GetAttribute(attributeName)
 		end
 		
 		attributeChangedEvent:Fire(unitModel:GetAttribute(attributeName))

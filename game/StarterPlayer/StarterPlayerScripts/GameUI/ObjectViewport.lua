@@ -11,6 +11,7 @@ local Roact = require(root:WaitForChild("Roact"))
 local Style = require(root:WaitForChild("Style"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
+local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
@@ -18,7 +19,6 @@ local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
-local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -112,7 +112,7 @@ ObjectViewport.render = function(self)
     local infoLeft
 
     if (self.props.titleDisplayType == GameEnum.ObjectViewportTitleType.PlacementPrice) then
-        titleText = ShopPrices.ObjectPlacementPrices[objectType][objectName] or "?"
+        titleText = Shop.GetObjectPlacementPrice(objectType, objectName) or "?"
     elseif (self.props.titleDisplayType == GameEnum.ObjectViewportTitleType.ObjectName) then
         titleText = objectName
     else

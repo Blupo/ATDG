@@ -395,7 +395,7 @@ Unit.Upgrade = function(self)
 	end
 end
 
-Unit.DoUnitPersistentUpgrade = function(unitName: string, owner: number)
+Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)
 	if (not Unit.DoesUnitExist(unitName)) then return end
 
 	local progressionData = unitProgressionData[owner]

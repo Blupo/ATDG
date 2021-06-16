@@ -44,6 +44,40 @@ type TransactionLog = {
 
 local Shop = {}
 
+Shop.GetObjectGrantPrice = function(objectType: string, objectName: string): number?
+    return ShopPrices.ObjectGrantPrices[objectType][objectName]
+end
+
+Shop.GetObjectPlacementPrice = function(objectType: string, objectName: string): number?
+    return ShopPrices.ObjectPlacementPrices[objectType][objectName]
+end
+
+Shop.GetUnitUpgradePrice = function(unitId: string): number?
+    local unit = Unit.fromId(unitId)
+    if (not unit) then return end
+
+    local unitPrices = ShopPrices.UnitUpgradePrices[unit.Name]
+    if (not unitPrices) then return end
+
+    local prices = unitPrices[unit.Level + 1]
+    if (not prices) then return end
+
+    return prices.Individual
+end
+
+Shop.GetUnitPersistentUpgradePrice = function(owner: number, unitName: string): number?
+    local currentLevel = Unit.GetUnitPersistentUpgradeLevel(owner, unitName)
+    if (not currentLevel) then return end
+
+    local unitPrices = ShopPrices.UnitUpgradePrices[unitName]
+    if (not unitPrices) then return end
+
+    local prices = unitPrices[currentLevel + 1]
+    if (not prices) then return end
+
+    return prices.Persistent
+end
+
 Shop.PurchaseTickets = function(userId: number, ticketItemId: string): PurchaseResult
 
 end
@@ -52,7 +86,7 @@ Shop.PurchaseObjectGrant = function(userId: number, objectType: ObjectType, obje
     local alreadyHasGrant = PlayerData.PlayerHasObjectGrant(userId, objectType, objectName)
     if (alreadyHasGrant) then return end
 
-    local grantPrice = ShopPrices.ItemPrices[objectType][objectName]
+    local grantPrice = Shop.GetObjectGrantPrice(objectType, objectName)
     if (not grantPrice) then return end -- item does not have a listed price
     
     local ticketsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Tickets)
@@ -68,7 +102,7 @@ Shop.PurchaseObjectGrant = function(userId: number, objectType: ObjectType, obje
 end
 
 Shop.PurchaseSpecialActionToken = function(userId: number, actionName: string): PurchaseResult
-    local tokenPrice = ShopPrices.ItemPrices[GameEnum.ItemType.SpecialAction][actionName]
+    local tokenPrice = ShopPrices.ItemPrices[GameEnum.ItemType.SpecialAction][actionName] -- todo: replace
     if (not tokenPrice) then return end -- item does not have a listed price
     
     local ticketsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Tickets)
@@ -87,7 +121,7 @@ end
 Shop.PurchaseObjectPlacement = function(userId: number, objectType: ObjectType, objectName: string, position: Vector3, rotation: number): boolean
     if (not Game.HasStarted()) then return end
 
-    local placementPrice = ShopPrices.ObjectPlacementPrices[objectType][objectName]
+    local placementPrice = Shop.GetObjectPlacementPrice(objectType, objectName)
     print(placementPrice)
     if (not placementPrice) then return false end
 
@@ -111,7 +145,7 @@ Shop.PurchaseUnitUpgrade = function(userId: number, unitId: string): boolean
     if (not unit) then return false end
     if (unit.Owner ~= userId) then return false end
 
-    local upgradePrice = ShopPrices.UnitUpgradePrices[unit.Name].Individual[unit.Level + 1]
+    local upgradePrice = Shop.GetUnitUpgradePrice(unitId)
     if (not upgradePrice) then return false end
 
     local pointsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Points)
@@ -129,7 +163,7 @@ end
 Shop.PurchaseUnitPersistentUpgrade = function(userId: number, unitName: string): boolean
     if (not Game.HasStarted()) then return end
 
-    local upgradePrice = ShopPrices.UnitUpgradePrices[unitName].Persistent[Unit.GetUnitPersistentUpgradeLevel(userId, unitName) + 1]
+    local upgradePrice = Shop.GetUnitPersistentUpgradePrice(userId, unitName)
     if (not upgradePrice) then return false end
 
     local pointsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Points)
@@ -139,7 +173,7 @@ Shop.PurchaseUnitPersistentUpgrade = function(userId: number, unitName: string):
         return false
     else
         PlayerData.WithdrawCurrencyFromPlayer(userId, GameEnum.CurrencyType.Points, upgradePrice)
-        Unit.PersistentUpgradeUnit(userId, unitName)
+        Unit.DoUnitPersistentUpgrade(userId, unitName)
         return true
     end
 end

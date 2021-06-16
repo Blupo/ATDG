@@ -1,12 +1,15 @@
 return {
     TestTowerUnit = {
-        [1] = {
+        [2] = {
             Individual = 100,
             Persistent = 1000,
         },
+    },
 
-        [2] = {},
-
-        [3] = {}
+    TestHeavyTowerUnit = {
+        [2] = {
+            Individual = 500,
+            Persistent = 4500,
+        }
     }
 }

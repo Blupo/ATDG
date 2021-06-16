@@ -37,7 +37,7 @@ return setmetatable({
 	GameMode = makeEnum("GameEnums.GameMode", { "TowerDefense", "Endless" }),
 	PlacementFailureReason = makeEnum("GameEnums.PlacementFailureReason", { "ObjectDoesNotExist", "InvalidPosition", "IncorrectSurfaceType", "NotPointingUp", "NotBounded", "NoVerticalClearance", "ObjectCollision", "LimitExceeded", "None", "Fallback" }),
 	CurrencyType = makeEnum("GameEnums.CurrencyType", { "Tickets", "Points" }),
-	ItemType = makeEnum("GameEnums.ItemType", { "Unit", "Roadblock", "SpecialAction" }),
+	ItemType = makeEnum("GameEnums.ItemType", { "SpecialAction" }),
 	PurchaseFailureReason = makeEnum("GameEnum.PurchaseFailureReason", { "None", "CannotAcquireProfile", "AlreadyPurchased" }),
 	ObjectViewportTitleType = makeEnum("GameEnum.UnitViewportTitleType", { "PlacementPrice", "ObjectName" })
 }, {

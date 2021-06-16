@@ -1,3 +1,5 @@
+-- todo: ui should update when upgrading
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -20,7 +22,6 @@ local Unit = require(GameModules:WaitForChild("Unit"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
-local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -38,6 +39,8 @@ local QUICK_ATTRIBUTES = {
 local Inventory = Roact.Component:extend("Inventory")
 
 Inventory.init = function(self)
+    self.listLength, self.updateListLength = Roact.createBinding(0)
+
     self.updateObjectList = function()
         local objectList = {}
 
@@ -179,7 +182,7 @@ Inventory.render = function(self)
             
                     Label = Roact.createElement("TextLabel", {
                         AnchorPoint = Vector2.new(1, 0.5),
-                        Size = UDim2.new(1, -36, 0, 0),
+                        Size = UDim2.new(1, -36, 0, 16),
                         Position = UDim2.new(1, 0, 0.5, 0),
                         BackgroundTransparency = 1,
                         BorderSizePixel = 0,
@@ -190,6 +193,7 @@ Inventory.render = function(self)
                         TextStrokeTransparency = 1,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         TextYAlignment = Enum.TextYAlignment.Center,
+                        TextScaled = true,
     
                         TextColor3 = Color3.new(0, 0, 0)
                     })
@@ -223,6 +227,10 @@ Inventory.render = function(self)
         StartCorner = Enum.StartCorner.TopLeft,
         HorizontalAlignment = Enum.HorizontalAlignment.Left,
         VerticalAlignment = Enum.VerticalAlignment.Top,
+
+        [Roact.Change.AbsoluteContentSize] = function(obj)
+            self.updateListLength(obj.AbsoluteContentSize.Y)
+        end
     })
 
     return Roact.createElement("Frame", {
@@ -329,7 +337,7 @@ Inventory.render = function(self)
                         Position = UDim2.new(0.5, 0, 0, 0),
                         LayoutOrder = 1,
 
-                        Text = ShopPrices.ObjectPlacementPrices[objectType][selectedName],
+                        Text = Shop.GetObjectPlacementPrice(objectType, selectedName) or "?",
                         Image = "rbxassetid://6837004068",
 
                         onActivated = function()
@@ -344,21 +352,23 @@ Inventory.render = function(self)
                         ImageColor3 = Color3.new(0, 0, 0),
                     }),
 
-                    PersistentUpgradeButton = Roact.createElement(IconButton, {
-                        AnchorPoint = Vector2.new(0.5, 1),
-                        Size = UDim2.new(1, 0, 0.5, -Style.Constants.MinorElementPadding / 2),
-                        Position = UDim2.new(0.5, 0, 1, 0),
-                        LayoutOrder = 2,
+                    PersistentUpgradeButton = (objectType == GameEnum.ObjectType.Unit) and
+                        Roact.createElement(IconButton, {
+                            AnchorPoint = Vector2.new(0.5, 1),
+                            Size = UDim2.new(1, 0, 0.5, -Style.Constants.MinorElementPadding / 2),
+                            Position = UDim2.new(0.5, 0, 1, 0),
+                            LayoutOrder = 2,
 
-                        Text = "",
-                        Image = "rbxassetid://6837004663",
+                            Text = Shop.GetUnitPersistentUpgradePrice(LocalPlayer.UserId, selectedName) or "MAX",
+                            Image = "rbxassetid://6837004663",
 
-                        onActivated = function()
+                            onActivated = function()
+                                Shop.PurchaseUnitPersistentUpgrade(LocalPlayer.UserId, selectedName)
+                            end,
 
-                        end,
-
-                        ImageColor3 = Color3.new(0, 0, 0),
-                    }),
+                            ImageColor3 = Color3.new(0, 0, 0),
+                        })
+                    or nil,
                 }),
 
                 Info = Roact.createElement("Frame", {
@@ -381,6 +391,7 @@ Inventory.render = function(self)
                         TextStrokeTransparency = 1,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         TextYAlignment = Enum.TextYAlignment.Center,
+                        TextScaled = true,
 
                         TextColor3 = Color3.new(0, 0, 0)
                     }),
@@ -403,6 +414,10 @@ Inventory.render = function(self)
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             ClipsDescendants = true,
+
+            CanvasSize = self.listLength:map(function(length)
+                return UDim2.new(1, 0, 0, length)
+            end)
         }, objectListChildren)
     })
 end

@@ -12,7 +12,7 @@ return {
 	Abilities = {},
 	
 	PointsAllowance = {
-		[0] = 500,
+		[0] = 999999,
 		[1] = 0,
 		[2] = 100,
 		[3] = 250,
