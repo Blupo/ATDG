@@ -146,8 +146,9 @@ PlacementFlow.Start = function(objType: string, objName: string)
 		local ray = CurrentCamera:ScreenPointToRay(inputPosition.X, inputPosition.Y, 0)
 		local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 5000, raycastParams)
 		if (not raycastResult) then return end
-		
-		print(Shop.PurchaseObjectPlacement(LocalPlayer.UserId, objType, objName, raycastResult.Position, objRotation))
+		if (not Placement.CanPlace(objType, objName, raycastResult.Position, objRotation).CanPlace) then return end
+
+		Shop.PurchaseObjectPlacement(LocalPlayer.UserId, objType, objName, raycastResult.Position, objRotation)
 		PlacementFlow.Stop()
 	end)
 

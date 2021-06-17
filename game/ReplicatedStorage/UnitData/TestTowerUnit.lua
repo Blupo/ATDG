@@ -21,7 +21,7 @@ return {
 				SPD = 0,
 
 				UnitTargeting = GameEnums.UnitTargeting.First,
-				PathType = GameEnums.PathType.Ground,
+				PathType = GameEnums.PathType.GroundAndAir,
 			},
 		},
 		

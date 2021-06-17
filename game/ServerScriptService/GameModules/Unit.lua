@@ -1,10 +1,11 @@
 local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 ---
 
-local UnitCommunicators = ReplicatedStorage:FindFirstChild("Communicators"):FindFirstChild("Unit")
+local Communicators = ReplicatedStorage:FindFirstChild("Communicators"):FindFirstChild("Unit")
 local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
@@ -20,10 +21,13 @@ local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 
 local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
+local UnitPersistentUpgradedEvent = Instance.new("BindableEvent")
 
 local SetAttributeRemoteFunction = Instance.new("RemoteFunction")
 local GetUnitBaseAttributesRemoteFunction = Instance.new("RemoteFunction")
 local GetUnitPersistentUpgradeLevelRemoteFunction = Instance.new("RemoteFunction")
+
+local UnitPersistentUpgradedRemoteEvent = Instance.new("RemoteEvent")
 
 ---
 
@@ -161,6 +165,7 @@ Unit.new = function(unitName: string, owner: number?)
 	local newBaseModel = unitModel:Clone()
 	local diedEvent = Instance.new("BindableEvent")
 	local attributeChangedEvent = Instance.new("BindableEvent")
+	local upgradedEvent = Instance.new("BindableEvent")
 	
 	local self = setmetatable({
 		Id = HttpService:GenerateGUID(false),
@@ -172,9 +177,11 @@ Unit.new = function(unitName: string, owner: number?)
 		
 		Died = diedEvent.Event,
 		AttributeChanged = attributeChangedEvent.Event,
+		Upgraded = upgradedEvent.Event,
 		
 		__diedEvent = diedEvent,
 		__attributeChangedEvent = attributeChangedEvent,
+		__upgradedEvent = upgradedEvent,
 		__baseAttributes = newBaseAttributes,
 		__attributeModifiers = {},
 		__abilities = {},
@@ -224,6 +231,7 @@ Unit.Destroy = function(self)
 	
 	self.__diedEvent:Destroy()
 	self.__attributeChangedEvent:Destroy()
+	self.__upgradedEvent:Destroy()
 	self.Model:Destroy()
 	
 	-- defer so that subscriptions have a chance to obtain the Unit for cleanup
@@ -374,8 +382,8 @@ Unit.RemoveAttributeModifier = function(self, id: string, attributeName: string,
 end
 
 Unit.Upgrade = function(self)
-	local currentLevel = self.Level
-	local nextLevelProgression = unitDataCache[self.Name].Progression[currentLevel + 1]
+	local nextLevel = self.Level + 1
+	local nextLevelProgression = unitDataCache[self.Name].Progression[nextLevel]
 	if (not nextLevelProgression) then return end
 	
 	if (nextLevelProgression.Attributes) then
@@ -393,6 +401,10 @@ Unit.Upgrade = function(self)
 			end
 		end
 	end
+
+	self.Level = nextLevel
+	self.__upgradedEvent:Fire(nextLevel)
+	self.Model:SetAttribute("Level", nextLevel)
 end
 
 Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)
@@ -405,11 +417,13 @@ Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)
 		progressionData = unitProgressionData[owner]
 	end
 
-	local currentLevel = progressionData[unitName] or 1
-	local nextLevelProgression = unitDataCache[unitName].Progression[currentLevel + 1]
+	local nextLevel = (progressionData[unitName] or 1) + 1
+	local nextLevelProgression = unitDataCache[unitName].Progression[nextLevel]
 	if (not nextLevelProgression) then return end
 
-	progressionData[unitName] = currentLevel + 1
+	progressionData[unitName] = nextLevel
+	UnitPersistentUpgradedEvent:Fire(owner, unitName, nextLevel)
+
 end
 
 ---
@@ -421,6 +435,13 @@ end
 for _, unitDataScript in pairs(UnitData:GetChildren()) do
 	unitDataCache[unitDataScript.Name] = require(unitDataScript)
 end
+
+UnitPersistentUpgradedEvent.Event:Connect(function(owner: number, ...)
+	local player = Players:GetPlayerByUserId(owner)
+	if (not player) then return end
+
+	UnitPersistentUpgradedRemoteEvent:FireClient(player, owner, ...)
+end)
 
 -- Players can only change the targeting on tower units for now
 SetAttributeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, unitId: string, attributeName: string, newValue: any)
@@ -443,12 +464,14 @@ GetUnitPersistentUpgradeLevelRemoteFunction.OnServerInvoke = RemoteUtils.Connect
 	return Unit.GetUnitPersistentUpgradeLevel(owner, unitName)
 end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
 
+UnitPersistentUpgradedRemoteEvent.Name = "UnitPersistentUpgraded"
 SetAttributeRemoteFunction.Name = "SetAttribute"
 GetUnitBaseAttributesRemoteFunction.Name = "GetUnitBaseAttributes"
 GetUnitPersistentUpgradeLevelRemoteFunction.Name = "GetUnitPersistentUpgradeLevel"
 
-SetAttributeRemoteFunction.Parent = UnitCommunicators
-GetUnitBaseAttributesRemoteFunction.Parent = UnitCommunicators
-GetUnitPersistentUpgradeLevelRemoteFunction.Parent = UnitCommunicators
+UnitPersistentUpgradedRemoteEvent.Parent = Communicators
+SetAttributeRemoteFunction.Parent = Communicators
+GetUnitBaseAttributesRemoteFunction.Parent = Communicators
+GetUnitPersistentUpgradeLevelRemoteFunction.Parent = Communicators
 
 return Unit

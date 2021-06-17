@@ -30,8 +30,7 @@ local HotbarChanged = Communicators:WaitForChild("HotbarChanged")
 
 local LocalPlayer = Players.LocalPlayer
 
--- todo: should cache the local player's currency balances
-local localPlayerCurrenciesBalances
+local localPlayerData = {}
 
 ---
 

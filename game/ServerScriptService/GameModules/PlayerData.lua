@@ -55,11 +55,8 @@ type PlayerInventory = {
 }
 
 type PlayerHotbars = {
-    Unit: {
-        TowerUnit: array<string>,
-        FieldUnit: array<string>
-    },
-
+    TowerUnit: array<string>,
+    FieldUnit: array<string>,
     Roadblock: array<string>
 }
 
@@ -76,12 +73,9 @@ type PlayerData = {
 local HOTBAR_SIZE = 5
 
 local DEFAULT_HOTBARS = {
-    Unit = {
-        TowerUnit = {"TestTowerUnit", "TestHeavyTowerUnit", "TestTowerUnit", "TestTowerUnit", "TestTowerUnit"},
-        FieldUnit = {"TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit"},
-    },
-
-    Roadblocks = {"", "", "", "", ""}
+    [GameEnum.UnitType.TowerUnit] = {"TestTowerUnit", "TestHeavyTowerUnit", "TestTowerUnit", "TestTowerUnit", "TestTowerUnit"},
+    [GameEnum.UnitType.FieldUnit] = {"TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit"},
+    [GameEnum.ObjectType.Roadblock] = {"", "", "", "", ""}
 }
 
 -- Perma-grants must not save to player data
@@ -117,7 +111,7 @@ local PlayerDataTemplate: PlayerData = {
 }
 
 local ProfileStore = ProfileService.GetProfileStore("PlayerData", PlayerDataTemplate)
-ProfileService = RunService:IsStudio() and ProfileStore.Mock or ProfileStore
+ProfileService = ProfileStore.Mock --RunService:IsStudio() and ProfileStore.Mock or ProfileStore
 
 local playerProfiles = {}
 local ephemeralCurrenciesBalances = {}
@@ -290,22 +284,17 @@ PlayerData.GetPlayerHotbars = function(userId: number): PlayerHotbars?
     return CopyTable(profile.Data.Hotbars)
 end
 
-PlayerData.GetPlayerHotbar = function(userId: number, objectType: string, subType: string?): array<string>?
+PlayerData.GetPlayerHotbar = function(userId: number, objectType: string): array<string>?
     local profile = playerProfiles[userId]
     if (not profile) then return end
 
     local hotbar = profile.Data.Hotbars[objectType]
     if (not hotbar) then return end
 
-    if (subType) then
-        hotbar = hotbar[subType]
-        if (not hotbar) then return end
-    end
-
     return CopyTable(hotbar)
 end
 
-PlayerData.SetPlayerHotbar = function(userId: number, objectType: string, subType: string?, newHotbar: array<string>): boolean
+PlayerData.SetPlayerHotbar = function(userId: number, objectType: string, newHotbar: array<string>): boolean
     local profile = playerProfiles[userId]
     if (not profile) then return false end
 
@@ -313,14 +302,9 @@ PlayerData.SetPlayerHotbar = function(userId: number, objectType: string, subTyp
 
     -- todo: validate hotbar items
     newHotbar = CopyTable(newHotbar)
+    hotbars[objectType] = newHotbar
 
-    if (subType) then
-        hotbars[objectType][subType] = newHotbar
-    else
-        hotbars[objectType] = newHotbar
-    end
-
-    HotbarChangedEvent:Fire(userId, objectType, subType, newHotbar)
+    HotbarChangedEvent:Fire(userId, objectType, newHotbar)
     return true
 end
 

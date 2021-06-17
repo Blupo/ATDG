@@ -17,6 +17,7 @@ local Style = require(root:WaitForChild("Style"))
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlacementFlow = require(GameModules:WaitForChild("PlacementFlow"))
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
+local PreviewAttributes = require(GameModules:WaitForChild("PreviewAttributes"))
 local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
@@ -26,15 +27,6 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 local LocalPlayer = Players.LocalPlayer
 
 ---
-local QUICK_ATTRIBUTES = {
-    [GameEnum.ObjectType.Unit] = {
-        [GameEnum.UnitType.TowerUnit] = {"DMG", "RANGE", "CD", "PathType"},
-        [GameEnum.UnitType.FieldUnit] = {"HP", "DEF", "SPD", "PathType"}
-    },
-
-    [GameEnum.ObjectType.Roadblock] = {} -- todo
-}
-
 
 local Inventory = Roact.Component:extend("Inventory")
 
@@ -68,6 +60,7 @@ Inventory.init = function(self)
         objects = {},
 
         placementFlowOpen = false,
+        open = true,
     })
 end
 
@@ -102,6 +95,7 @@ end
 Inventory.render = function(self)
     if (self.state.placementFlowOpen) then return nil end
 
+    local isOpen = self.state.open
     local category = self.state.category
     local objectType
 
@@ -114,7 +108,7 @@ Inventory.render = function(self)
     local objects = self.state.objects
     local selectedName = self.state.name
     local objectListChildren = {}
-    local statsChildren = {}
+    local attributesPreviewChildren = {}
 
     if (category == GameEnum.UnitType.TowerUnit) then
         for i = 1, #objects do
@@ -147,11 +141,10 @@ Inventory.render = function(self)
         if ((category == GameEnum.UnitType.TowerUnit) or (category == GameEnum.UnitType.FieldUnit)) then
             local attributes = Unit.GetUnitBaseAttributes(selectedName, Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, selectedName))
             -- badness: remove async call
+            local previewAttributes = PreviewAttributes[category]
 
-            local shownAttributes = QUICK_ATTRIBUTES[GameEnum.ObjectType.Unit][category]
-
-            for i = 1, #shownAttributes do
-                local attribute = shownAttributes[i]
+            for i = 1, #previewAttributes do
+                local attribute = previewAttributes[i]
                 local value = attributes[attribute]
 
                 if ((attribute ~= "HP") and tonumber(value)) then
@@ -164,25 +157,25 @@ Inventory.render = function(self)
                     value = "GA"
                 end
 
-                statsChildren[i] = Roact.createElement("Frame", {
+                attributesPreviewChildren[i] = Roact.createElement("Frame", {
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = i,
                 }, {
                     Icon = Roact.createElement("ImageLabel", {
                         AnchorPoint = Vector2.new(0, 0.5),
-                        Size = UDim2.new(0, 28, 0, 28),
+                        Size = UDim2.new(0, 22, 0, 22),
                         Position = UDim2.new(0, 2, 0.5, 0),
                         BackgroundTransparency = 1,
                         BorderSizePixel = 0,
-                        Image = "rbxasset://textures/ui/GuiImagePlaceholder.png", -- todo
+                        Image = Style.Images[attribute .. "AttributeIcon"],
     
-                        ImageColor3 = Color3.new(1, 1, 1) -- todo
+                        ImageColor3 = Style.Colors[attribute .. "AttributeIconColor"]
                     }),
             
                     Label = Roact.createElement("TextLabel", {
                         AnchorPoint = Vector2.new(1, 0.5),
-                        Size = UDim2.new(1, -36, 0, 16),
+                        Size = UDim2.new(1, -(22 + Style.Constants.MinorElementPadding), 0, 16),
                         Position = UDim2.new(1, 0, 0.5, 0),
                         BackgroundTransparency = 1,
                         BorderSizePixel = 0,
@@ -200,11 +193,12 @@ Inventory.render = function(self)
                 })
             end
         elseif (category == GameEnum.ObjectType.Roadblock) then
+            -- todo
         else
             -- wat
         end
 
-        statsChildren.UIGridLayout = Roact.createElement("UIGridLayout", {
+        attributesPreviewChildren.UIGridLayout = Roact.createElement("UIGridLayout", {
             CellPadding = UDim2.new(0, 4, 0, 4),
             CellSize = UDim2.new(0.5, -2, 0.5, -2),
 
@@ -234,9 +228,9 @@ Inventory.render = function(self)
     })
 
     return Roact.createElement("Frame", {
-        AnchorPoint = Vector2.new(1, 1),
+        AnchorPoint = Vector2.new(isOpen and 1 or 0, 1),
         Size = UDim2.new(0, 310, 0, 420),
-        Position = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(1, isOpen and 0 or Style.Constants.MajorElementPadding, 1, 0),
         BackgroundTransparency = 0,
         BorderSizePixel = 0,
 
@@ -246,6 +240,46 @@ Inventory.render = function(self)
 
         UICorner = Roact.createElement("UICorner", {
             CornerRadius = UDim.new(0, Style.Constants.StandardCornerRadius),
+        }),
+
+        ToggleButton = Roact.createElement("TextButton", {
+            AnchorPoint = Vector2.new(1, isOpen and 0 or 1),
+            Size = UDim2.new(0, 70, 0, 70),
+            BackgroundTransparency = 0,
+            BorderSizePixel = 0,
+            AutoButtonColor = false,
+
+            Position = UDim2.new(
+                UDim.new(0, -Style.Constants.MajorElementPadding * 2),
+                isOpen and UDim.new(0, -Style.Constants.MajorElementPadding) or UDim.new(1, Style.Constants.MajorElementPadding)
+            ),
+
+            Text = "",
+            TextTransparency = 1,
+            TextStrokeTransparency = 1,
+
+            BackgroundColor3 = Color3.new(1, 1, 1),
+
+            [Roact.Event.Activated] = function()
+                self:setState({
+                    open = not self.state.open
+                })
+            end
+        }, {
+            UICorner = Roact.createElement("UICorner", {
+                CornerRadius = UDim.new(0, Style.Constants.StandardCornerRadius),
+            }),
+
+            Icon = Roact.createElement("ImageLabel", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(0, 30, 0, 30),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+
+                Image = Style.Images.InventoryIcon,
+                ImageColor3 = Color3.new(0, 0, 0),
+            })
         }),
 
         Categories = Roact.createElement("Frame", {
@@ -396,13 +430,13 @@ Inventory.render = function(self)
                         TextColor3 = Color3.new(0, 0, 0)
                     }),
 
-                    Stats = Roact.createElement("Frame", {
+                    AttributesPreview = Roact.createElement("Frame", {
                         AnchorPoint = Vector2.new(0.5, 1),
                         Size = UDim2.new(1, 0, 1, -(16 + Style.Constants.MinorElementPadding)),
                         Position = UDim2.new(0.5, 0, 1, 0),
                         BackgroundTransparency = 1,
                         BorderSizePixel = 0,
-                    }, statsChildren)
+                    }, attributesPreviewChildren)
                 })
             })
         or nil,

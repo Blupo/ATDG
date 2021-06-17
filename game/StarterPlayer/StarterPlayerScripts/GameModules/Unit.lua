@@ -112,6 +112,7 @@ local constructUnit = function(unitModel)
 	
 	local diedEvent = Instance.new("BindableEvent")
 	local attributeChangedEvent = Instance.new("BindableEvent")
+	local upgradedEvent = Instance.new("BindableEvent")
 	
 	local unit = setmetatable({
 		Id = unitModel:GetAttribute("Id"),
@@ -123,9 +124,11 @@ local constructUnit = function(unitModel)
 		
 		Died = diedEvent.Event,
 		AttributeChanged = attributeChangedEvent.Event,
+		Upgraded = upgradedEvent.Event,
 		
 		__diedEvent = diedEvent,
 		__attributeChangedEvent = attributeChangedEvent,
+		__upgradedEvent = upgradedEvent,
 	}, {
 		__index = Unit,
 
@@ -148,7 +151,11 @@ local constructUnit = function(unitModel)
 				unit.__diedEvent:Fire()
 			end
 		elseif (attributeName == "Level") then
-			unit.Level = unitModel:GetAttribute(attributeName)
+			local newLevel = unitModel:GetAttribute(attributeName)
+
+			unit.Level = newLevel
+			unit.__upgradedEvent:Fire(newLevel)
+			return
 		end
 		
 		attributeChangedEvent:Fire(unitModel:GetAttribute(attributeName))
@@ -163,6 +170,7 @@ local destroyUnit = function(unit)
 	
 	unit.__diedEvent:Destroy()
 	unit.__attributeChangedEvent:Destroy()
+	unit.__upgradedEvent:Destroy()
 	
 	-- defer so that subscriptions have a chance to obtain the Unit for cleanup
 	Promise.defer(function(resolve)

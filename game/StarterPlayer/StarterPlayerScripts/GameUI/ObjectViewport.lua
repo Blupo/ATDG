@@ -131,8 +131,8 @@ ObjectViewport.render = function(self)
 
             Text = self.props.hotkey,
             Font = Style.Constants.MainFont,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextYAlignment = Enum.TextYAlignment.Top,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Center,
             TextSize = 16,
             TextStrokeTransparency = 0.5,
 
@@ -156,22 +156,16 @@ ObjectViewport.render = function(self)
         TextTransparency = 1,
         TextStrokeTransparency = 1,
 
-        BackgroundColor3 = Color3.new(0.85, 0.85, 0.85),
+        BackgroundColor3 = self.props.BackgroundColor3 or Color3.new(0.85, 0.85, 0.85),
 
-        [Roact.Event.Activated] = function(_)
+        [Roact.Event.Activated] = function()
             self.props.onActivated()
         end,
 
-        [Roact.Event.MouseEnter] = function(_)
-            self.props.onMouseEnter()
-        end,
-
-        [Roact.Event.MouseLeave] = function(_)
-            self.props.onMouseLeave()
-        end
+        -- todo: hovering
     }, {
         UICorner = Roact.createElement("UICorner", {
-            CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius)
+            CornerRadius = UDim.new(0, Style.Constants.StandardCornerRadius)
         }),
 
         UIPadding = Roact.createElement(Padding, {4}),

@@ -17,40 +17,26 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlacementFlow = require(GameModules:WaitForChild("PlacementFlow"))
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
+local PreviewAttributes = require(GameModules:WaitForChild("PreviewAttributes"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local LocalPlayer = Players.LocalPlayer
 
 ---
 
-local HOTBAR_ATTRIBUTES = {
-    [GameEnum.ObjectType.Unit] = {
-        [GameEnum.UnitType.TowerUnit] = {"DMG", "RANGE", "CD", "PathType"},
-        [GameEnum.UnitType.FieldUnit] = {"HP", "DEF", "SPD", "PathType"}
-    },
-
-    [GameEnum.ObjectType.Roadblock] = {} -- todo
-}
-
-local attr = {"DMG", "RANGE", "CD", "PathType"}
-
 local Hotbar = Roact.PureComponent:extend("Hotbar")
 
 Hotbar.init = function(self)
     self:setState({
         hotbars = {
-            [GameEnum.ObjectType.Unit] = {
-                [GameEnum.UnitType.TowerUnit] = {},
-                [GameEnum.UnitType.FieldUnit] = {},
-            },
-
+            [GameEnum.UnitType.TowerUnit] = {},
+            [GameEnum.UnitType.FieldUnit] = {},
             [GameEnum.ObjectType.Roadblock] = {},
         },
 
-        hotbarObjectType = GameEnum.ObjectType.Unit,
-        hotbarObjectSubtype = GameEnum.UnitType.TowerUnit,
+        hotbarObjectType = GameEnum.UnitType.TowerUnit,
+        hoverObjectName = nil,
 
-        hoverUnitName = nil,
         placementFlowOpen = false,
     })
 end
@@ -68,14 +54,9 @@ Hotbar.didMount = function(self)
         })
     end)
 
-    self.hotbarChanged = PlayerData.HotbarChanged:Connect(function(_, objectType, subType, newHotbar)
+    self.hotbarChanged = PlayerData.HotbarChanged:Connect(function(_, objectType, newHotbar)
         local hotbarsCopy = CopyTable(self.state.hotbars)
-
-        if (subType) then
-            hotbarsCopy[objectType][subType] = newHotbar
-        else
-            hotbarsCopy[objectType] = newHotbar
-        end
+        hotbarsCopy[objectType] = newHotbar
 
         self:setState({
             hotbars = hotbarsCopy
@@ -96,28 +77,21 @@ Hotbar.render = function(self)
     if (self.state.placementFlowOpen) then return nil end
 
     local hotbars = self.state.hotbars
-    local objectType = self.state.hotbarObjectType
-    local subType = self.state.hotbarObjectSubtype
+    local hotbarObjectType = self.state.hotbarObjectType
+    local objectType = (hotbarObjectType == GameEnum.ObjectType.Roadblock) and GameEnum.ObjectType.Roadblock or GameEnum.ObjectType.Unit
         
     local hotbarListChildren = {}
-    local statPreviewChildren = {}
+    local attributesPreviewChildren = {}
 
-    local hotbar
-    local hotbarItemCount
-
-    if (subType) then
-        hotbar = hotbars[objectType][subType]
-    else
-        hotbar = hotbars[objectType]
-    end
-
-    hotbarItemCount = #hotbar
+    local hotbar = hotbars[hotbarObjectType]
+    local hotbarItemCount = #hotbar
 
     for i = 1, hotbarItemCount do
         local objectName = hotbar[i]
 
         hotbarListChildren[i] = Roact.createElement(ObjectViewport, {
             LayoutOrder = i,
+            BackgroundColor3 = Color3.new(1, 1, 1),
 
             -- todo
             objectType = objectType,
@@ -135,17 +109,40 @@ Hotbar.render = function(self)
                 PlacementFlow.Start(objectType, objectName)
             end,
 
-            onMouseEnter = function() end,
-            onMouseLeave = function() end
+            onMouseEnter = function()
+                self:setState({
+                    hoverObjectName = objectName
+                })
+            end,
+
+            onMouseLeave = function()
+                self:setState({
+                    hoverObjectName = Roact.None
+                })
+            end,
         })
     end
 
-    if (self.state.hoverUnitName) then
-        -- todo: distinguish between tower/field/roadblock
-        local hoverUnitAttributes = Unit.GetUnitBaseAttributes(self.state.hoverUnitName, 1)
+    if (self.state.hoverObjectName) then
+        -- todo: roadblocks
+        local attributes = Unit.GetUnitBaseAttributes(self.state.hoverObjectName, 1)
+        local previewAttributes = PreviewAttributes[hotbarObjectType]
 
-        for i = 1, 4 do
-            statPreviewChildren[i] = Roact.createElement("Frame", {
+        for i = 1, #previewAttributes do
+            local attribute = previewAttributes[i]
+            local value = attributes[attribute]
+
+            if ((attribute ~= "HP") and tonumber(value)) then
+                value = string.format("%0.2f", value)
+            elseif (value == GameEnum.PathType.Ground) then
+                value = "G"
+            elseif (value == GameEnum.PathType.Air) then
+                value = "A"
+            elseif (value == GameEnum.PathType.GroundAndAir) then
+                value = "GA"
+            end
+
+            attributesPreviewChildren[i] = Roact.createElement("Frame", {
                 Size = UDim2.new(0, 80, 1, 0),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
@@ -153,37 +150,40 @@ Hotbar.render = function(self)
             }, {
                 Icon = Roact.createElement("ImageLabel", {
                     AnchorPoint = Vector2.new(0, 0.5),
-                    Size = UDim2.new(0, 28, 0, 28),
+                    Size = UDim2.new(0, 22, 0, 22),
                     Position = UDim2.new(0, 2, 0.5, 0),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Image = "rbxasset://textures/ui/GuiImagePlaceholder.png", -- todo
-
-                    ImageColor3 = Color3.new(1, 1, 1) -- todo
+                    Image = Style.Images[attribute .. "AttributeIcon"],
+    
+                    ImageColor3 = Style.Colors[attribute .. "AttributeIconColor"]
                 }),
         
                 Label = Roact.createElement("TextLabel", {
                     AnchorPoint = Vector2.new(1, 0.5),
-                    Size = UDim2.new(1, -36, 0, 0),
+                    Size = UDim2.new(1, -(22 + Style.Constants.MinorElementPadding), 0, 16),
                     Position = UDim2.new(1, 0, 0.5, 0),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
         
-                    Text = hoverUnitAttributes[attr[i]],
+                    Text = value,
                     Font = Style.Constants.MainFont,
                     TextSize = 16,
                     TextStrokeTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+                    TextScaled = true,
 
                     TextColor3 = Color3.new(0, 0, 0)
                 })
             })
         end
 
-        statPreviewChildren["UICorner"] = Roact.createElement("UICorner", {
+        attributesPreviewChildren.UICorner = Roact.createElement("UICorner", {
             CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius)
         })
 
-        statPreviewChildren["UIListLayout"] = Roact.createElement("UIListLayout", {
+        attributesPreviewChildren.UIListLayout = Roact.createElement("UIListLayout", {
             Padding = UDim.new(0, Style.Constants.MajorElementPadding),
             FillDirection = Enum.FillDirection.Horizontal,
             SortOrder = Enum.SortOrder.LayoutOrder,
@@ -192,7 +192,7 @@ Hotbar.render = function(self)
         })
     end
 
-    hotbarListChildren["UIListLayout"] = Roact.createElement("UIListLayout", {
+    hotbarListChildren.UIListLayout = Roact.createElement("UIListLayout", {
         Padding = UDim.new(0, Style.Constants.MinorElementPadding),
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -207,7 +207,7 @@ Hotbar.render = function(self)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
     }, {
-        StatsPreview = self.state.hoverUnitName and
+        AttributesPreview = self.state.hoverObjectName and
             Roact.createElement("Frame", {
                 AnchorPoint = Vector2.new(0.5, 0),
                 Size = UDim2.new(1, 0, 0, 32),
@@ -216,7 +216,7 @@ Hotbar.render = function(self)
                 BorderSizePixel = 0,
 
                 BackgroundColor3 = Color3.new(1, 1, 1),
-            }, statPreviewChildren)
+            }, attributesPreviewChildren)
         or nil,
 
         HotbarList = Roact.createElement("Frame", {

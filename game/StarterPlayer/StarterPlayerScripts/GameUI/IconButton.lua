@@ -11,6 +11,8 @@ local Style = require(root:WaitForChild("Style"))
     onActivated
     onMouseEnter
     onMouseLeave
+
+    disabled
 ]]
 
 local IconButton = Roact.PureComponent:extend("IconButton")
@@ -30,17 +32,23 @@ IconButton.render = function(self)
         TextTransparency = 1,
 
         [Roact.Event.Activated] = function()
+            if (self.props.disabled) then return end
+
             self.props.onActivated()
         end,
 
         [Roact.Event.MouseEnter] = self.props.onMouseEnter and
             function()
+                if (self.props.disabled) then return end
+
                 self.props.onMouseEnter()
             end
         or nil,
 
         [Roact.Event.MouseLeave] = self.props.onMouseLeave and
             function()
+                if (self.props.disabled) then return end
+                
                 self.props.onMouseLeave()
             end
         or nil
