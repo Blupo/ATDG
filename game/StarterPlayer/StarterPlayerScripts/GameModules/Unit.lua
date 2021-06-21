@@ -164,7 +164,7 @@ local constructUnit = function(unitModel)
 			return
 		end
 		
-		attributeChangedEvent:Fire(unitModel:GetAttribute(attributeName))
+		attributeChangedEvent:Fire(attributeName, unitModel:GetAttribute(attributeName))
 	end)
 	
 	units[unit.Id] = unit
