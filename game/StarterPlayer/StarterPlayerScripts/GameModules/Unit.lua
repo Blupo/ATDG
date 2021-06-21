@@ -103,6 +103,12 @@ Unit.GetUnitType = function(unitName: string): string?
 	return unitDataCache[unitName].Type
 end
 
+Unit.GetAttribute = function(self, attributeName: string)
+	if (IGNORED_ATTRIBUTES[attributeName] and (attributeName ~= "Level")) then return end
+
+	return self.Model:GetAttribute(attributeName)
+end
+
 Unit.SetAttribute = function(self, attributeName: string, newValue: any)
 	SetAttribute:InvokeServer(self.Id, attributeName, newValue)
 end
