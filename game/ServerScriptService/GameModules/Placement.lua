@@ -229,7 +229,7 @@ Placement.PlaceObject = function(owner: number, objType: string, objName: string
 	local objModel
 
 	if (objType == GameEnums.ObjectType.Unit) then
-		local newUnit = Unit.new(objName)
+		local newUnit = Unit.new(objName, owner)
 		
 		objModel = newUnit.Model
 	elseif (objType == GameEnums.ObjectType.Roadblock) then

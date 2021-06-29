@@ -135,7 +135,8 @@ Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictiona
 	local attributes = {}
 
 	for i = 1, level do
-		local progressionDataAttributes = unitData.Progression[i].Attributes
+		local progressionData = unitData.Progression[i]
+		local progressionDataAttributes = progressionData and progressionData.Attributes or nil
 
 		if (progressionDataAttributes) then
 			for attributeName, baseValue in pairs(progressionDataAttributes) do

@@ -60,7 +60,7 @@ Inventory.init = function(self)
         objects = {},
 
         placementFlowOpen = false,
-        open = true,
+        open = false,
     })
 end
 

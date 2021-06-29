@@ -1,5 +1,6 @@
 -- handles the placement flow
 -- todo: cancel event
+-- todo: should all PlacementAreas show?
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
