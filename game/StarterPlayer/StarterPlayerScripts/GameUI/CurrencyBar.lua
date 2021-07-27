@@ -4,18 +4,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local root = script.Parent
-local PlayerScripts = root.Parent
 
 local LocalPlayer = Players.LocalPlayer
 
 local Roact = require(root:WaitForChild("Roact"))
 
-local GameModules = PlayerScripts:WaitForChild("GameModules")
-local PlayerData = require(GameModules:WaitForChild("PlayerData"))
-
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
+
+local PlayerData = SystemCoordinator.getSystem("PlayerData")
 
 ---
 

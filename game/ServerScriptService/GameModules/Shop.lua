@@ -4,26 +4,19 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 ---
 
-local Communicators = ReplicatedStorage:FindFirstChild("Communicators"):FindFirstChild("Shop")
-
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Game = require(GameModules:FindFirstChild("Game"))
 local Placement = require(GameModules:FindFirstChild("Placement"))
 local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
-local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
 local ShopPrices = require(SharedModules:FindFirstChild("ShopPrices"))
+local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
 
-local PurchaseTicketsRemoteFunction = Instance.new("RemoteFunction")
-local PurchaseObjectGrantRemoteFunction = Instance.new("RemoteFunction")
-local PurchaseSpecialActionTokenRemoteFunction = Instance.new("RemoteFunction")
-local PurchaseObjectPlacementRemoteFunction = Instance.new("RemoteFunction")
-local PurchaseUnitUpgradeRemoteFunction = Instance.new("RemoteFunction")
-local PurchaseUnitPersistentUpgradeRemoteFunction = Instance.new("RemoteFunction")
+local System = SystemCoordinator.newSystem("Shop")
 
 ---
 
@@ -185,48 +178,34 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
     return Enum.ProductPurchaseDecision.NotProcessedYet
 end
 
-PurchaseTicketsRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number)
+System.addFunction("PurchaseTickets", t.wrap(function(callingPlayer: Player, userId: number)
 
-end, t.tuple(t.instanceOf("Player"), t.number)))
+end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
-PurchaseObjectGrantRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number)
+System.addFunction("PurchaseObjectGrant", t.wrap(function(callingPlayer: Player, userId: number)
 
-end, t.tuple(t.instanceOf("Player"), t.number)))
+end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
-PurchaseSpecialActionTokenRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number)
+System.addFunction("PurchaseSpecialActionToken", t.wrap(function(callingPlayer: Player, userId: number)
 
-end, t.tuple(t.instanceOf("Player"), t.number)))
+end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
-PurchaseObjectPlacementRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number, objectType: string, objectName: string, position: Vector3, rotation: number)
+System.addFunction("PurchaseObjectPlacement", t.wrap(function(callingPlayer: Player, userId: number, objectType: string, objectName: string, position: Vector3, rotation: number)
     if (callingPlayer.UserId ~= userId) then return end
 
     return Shop.PurchaseObjectPlacement(userId, objectType, objectName, position, rotation)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string, t.Vector3, t.number)))
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string, t.Vector3, t.number)), true)
 
-PurchaseUnitUpgradeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number, unitId: string)
+System.addFunction("PurchaseUnitUpgrade", t.wrap(function(callingPlayer: Player, userId: number, unitId: string)
     if (callingPlayer.UserId ~= userId) then return end
 
     return Shop.PurchaseUnitUpgrade(userId, unitId)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
+end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
 
-PurchaseUnitPersistentUpgradeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(callingPlayer: Player, userId: number, unitName: string)
+System.addFunction("PurchaseUnitPersistentUpgrade", t.wrap(function(callingPlayer: Player, userId: number, unitName: string)
     if (callingPlayer.UserId ~= userId) then return end
 
     return Shop.PurchaseUnitPersistentUpgrade(userId, unitName)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
-
-PurchaseTicketsRemoteFunction.Name = "PurchaseTickets"
-PurchaseObjectGrantRemoteFunction.Name = "PurchaseObjectGrant"
-PurchaseSpecialActionTokenRemoteFunction.Name = "PurchaseSpecialActionToken"
-PurchaseObjectPlacementRemoteFunction.Name = "PurchaseObjectPlacement"
-PurchaseUnitUpgradeRemoteFunction.Name = "PurchaseUnitUpgrade"
-PurchaseUnitPersistentUpgradeRemoteFunction.Name = "PurchaseUnitPersistentUpgrade"
-
-PurchaseTicketsRemoteFunction.Parent = Communicators
-PurchaseObjectGrantRemoteFunction.Parent = Communicators
-PurchaseSpecialActionTokenRemoteFunction.Parent = Communicators
-PurchaseObjectPlacementRemoteFunction.Parent = Communicators
-PurchaseUnitUpgradeRemoteFunction.Parent = Communicators
-PurchaseUnitPersistentUpgradeRemoteFunction.Parent = Communicators
+end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
 
 return Shop

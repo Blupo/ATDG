@@ -15,6 +15,7 @@ local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
+local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
 
 local CurrencyBalanceChangedEvent = Instance.new("BindableEvent")
@@ -22,6 +23,13 @@ local ObjectGrantedEvent = Instance.new("BindableEvent")
 local InventoryChangedEvent = Instance.new("BindableEvent")
 local HotbarChangedEvent = Instance.new("BindableEvent")
 
+local System = SystemCoordinator.newSystem("PlayerData")
+local CurrencyBalanceChangedRemoteEvent = System.addEvent("CurrencyBalanceChanged")
+local ObjectGrantedRemoteEvent = System.addEvent("ObjectGranted")
+local InventoryChangedRemoteEvent = System.addEvent("InventoryChanged")
+local HotbarChangedRemoteEvent = System.addEvent("HotbarChanged")
+
+--[[
 local GetPlayerInventoryRemoteFunction = Instance.new("RemoteFunction")
 local GetPlayerInventoryItemCountRemoteFunction = Instance.new("RemoteFunction")
 
@@ -39,6 +47,7 @@ local CurrencyBalanceChangedRemoteEvent = Instance.new("RemoteEvent")
 local ObjectGrantedRemoteEvent = Instance.new("RemoteEvent")
 local InventoryChangedRemoteEvent = Instance.new("RemoteEvent")
 local HotbarChangedRemoteEvent = Instance.new("RemoteEvent")
+--]]
 
 ---
 
@@ -400,11 +409,6 @@ end
 Players.PlayerAdded:Connect(playerAdded)
 Players.PlayerRemoving:Connect(playerRemoving)
 
-CurrencyBalanceChangedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-ObjectGrantedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-InventoryChangedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-HotbarChangedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-
 CurrencyBalanceChangedEvent.Event:Connect(function(userId, ...)
     local player = Players:GetPlayerByUserId(userId)
     if (not player) then return end
@@ -433,59 +437,59 @@ HotbarChangedEvent.Event:Connect(function(userId, ...)
     HotbarChangedRemoteEvent:FireClient(player, userId, ...)
 end)
 
-GetPlayerInventoryRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number)
+System.addFunction("GetPlayerInventory", t.wrap(function(player: Player, userId: number)
     if (player.UserId ~= userId) then return end
 
     return PlayerData.GetPlayerInventory(userId)
-end, t.tuple(t.instanceOf("Player"), t.number)))
+end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
-GetPlayerInventoryItemCountRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, itemType: string, itemName: string)
+System.addFunction("GetPlayerInventoryItemCount", t.wrap(function(player: Player, userId: number, itemType: string, itemName: string)
     if (player.UserId ~= userId) then return end
 
     return PlayerData.GetPlayerInventoryItemCount(userId, itemType, itemName)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string)))
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string)), true)
 
-GetPlayerObjectGrantsRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number)
+System.addFunction("GetPlayerObjectGrants", t.wrap(function(player: Player, userId: number)
     if (player.UserId ~= userId) then return end
 
     return PlayerData.GetPlayerObjectGrants(userId)
-end, t.tuple(t.instanceOf("Player"), t.number)))
+end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
-PlayerHasObjectGrantRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, objectType: string, objectName: string)
+System.addFunction("PlayerHasObjectGrant", t.wrap(function(player: Player, userId: number, objectType: string, objectName: string)
     if (player.UserId ~= userId) then return false end
 
     return PlayerData.PlayerHasObjectGrant(userId, objectType, objectName)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string)))
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string)), true)
 
-GetPlayerHotbarsRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number)
+System.addFunction("GetPlayerHotbars", t.wrap(function(player: Player, userId: number)
     if (player.UserId ~= userId) then return end
 
     return PlayerData.GetPlayerHotbars(userId)
-end, t.tuple(t.instanceOf("Player"), t.number)))
+end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
-GetPlayerHotbarRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, objectType: string, subType: string?)
+System.addFunction("GetPlayerHotbar", t.wrap(function(player: Player, userId: number, objectType: string, subType: string?)
     if (player.UserId ~= userId) then return end
 
     PlayerData.GetPlayerHotbar(userId, objectType, subType)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.optional(t.string))))
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.optional(t.string))), true)
 
-SetPlayerHotbarRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, objectType: string, subType: string?, newHotbar: array<string>)
+System.addFunction("SetPlayerHotbar", t.wrap(function(player: Player, userId: number, objectType: string, subType: string?, newHotbar: array<string>)
     if (player.UserId ~= userId) then return false end
 
     return PlayerData.SetPlayerHotbar(userId, objectType, subType, newHotbar)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.optional(t.string), t.array(t.string))))
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.optional(t.string), t.array(t.string))), true)
 
-GetPlayerAllCurrenciesBalancesRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number)
+System.addFunction("GetPlayerAllCurrenciesBalances", t.wrap(function(player: Player, userId: number)
     if (player.UserId ~= userId) then return end
 
     return PlayerData.GetPlayerAllCurrenciesBalances(userId)
-end, t.tuple(t.instanceOf("Player"), t.nubmer)))
+end, t.tuple(t.instanceOf("Player"), t.nubmer)), true)
 
-GetPlayerCurrencyBalanceRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, userId: number, currencyType: string)
+System.addFunction("GetPlayerCurrencyBalance", t.wrap(function(player: Player, userId: number, currencyType: string)
     if (player.UserId ~= userId) then return end
 
     return PlayerData.GetPlayerCurrencyBalance(userId, currencyType)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
+end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
 
 ---
 
@@ -496,33 +500,5 @@ do
         playerAdded(players[i])
     end
 end
-
-GetPlayerInventoryRemoteFunction.Name = "GetPlayerInventory"
-GetPlayerInventoryItemCountRemoteFunction.Name = "GetPlayerInventoryItemCount"
-GetPlayerObjectGrantsRemoteFunction.Name = "GetPlayerObjectGrants"
-PlayerHasObjectGrantRemoteFunction.Name = "PlayerHasObjectGrant"
-GetPlayerHotbarsRemoteFunction.Name = "GetPlayerHotbars"
-GetPlayerHotbarRemoteFunction.Name = "GetPlayerHotbar"
-SetPlayerHotbarRemoteFunction.Name = "SetPlayerHotbar"
-GetPlayerAllCurrenciesBalancesRemoteFunction.Name = "GetPlayerAllCurrenciesBalances"
-GetPlayerCurrencyBalanceRemoteFunction.Name = "GetPlayerCurrencyBalance"
-CurrencyBalanceChangedRemoteEvent.Name = "CurrencyBalanceChanged"
-ObjectGrantedRemoteEvent.Name = "ObjectGranted"
-InventoryChangedRemoteEvent.Name = "InventoryChanged"
-HotbarChangedRemoteEvent.Name = "HotbarChanged"
-
-GetPlayerInventoryRemoteFunction.Parent = Communicators
-GetPlayerInventoryItemCountRemoteFunction.Parent = Communicators
-GetPlayerObjectGrantsRemoteFunction.Parent = Communicators
-PlayerHasObjectGrantRemoteFunction.Parent = Communicators
-GetPlayerHotbarsRemoteFunction.Parent = Communicators
-GetPlayerHotbarRemoteFunction.Parent = Communicators
-SetPlayerHotbarRemoteFunction.Parent = Communicators
-GetPlayerAllCurrenciesBalancesRemoteFunction.Parent = Communicators
-GetPlayerCurrencyBalanceRemoteFunction.Parent = Communicators
-CurrencyBalanceChangedRemoteEvent.Parent = Communicators
-ObjectGrantedRemoteEvent.Parent = Communicators
-InventoryChangedRemoteEvent.Parent = Communicators
-HotbarChangedRemoteEvent.Parent = Communicators
 
 return PlayerData

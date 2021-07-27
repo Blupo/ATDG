@@ -5,23 +5,18 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local Communicators = ReplicatedStorage:WaitForChild("Communicators"):WaitForChild("Unit")
-
-local Util = script.Parent.Parent:WaitForChild("Util")
-local RemoteFunctionWrapper = require(Util:WaitForChild("RemoteFunctionWrapper"))
-
 local UnitData = ReplicatedStorage:WaitForChild("UnitData")
 local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local Promise = require(SharedModules:WaitForChild("Promise"))
-
-local SetAttribute = Communicators:WaitForChild("SetAttribute")
-local GetUnitBaseAttributes = Communicators:WaitForChild("GetUnitBaseAttributes")
-local GetUnitPersistentUpgradeLevel = Communicators:WaitForChild("GetUnitPersistentUpgradeLevel")
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
 local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
+
+local Unit = SystemCoordinator.getSystem("Unit")
+local SetAttributeRemoteFunction = Unit.SetAttribute
 
 ---
 
@@ -37,12 +32,8 @@ local unitDataCache = {}
 
 ---
 
-local Unit = {}
-
 Unit.UnitAdded = UnitAddedEvent.Event
 Unit.UnitRemoving = UnitRemovingEvent.Event
-
-Unit.GetUnitPersistentUpgradeLevel = RemoteFunctionWrapper(GetUnitPersistentUpgradeLevel)
 
 Unit.fromModel = function(model: Model)
 	for _, unit in pairs(units) do
@@ -111,7 +102,7 @@ Unit.GetAttribute = function(self, attributeName: string)
 end
 
 Unit.SetAttribute = function(self, attributeName: string, newValue: any)
-	SetAttribute:InvokeServer(self.Id, attributeName, newValue)
+	SetAttributeRemoteFunction:InvokeServer(self.Id, attributeName, newValue)
 end
 
 local constructUnit = function(unitModel)

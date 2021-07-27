@@ -1,3 +1,7 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+---
+
 local root = script.Parent
 
 local Roact = require(root:WaitForChild("Roact"))
@@ -7,9 +11,10 @@ local Inventory = require(root:WaitForChild("Inventory"))
 local GameState = require(root:WaitForChild("GameState"))
 local Padding = require(root:WaitForChild("Padding"))
 
-local PlayerScripts = root.Parent
-local GameModules = PlayerScripts:WaitForChild("GameModules")
-local Game = require(GameModules:WaitForChild("Game"))
+local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
+
+local Game = SystemCoordinator.getSystem("Game")
 
 ---
 
@@ -24,7 +29,7 @@ GameUI.init = function(self)
 end
 
 GameUI.didMount = function(self)
-    local gameStarted = Game:HasStarted()
+    local gameStarted = Game.HasStarted()
 
     if (gameStarted) then
         self:setState({

@@ -7,20 +7,19 @@ local Workspace = game:GetService("Workspace")
 ---
 
 local ChallengeData = ServerScriptService:FindFirstChild("ChallengeData")
-local GameCommunicators = ReplicatedStorage:FindFirstChild("Communicators"):FindFirstChild("Game")
 local MapData = ServerStorage:FindFirstChild("MapData")
 local Paths = Workspace:FindFirstChild("Paths")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
+local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local TimeSyncService = require(SharedModules:FindFirstChild("Nevermore"))("TimeSyncService")
 TimeSyncService:Init()
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Path = require(GameModules:FindFirstChild("Path"))
 local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
-local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 local StatusEffects = require(GameModules:FindFirstChild("StatusEffects"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
@@ -32,18 +31,21 @@ local CentralTowerHealthChangedEvent = Instance.new("BindableEvent")
 local CentralTowerDestroyedEvent = Instance.new("BindableEvent")
 local PhaseChangedEvent = Instance.new("BindableEvent")
 
+local System = SystemCoordinator.newSystem("Game")
+local StartedRemoteEvent = System.addEvent("Started")
+local EndedRemoteEvent = System.addEvent("Ended")
+local RoundStartedRemoteEvent = System.addEvent("RoundStarted")
+local RoundEndedRemoteEvent = System.addEvent("RoundEnded")
+local CentralTowerHealthChangedRemoteEvent = System.addEvent("CentralTowerHealthChanged")
+local CentralTowerDestroyedRemoteEvent = System.addEvent("CentralTowerDestroyed")
+local PhaseChangedRemoteEvent = System.addEvent("PhaseChanged") 
+
+--[[
 local HasStartedRemoteFunction = Instance.new("RemoteFunction")
 local GetDerivedGameStateRemoteFunction = Instance.new("RemoteFunction")
-local StartedRemoteEvent = Instance.new("RemoteEvent")
-local EndedRemoteEvent = Instance.new("RemoteEvent")
-local RoundStartedRemoteEvent = Instance.new("RemoteEvent")
-local RoundEndedRemoteEvent = Instance.new("RemoteEvent")
-local CentralTowerHealthChangedRemoteEvent = Instance.new("RemoteEvent")
-local CentralTowerDestroyedRemoteEvent = Instance.new("RemoteEvent")
-local PhaseChangedRemoteEvent = Instance.new("RemoteEvent")
-
 local TEST_SkipToNextRoundRemoteFunction = Instance.new("RemoteFunction")
 local TEST_ReviveRemoteFunction = Instance.new("RemoteFunction")
+--]]
 
 ---
 
@@ -640,44 +642,9 @@ PhaseChangedEvent.Event:Connect(function(...)
 	PhaseChangedRemoteEvent:FireAllClients(...)
 end)
 
-HasStartedRemoteFunction.OnServerInvoke = Game.HasStarted
-GetDerivedGameStateRemoteFunction.OnServerInvoke = Game.GetDerivedGameState
-
--- todo: REMOVE
-TEST_ReviveRemoteFunction.OnServerInvoke = Game.Revive
-TEST_SkipToNextRoundRemoteFunction.OnServerInvoke = Game.SkipToNextRound
---
-
-StartedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-EndedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-RoundStartedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-RoundEndedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-CentralTowerHealthChangedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-CentralTowerDestroyedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-PhaseChangedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-
-HasStartedRemoteFunction.Name = "HasStarted"
-GetDerivedGameStateRemoteFunction.Name = "GetDerivedGameState"
-StartedRemoteEvent.Name = "Started"
-EndedRemoteEvent.Name = "Ended"
-RoundStartedRemoteEvent.Name = "RoundStarted"
-RoundEndedRemoteEvent.Name = "RoundEnded"
-CentralTowerHealthChangedRemoteEvent.Name = "CentralTowerHealthChanged"
-CentralTowerDestroyedRemoteEvent.Name = "CentralTowerDestroyed"
-PhaseChangedRemoteEvent.Name = "PhaseChanged"
-TEST_ReviveRemoteFunction.Name = "TEST_ReviveRemoteFunction"
-TEST_SkipToNextRoundRemoteFunction.Name = "TEST_SkipToNextRoundRemoteFunction"
-
-HasStartedRemoteFunction.Parent = GameCommunicators
-GetDerivedGameStateRemoteFunction.Parent = GameCommunicators
-StartedRemoteEvent.Parent = GameCommunicators
-EndedRemoteEvent.Parent = GameCommunicators
-RoundStartedRemoteEvent.Parent = GameCommunicators
-RoundEndedRemoteEvent.Parent = GameCommunicators
-CentralTowerHealthChangedRemoteEvent.Parent = GameCommunicators
-CentralTowerDestroyedRemoteEvent.Parent = GameCommunicators
-PhaseChangedRemoteEvent.Parent = GameCommunicators
-TEST_ReviveRemoteFunction.Parent = GameCommunicators
-TEST_SkipToNextRoundRemoteFunction.Parent = GameCommunicators
+System.addFunction("HasStarted", Game.HasStarted)
+System.addFunction("GetDerivedGameState", Game.GetDerivedGameState)
+System.addFunction("TEST_Revive", Game.Revive) -- TEMP
+System.addFunction("TEST_SkipToNextRound", Game.SkipToNextRound) -- TEMP
 
 return Game

@@ -3,33 +3,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local PlayerScripts = script.Parent.Parent
-local Util = PlayerScripts:WaitForChild("Util")
-local RemoteFunctionWrapper = require(Util:WaitForChild("RemoteFunctionWrapper"))
-
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))
 
-local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local ShopPrices = require(SharedModules:FindFirstChild("ShopPrices"))
+local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
-local Communicators = ReplicatedStorage:WaitForChild("Communicators"):WaitForChild("Shop")
-local PurchaseTickets = Communicators:WaitForChild("PurchaseTickets")
-local PurchaseObjectGrant = Communicators:WaitForChild("PurchaseObjectGrant")
-local PurchaseSpecialActionToken = Communicators:WaitForChild("PurchaseSpecialActionToken")
-local PurchaseObjectPlacement = Communicators:WaitForChild("PurchaseObjectPlacement")
-local PurchaseUnitUpgrade = Communicators:WaitForChild("PurchaseUnitUpgrade")
-local PurchaseUnitPersistentUpgrade = Communicators:WaitForChild("PurchaseUnitPersistentUpgrade")
+local Shop = SystemCoordinator.getSystem("Shop")
 
 ---
-
-local Shop = {}
-
-Shop.PurchaseTickets = RemoteFunctionWrapper(PurchaseTickets)
-Shop.PurchaseObjectGrant = RemoteFunctionWrapper(PurchaseObjectGrant)
-Shop.PurchaseSpecialActionToken = RemoteFunctionWrapper(PurchaseSpecialActionToken)
-Shop.PurchaseObjectPlacement = RemoteFunctionWrapper(PurchaseObjectPlacement)
-Shop.PurchaseUnitUpgrade = RemoteFunctionWrapper(PurchaseUnitUpgrade)
-Shop.PurchaseUnitPersistentUpgrade = RemoteFunctionWrapper(PurchaseUnitPersistentUpgrade)
 
 Shop.GetObjectGrantPrice = function(objectType: string, objectName: string): number?
     return ShopPrices.ObjectGrantPrices[objectType][objectName]

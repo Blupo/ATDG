@@ -13,7 +13,6 @@ local Roact = require(root:WaitForChild("Roact"))
 local Padding = require(root:WaitForChild("Padding"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
-local Game = require(GameModules:WaitForChild("Game"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local Util = PlayerScripts:WaitForChild("Util")
@@ -22,6 +21,9 @@ local TimeSyncService = require(Util:WaitForChild("TimeSyncService"))
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnums = require(SharedModules:WaitForChild("GameEnums"))
 local Promise = require(SharedModules:WaitForChild("Promise"))
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
+
+local Game = SystemCoordinator.getSystem("Game")
 
 ---
 

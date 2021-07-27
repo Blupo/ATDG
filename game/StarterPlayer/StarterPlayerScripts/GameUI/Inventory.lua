@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local root = script.Parent
 local PlayerScripts = root.Parent
+local LocalPlayer = Players.LocalPlayer
 
 local IconButton = require(root:WaitForChild("IconButton"))
 local ObjectViewport = require(root:WaitForChild("ObjectViewport"))
@@ -16,15 +17,15 @@ local Style = require(root:WaitForChild("Style"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlacementFlow = require(GameModules:WaitForChild("PlacementFlow"))
-local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 local PreviewAttributes = require(GameModules:WaitForChild("PreviewAttributes"))
 local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
-local LocalPlayer = Players.LocalPlayer
+local PlayerData = SystemCoordinator.getSystem("PlayerData")
 
 ---
 

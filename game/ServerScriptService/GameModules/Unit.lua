@@ -5,29 +5,23 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 ---
 
-local Communicators = ReplicatedStorage:FindFirstChild("Communicators"):FindFirstChild("Unit")
 local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
 
 local AbilityData = ServerScriptService:FindFirstChild("AbilityData")
 local UnitData = ReplicatedStorage:FindFirstChild("UnitData")
 
-local GameModules = ServerScriptService:FindFirstChild("GameModules")
-local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
-
 local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
 local UnitPersistentUpgradedEvent = Instance.new("BindableEvent")
 
-local SetAttributeRemoteFunction = Instance.new("RemoteFunction")
-local GetUnitBaseAttributesRemoteFunction = Instance.new("RemoteFunction")
-local GetUnitPersistentUpgradeLevelRemoteFunction = Instance.new("RemoteFunction")
-
-local UnitPersistentUpgradedRemoteEvent = Instance.new("RemoteEvent")
+local System = SystemCoordinator.newSystem("Unit")
+local UnitPersistentUpgradedRemoteEvent = System.addEvent("UnitPersistentUpgraded")
 
 ---
 
@@ -445,7 +439,7 @@ UnitPersistentUpgradedEvent.Event:Connect(function(owner: number, ...)
 end)
 
 -- Players can only change the targeting on tower units for now
-SetAttributeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, unitId: string, attributeName: string, newValue: any)
+System.addFunction("SetAttribute", t.wrap(function(player: Player, unitId: string, attributeName: string, newValue: any)
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return end
 	if (unit.Owner ~= player.UserId) then return end
@@ -453,26 +447,18 @@ SetAttributeRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.
 	if (attributeName ~= "UnitTargeting") then return end
 	
 	unit:SetAttribute(attributeName, newValue)
-end, t.tuple(t.instanceOf("Player"), t.string, t.string, t.any)))
+end, t.tuple(t.instanceOf("Player"), t.string, t.string, t.any)), true)
 
-GetUnitBaseAttributesRemoteFunction.OnServerInvoke = t.wrap(function(_: Player, unitName: string, level: number)
+--[[
+System.addFunction("GetUnitBaseAttributes", t.wrap(function(_: Player, unitName: string, level: number)
 	return Unit.GetUnitBaseAttributes(unitName, level)
-end, t.tuple(t.instanceOf("Player"), t.string, t.number))
+end, t.tuple(t.instanceOf("Player"), t.string, t.number)))
+--]]
 
-GetUnitPersistentUpgradeLevelRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(player: Player, owner: number, unitName: string): number?
+System.addFunction("GetUnitPersistentUpgradeLevel", t.wrap(function(player: Player, owner: number, unitName: string): number?
 	if (player.UserId ~= owner) then return end
 
 	return Unit.GetUnitPersistentUpgradeLevel(owner, unitName)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string)))
-
-UnitPersistentUpgradedRemoteEvent.Name = "UnitPersistentUpgraded"
-SetAttributeRemoteFunction.Name = "SetAttribute"
-GetUnitBaseAttributesRemoteFunction.Name = "GetUnitBaseAttributes"
-GetUnitPersistentUpgradeLevelRemoteFunction.Name = "GetUnitPersistentUpgradeLevel"
-
-UnitPersistentUpgradedRemoteEvent.Parent = Communicators
-SetAttributeRemoteFunction.Parent = Communicators
-GetUnitBaseAttributesRemoteFunction.Parent = Communicators
-GetUnitPersistentUpgradeLevelRemoteFunction.Parent = Communicators
+end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
 
 return Unit
