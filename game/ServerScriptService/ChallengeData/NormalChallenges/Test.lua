@@ -93,6 +93,7 @@ return {
 	},
 	
 	AttributeModifiers = {
+		--[[
 		[1] = {
 			[GameEnums.UnitType.FieldUnit] = {
 				DEF = {
@@ -110,5 +111,6 @@ return {
 				DEF = false,
 			}
 		}
+		--]]
 	},
 }

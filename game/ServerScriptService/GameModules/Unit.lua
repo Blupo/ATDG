@@ -275,8 +275,8 @@ end
 Unit.SetAttribute = function(self, attributeName: string, newValue: any)
 	local oldValue = self:GetAttribute(attributeName)
 	if (type(oldValue) ~= type(newValue)) then return end
-	
 	if (oldValue == newValue) then return end
+
 	self.__baseAttributes[attributeName] = newValue
 	self.__attributeChangedEvent:Fire(attributeName, self:GetAttribute(attributeName))
 end
@@ -286,9 +286,13 @@ Unit.TakeDamage = function(self, damage: number, ignoreDEF: boolean?)
 	
 	local hp = self:GetAttribute("HP")
 	local def = ignoreDEF and 0 or self:GetAttribute("DEF")
-	local effectiveDMG = (damage * damage) / (damage + def)
-	
-	self:SetAttribute("HP", hp - effectiveDMG)
+
+	-- effective damage in whole numbers only
+	local effectiveDamage = (damage * damage) / (damage + def)
+	effectiveDamage = math.floor(effectiveDamage + 0.5)
+	if (effectiveDamage <= 0) then return end
+
+	self:SetAttribute("HP", hp - effectiveDamage)
 end
 
 Unit.HasAbility = function(self, abilityName: string): boolean
@@ -448,12 +452,6 @@ System.addFunction("SetAttribute", t.wrap(function(player: Player, unitId: strin
 	
 	unit:SetAttribute(attributeName, newValue)
 end, t.tuple(t.instanceOf("Player"), t.string, t.string, t.any)), true)
-
---[[
-System.addFunction("GetUnitBaseAttributes", t.wrap(function(_: Player, unitName: string, level: number)
-	return Unit.GetUnitBaseAttributes(unitName, level)
-end, t.tuple(t.instanceOf("Player"), t.string, t.number)))
---]]
 
 System.addFunction("GetUnitPersistentUpgradeLevel", t.wrap(function(player: Player, owner: number, unitName: string): number?
 	if (player.UserId ~= owner) then return end
