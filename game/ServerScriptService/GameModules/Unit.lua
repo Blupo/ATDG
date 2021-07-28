@@ -8,6 +8,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
+local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
@@ -26,7 +27,7 @@ local UnitPersistentUpgradedRemoteEvent = System.addEvent("UnitPersistentUpgrade
 ---
 
 local units = {}
-local unitProgressionData = {}
+local unitPersistentUpgradeLevels = {}
 local unitDataCache = {}
 local abilitiesCache = {}
 
@@ -109,17 +110,36 @@ Unit.GetUnitType = function(unitName: string): string?
 	return unitDataCache[unitName].Type
 end
 
+Unit.GetAllUnitsPersistentUpgradeLevels = function(owner: number): {[string]: number}?
+	local persistentUpgradeLevels = unitPersistentUpgradeLevels[owner]
+
+	if (not persistentUpgradeLevels) then
+		unitPersistentUpgradeLevels[owner] = {}
+		persistentUpgradeLevels = unitPersistentUpgradeLevels[owner]
+	end
+
+	persistentUpgradeLevels = CopyTable(persistentUpgradeLevels)
+
+	for unitName in pairs(unitDataCache) do
+		if (not persistentUpgradeLevels[unitName]) then
+			persistentUpgradeLevels[unitName] = 1
+		end
+	end
+
+	return persistentUpgradeLevels
+end
+
 Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): number?
 	if (not Unit.DoesUnitExist(unitName)) then return end
 
-	local progressionData = unitProgressionData[owner]
+	local persistentUpgradeLevels = unitPersistentUpgradeLevels[owner]
 
-	if (not progressionData) then
-		unitProgressionData[owner] = {}
-		progressionData = unitProgressionData[owner]
+	if (not persistentUpgradeLevels) then
+		unitPersistentUpgradeLevels[owner] = {}
+		persistentUpgradeLevels = unitPersistentUpgradeLevels[owner]
 	end
 
-	return progressionData[unitName] or 1
+	return persistentUpgradeLevels[unitName] or 1
 end
 
 Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
@@ -150,8 +170,8 @@ Unit.new = function(unitName: string, owner: number?)
 	local unitModel = UnitModels:FindFirstChild(unitName)
 	local newUnitLevel = 1
 	
-	if (unitProgressionData[owner]) then
-		newUnitLevel = unitProgressionData[owner][unitName] or 1
+	if (unitPersistentUpgradeLevels[owner]) then
+		newUnitLevel = unitPersistentUpgradeLevels[owner][unitName] or 1
 	end
 	
 	local newBaseAttributes = copy(unitData.Progression[newUnitLevel].Attributes)
@@ -409,11 +429,11 @@ end
 Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)
 	if (not Unit.DoesUnitExist(unitName)) then return end
 
-	local progressionData = unitProgressionData[owner]
+	local progressionData = unitPersistentUpgradeLevels[owner]
 
 	if (not progressionData) then
-		unitProgressionData[owner] = {}
-		progressionData = unitProgressionData[owner]
+		unitPersistentUpgradeLevels[owner] = {}
+		progressionData = unitPersistentUpgradeLevels[owner]
 	end
 
 	local nextLevel = (progressionData[unitName] or 1) + 1
@@ -452,6 +472,12 @@ System.addFunction("SetAttribute", t.wrap(function(player: Player, unitId: strin
 	
 	unit:SetAttribute(attributeName, newValue)
 end, t.tuple(t.instanceOf("Player"), t.string, t.string, t.any)), true)
+
+System.addFunction("GetAllUnitsPersistentUpgradeLevels", t.wrap(function(player: Player, owner: number): {[string]: number}?
+	if (player.UserId ~= owner) then return end
+
+	return Unit.GetAllUnitsPersistentUpgradeLevels(owner)
+end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
 System.addFunction("GetUnitPersistentUpgradeLevel", t.wrap(function(player: Player, owner: number, unitName: string): number?
 	if (player.UserId ~= owner) then return end

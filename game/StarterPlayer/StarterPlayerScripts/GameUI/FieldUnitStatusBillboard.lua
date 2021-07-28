@@ -143,7 +143,7 @@ FieldUnitBillboard.render = function(self)
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
 
-                Text = string.format("%0.3f/%0.3f", self.state.hp, self.state.maxHP),
+                Text = string.format("%d/%d", self.state.hp, self.state.maxHP),
                 Font = Style.Constants.MainFont,
                 TextScaled = true,
                 TextXAlignment = Enum.TextXAlignment.Center,

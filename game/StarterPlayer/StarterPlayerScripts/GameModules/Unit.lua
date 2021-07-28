@@ -1,6 +1,5 @@
--- todo: cache localplayer's persistent upgrade levels?
-
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
@@ -12,10 +11,13 @@ local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local Promise = require(SharedModules:WaitForChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
+local LocalPlayer = Players.LocalPlayer
+
 local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
 
 local Unit = SystemCoordinator.getSystem("Unit")
+local GetUnitPersistentUpgradeLevelRemoteFunction = Unit.GetUnitPersistentUpgradeLevel
 local SetAttributeRemoteFunction = Unit.SetAttribute
 
 ---
@@ -29,6 +31,7 @@ local IGNORED_ATTRIBUTES = {
 
 local units = {}
 local unitDataCache = {}
+local localPlayerUnitPersistentUpgradeLevels = {}
 
 ---
 
@@ -67,6 +70,16 @@ Unit.DoesUnitExist = function(unitName: string): boolean
 	if (not unitModel) then return false end
 
 	return true
+end
+
+Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): number?
+	if (owner ~= LocalPlayer.UserId) then
+		return GetUnitPersistentUpgradeLevelRemoteFunction:InvokeServer(owner, unitName)
+	end
+
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	return localPlayerUnitPersistentUpgradeLevels[unitName] or 1
 end
 
 Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
@@ -179,6 +192,8 @@ end
 
 ---
 
+localPlayerUnitPersistentUpgradeLevels = Unit.GetAllUnitsPersistentUpgradeLevels(LocalPlayer.UserId)
+
 for _, unitDataScript in pairs(UnitData:GetChildren()) do
 	unitDataCache[unitDataScript.Name] = require(unitDataScript)
 end
@@ -194,6 +209,12 @@ CollectionService:GetInstanceRemovedSignal("Unit"):Connect(function(unitModel)
 	if (not unit) then return end
 	
 	destroyUnit(unit)
+end)
+
+Unit.UnitPersistentUpgraded:Connect(function(owner: number, unitName: string, newLevel: number)
+	if (owner ~= LocalPlayer.UserId) then return end
+
+	localPlayerUnitPersistentUpgradeLevels[unitName] = newLevel
 end)
 
 return Unit

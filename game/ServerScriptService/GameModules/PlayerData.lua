@@ -7,13 +7,11 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local ProfileService = require(ServerScriptService:FindFirstChild("ProfileService"))
 
-local GameModules = ServerScriptService:FindFirstChild("GameModules")
-local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
-
-local Communicators = ReplicatedStorage:FindFirstChild("Communicators"):WaitForChild("PlayerData")
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
+local EphemeralCurrencies = require(SharedModules:FindFirstChild("EphemeralCurrencies"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
+local PermanentObjectGrants = require(SharedModules:FindFirstChild("PermanentObjectGrants"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
@@ -28,26 +26,6 @@ local CurrencyBalanceChangedRemoteEvent = System.addEvent("CurrencyBalanceChange
 local ObjectGrantedRemoteEvent = System.addEvent("ObjectGranted")
 local InventoryChangedRemoteEvent = System.addEvent("InventoryChanged")
 local HotbarChangedRemoteEvent = System.addEvent("HotbarChanged")
-
---[[
-local GetPlayerInventoryRemoteFunction = Instance.new("RemoteFunction")
-local GetPlayerInventoryItemCountRemoteFunction = Instance.new("RemoteFunction")
-
-local GetPlayerObjectGrantsRemoteFunction = Instance.new("RemoteFunction")
-local PlayerHasObjectGrantRemoteFunction = Instance.new("RemoteFunction")
-
-local GetPlayerHotbarsRemoteFunction = Instance.new("RemoteFunction")
-local GetPlayerHotbarRemoteFunction = Instance.new("RemoteFunction")
-local SetPlayerHotbarRemoteFunction = Instance.new("RemoteFunction")
-
-local GetPlayerAllCurrenciesBalancesRemoteFunction = Instance.new("RemoteFunction")
-local GetPlayerCurrencyBalanceRemoteFunction = Instance.new("RemoteFunction")
-
-local CurrencyBalanceChangedRemoteEvent = Instance.new("RemoteEvent")
-local ObjectGrantedRemoteEvent = Instance.new("RemoteEvent")
-local InventoryChangedRemoteEvent = Instance.new("RemoteEvent")
-local HotbarChangedRemoteEvent = Instance.new("RemoteEvent")
---]]
 
 ---
 
@@ -87,23 +65,6 @@ local DEFAULT_HOTBARS = {
     [GameEnum.ObjectType.Roadblock] = {"", "", "", "", ""}
 }
 
--- Perma-grants must not save to player data
-local PERMA_GRANTS = {
-    [GameEnum.ObjectType.Unit] = {
-        TestTowerUnit = true,
-        TestHeavyTowerUnit = true,
-    },
-
-    [GameEnum.ObjectType.Roadblock] = {
-
-    }
-}
-
--- Ephemeral currencies only exist in a single game session
-local EPHEMERAL_CURRENCIES = {
-    [GameEnum.CurrencyType.Points] = true,
-}
-
 local PlayerDataTemplate: PlayerData = {
     Currencies = {},
     Transactions = {},
@@ -141,7 +102,7 @@ local playerAdded = function(player: Player)
         end)
 
         if player:IsDescendantOf(Players) then
-            for currencyType in pairs(EPHEMERAL_CURRENCIES) do
+            for currencyType in pairs(EphemeralCurrencies) do
                 ephemeralCurrenciesBalance[currencyType] = 0
             end
 
@@ -181,6 +142,14 @@ PlayerData.WaitForPlayerProfile = function(userId: number)
 
         resolve(playerProfiles[userId])
     end)
+end
+
+PlayerData.WaitForPlayerData = function(userId: number)
+    while (not playerProfiles[userId]) do
+        RunService.Heartbeat:Wait()
+    end
+
+    return playerProfiles[userId].Data
 end
 
 PlayerData.GetPlayerInventory = function(userId: number): PlayerInventory?
@@ -246,7 +215,7 @@ PlayerData.GetPlayerObjectGrants = function(userId: number): PlayerObjectGrants?
 
     local grants = CopyTable(profile.Data.ObjectGrants)
 
-    for objectType, permaGrants in pairs(PERMA_GRANTS) do
+    for objectType, permaGrants in pairs(PermanentObjectGrants) do
         for objectName in pairs(permaGrants) do
             grants[objectType][objectName] = true
         end
@@ -259,7 +228,7 @@ PlayerData.PlayerHasObjectGrant = function(userId: number, objectType: string, o
     local profile = playerProfiles[userId]
     if (not profile) then return false end
 
-    local permaGrantStatus = PERMA_GRANTS[objectType][objectName]
+    local permaGrantStatus = PermanentObjectGrants[objectType][objectName]
     if (permaGrantStatus) then return permaGrantStatus end
 
     return profile.Data.ObjectGrants[objectType][objectName] and true or false
@@ -271,7 +240,7 @@ PlayerData.GrantObjectToPlayer = function(userId: number, objectType: string, ob
     if (not profile) then return false end
 
     -- perma-granted items do not save to player data
-    local permaGrantStatus = PERMA_GRANTS[objectType][objectName]
+    local permaGrantStatus = PermanentObjectGrants[objectType][objectName]
     if (permaGrantStatus) then return true end
 
     local grants = profile.Data.ObjectGrants[objectType]
@@ -323,8 +292,8 @@ PlayerData.GetPlayerAllCurrenciesBalances = function(userId: number): dictionary
 
     local currenciesBalances = {}
 
-    for currency in pairs(GameEnum.CurrencyType) do
-        if (EPHEMERAL_CURRENCIES[currency]) then
+    for currency in pairs(GameEnum.CurrencyType) do -- badness
+        if (EphemeralCurrencies[currency]) then
             currenciesBalances[currency] = ephemeralCurrenciesBalances[userId][currency] or 0
         else
             currenciesBalances[currency] = profile.Data.Currencies[currency] or 0
@@ -338,7 +307,7 @@ PlayerData.GetPlayerCurrencyBalance = function(userId: number, currencyType: str
     local profile = playerProfiles[userId]
     if (not profile) then return end
 
-    if (EPHEMERAL_CURRENCIES[currencyType]) then
+    if (EphemeralCurrencies[currencyType]) then
         return ephemeralCurrenciesBalances[userId][currencyType] or 0
     else
         return profile.Data.Currencies[currencyType] or 0
@@ -353,7 +322,7 @@ PlayerData.DepositCurrencyToPlayer = function(userId: number, currencyType: stri
 
     local currenciesBalances
 
-    if (EPHEMERAL_CURRENCIES[currencyType]) then
+    if (EphemeralCurrencies[currencyType]) then
         currenciesBalances = ephemeralCurrenciesBalances[userId]
     else
         currenciesBalances = profile.Data.Currencies
@@ -385,7 +354,7 @@ PlayerData.WithdrawCurrencyFromPlayer = function(userId: number, currencyType: s
 
     local currenciesBalances
 
-    if (EPHEMERAL_CURRENCIES[currencyType]) then
+    if (EphemeralCurrencies[currencyType]) then
         currenciesBalances = ephemeralCurrenciesBalances[userId]
     else
         currenciesBalances = profile.Data.Currencies
@@ -436,6 +405,12 @@ HotbarChangedEvent.Event:Connect(function(userId, ...)
 
     HotbarChangedRemoteEvent:FireClient(player, userId, ...)
 end)
+
+System.addFunction("WaitForPlayerData", t.wrap(function(player: Player, userId: number)
+    if (player.UserId ~= userId) then return end
+
+    return PlayerData.WaitForPlayerData(userId)
+end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
 System.addFunction("GetPlayerInventory", t.wrap(function(player: Player, userId: number)
     if (player.UserId ~= userId) then return end

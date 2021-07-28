@@ -6,8 +6,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local root = script.Parent
-local PlayerScripts = root.Parent
+
 local LocalPlayer = Players.LocalPlayer
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
 local IconButton = require(root:WaitForChild("IconButton"))
 local ObjectViewport = require(root:WaitForChild("ObjectViewport"))
@@ -17,15 +18,13 @@ local Style = require(root:WaitForChild("Style"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlacementFlow = require(GameModules:WaitForChild("PlacementFlow"))
+local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 local PreviewAttributes = require(GameModules:WaitForChild("PreviewAttributes"))
 local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
-local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
-
-local PlayerData = SystemCoordinator.getSystem("PlayerData")
 
 ---
 
@@ -141,7 +140,6 @@ Inventory.render = function(self)
     if (selectedName) then
         if ((category == GameEnum.UnitType.TowerUnit) or (category == GameEnum.UnitType.FieldUnit)) then
             local attributes = Unit.GetUnitBaseAttributes(selectedName, Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, selectedName))
-            -- badness: remove async call
             local previewAttributes = PreviewAttributes[category]
 
             for i = 1, #previewAttributes do
