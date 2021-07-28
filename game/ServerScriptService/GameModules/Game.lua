@@ -11,7 +11,7 @@ local MapData = ServerStorage:FindFirstChild("MapData")
 local Paths = Workspace:FindFirstChild("Paths")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local TimeSyncService = require(SharedModules:FindFirstChild("Nevermore"))("TimeSyncService")

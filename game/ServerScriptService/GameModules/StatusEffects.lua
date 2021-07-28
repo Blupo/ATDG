@@ -7,7 +7,7 @@ local EffectData = ServerScriptService:FindFirstChild("EffectData")
 local StatusEffectsCommunicators = ReplicatedStorage:FindFirstChild("Communicators"):FindFirstChild("StatusEffects")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local t = require(SharedModules:FindFirstChild("t"))
 
@@ -83,7 +83,7 @@ StatusEffects.ApplyEffect = function(unit, effectName: string, duration: number,
 		if (StatusEffects.UnitHasEffect(unit, interactingEffectName)) then
 			local result = interaction(StatusEffects, unit)
 			
-			if (result == GameEnums.StatusEffectInteractionResult.DoNotApply) then
+			if (result == GameEnum.StatusEffectInteractionResult.DoNotApply) then
 				return
 			end
 		end
@@ -95,7 +95,7 @@ StatusEffects.ApplyEffect = function(unit, effectName: string, duration: number,
 	effectData.OnApplying(unit, effectConfig)
 	
 	-- schedule next action
-	if (effectType == GameEnums.StatusEffectType.Lingering) then		
+	if (effectType == GameEnum.StatusEffectType.Lingering) then		
 		unitEffects[effectName] = scheduleCallback(nil, function()
 			local onRemoving = effectData.OnRemoving
 
@@ -105,7 +105,7 @@ StatusEffects.ApplyEffect = function(unit, effectName: string, duration: number,
 			
 			unitEffects[effectName] = nil
 		end, duration)
-	elseif (effectType == GameEnums.StatusEffectType.Periodic) then
+	elseif (effectType == GameEnum.StatusEffectType.Periodic) then
 		local totalElapsed = 0
 		local periodicCallback
 		

@@ -15,7 +15,7 @@ local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
-local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 ---
 

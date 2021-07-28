@@ -13,7 +13,7 @@ local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
-local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 ---
 

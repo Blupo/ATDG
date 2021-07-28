@@ -19,7 +19,7 @@ local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
 local TimeSyncService = require(PlayerModules:WaitForChild("TimeSyncService"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
-local GameEnums = require(SharedModules:WaitForChild("GameEnums"))
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local Promise = require(SharedModules:WaitForChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
@@ -36,28 +36,28 @@ local STAT_TEXT_SIZE = 24
 local CORNER_RADIUS_PX = 12
 
 local BKG_COLORS = {
-    [GameEnums.GamePhase.Intermission] = {
+    [GameEnum.GamePhase.Intermission] = {
         CurrentRoundPrimaryBkg = Color3.new(1, 1, 1),
         CurrentRoundSecondaryBkg = Color3.new(0.5, 0.5, 0.5),
         TotalRoundsPrimaryBkg = Color3.new(1, 1, 1),
         TotalRoundsSecondaryBkg = Color3.new(0.5, 0.5, 0.5),
     },
 
-    [GameEnums.GamePhase.FinalIntermission] = {
+    [GameEnum.GamePhase.FinalIntermission] = {
         CurrentRoundPrimaryBkg = Color3.new(0.4, 0.4, 0.4),
         CurrentRoundSecondaryBkg = Color3.new(0.5, 0.5, 0.5),
         TotalRoundsPrimaryBkg = Color3.new(0.4, 0.4, 0.4),
         TotalRoundsSecondaryBkg = Color3.new(0.5, 0.5, 0.5),
     },
 
-    [GameEnums.GamePhase.Round] = {
+    [GameEnum.GamePhase.Round] = {
         CurrentRoundPrimaryBkg = Color3.new(1, 1, 0),
         CurrentRoundSecondaryBkg = Color3.new(1, 0, 1),
         TotalRoundsPrimaryBkg = Color3.fromRGB(255, 85, 127),
         TotalRoundsSecondaryBkg = Color3.fromRGB(255, 128, 85),
     },
 
-    [GameEnums.GamePhase.Preparation] = {
+    [GameEnum.GamePhase.Preparation] = {
         CurrentRoundPrimaryBkg = Color3.new(1, 1, 1),
         CurrentRoundSecondaryBkg = Color3.new(1, 1, 1),
         TotalRoundsPrimaryBkg = Color3.new(1, 1, 1),
@@ -286,9 +286,9 @@ GameState.init = function(self)
     self.getPhaseText = function(phase)
         local phaseText
 
-        if (phase == GameEnums.GamePhase.Round) then
+        if (phase == GameEnum.GamePhase.Round) then
             phaseText = phase .. " " .. self.state.currentRound
-        elseif (phase == GameEnums.GamePhase.FinalIntermission) then
+        elseif (phase == GameEnum.GamePhase.FinalIntermission) then
             phaseText = "Game over"
         else
             phaseText = phase
@@ -474,11 +474,11 @@ GameState.init = function(self)
         phaseText = "",
         enemiesRemaining = 0,
         centralTowerHP = 0,
-        lastPhase = GameEnums.GamePhase.Preparation,
+        lastPhase = GameEnum.GamePhase.Preparation,
 
         phaseTransitionContainerRotation = randomValueInRange(-8, 8),
-        bkgColors = BKG_COLORS[GameEnums.GamePhase.Preparation],
-        bkgColorTransitions = generateTransition(GameEnums.GamePhase.Preparation, GameEnums.GamePhase.Preparation),
+        bkgColors = BKG_COLORS[GameEnum.GamePhase.Preparation],
+        bkgColorTransitions = generateTransition(GameEnum.GamePhase.Preparation, GameEnum.GamePhase.Preparation),
 
         phaseTransitionChildrenColors = {
             Color3.fromHSV(math.random(), 1, 1),
@@ -512,7 +512,7 @@ GameState.didMount = function(self)
     self.unitAddedConnection = Unit.UnitAdded:Connect(function(unitId)
         local unit = Unit.fromId(unitId)
         if (unit.Owner ~= 0) then return end
-        if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return false end
+        if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return false end
 
         self:setState({
             enemiesRemaining = self.state.enemiesRemaining + 1
@@ -522,7 +522,7 @@ GameState.didMount = function(self)
     self.unitRemovingConnection = Unit.UnitRemoving:Connect(function(unitId)
         local unit = Unit.fromId(unitId)
         if (unit.Owner ~= 0) then return end
-        if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return false end
+        if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return false end
 
         self:setState({
             enemiesRemaining = self.state.enemiesRemaining - 1
@@ -574,7 +574,7 @@ GameState.didMount = function(self)
 
         enemiesRemaining = #Unit.GetUnits(function(unit)
             if (unit.Owner ~= 0) then return false end
-            if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return false end
+            if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return false end
 
             return true
         end)

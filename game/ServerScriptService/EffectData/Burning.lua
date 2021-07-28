@@ -3,7 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
@@ -11,7 +11,7 @@ local DMG_RATIO = 5/100
 local BURST_RATIO = 10/100
 
 return {
-	EffectType = GameEnums.StatusEffectType.Periodic,
+	EffectType = GameEnum.StatusEffectType.Periodic,
 	Interval = 1,
 	
 	OnApplying = function(unit)
@@ -25,11 +25,11 @@ return {
 			StatusEffects.RemoveEffect(unit, "Frozen")
 			unit:TakeDamage(unit:GetAttribute("HP") * BURST_RATIO)
 
-			return GameEnums.StatusEffectInteractionResult.DoNotApply
+			return GameEnum.StatusEffectInteractionResult.DoNotApply
 		end,
 		
 		Immune = function()
-			return GameEnums.StatusEffectInteractionResult.DoNotApply
+			return GameEnum.StatusEffectInteractionResult.DoNotApply
 		end,
 	}
 }

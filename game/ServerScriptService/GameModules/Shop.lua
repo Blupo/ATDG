@@ -11,7 +11,7 @@ local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local ShopPrices = require(SharedModules:FindFirstChild("ShopPrices"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))

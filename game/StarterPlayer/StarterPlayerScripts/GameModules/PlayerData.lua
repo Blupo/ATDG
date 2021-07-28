@@ -6,7 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local EphemeralCurrencies = require(SharedModules:FindFirstChild("EphemeralCurrencies"))
-local GameEnum = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local PermanentObjectGrants = require(SharedModules:FindFirstChild("PermanentObjectGrants"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 

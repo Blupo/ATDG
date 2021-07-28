@@ -26,7 +26,7 @@ local PlacementFlow = require(PlayerModules:WaitForChild("PlacementFlow"))
 local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
-local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 ---
 

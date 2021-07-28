@@ -18,7 +18,7 @@ local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 -- local RoadblockModels = ReplicatedStorage:WaitForChild("RoadblocksModels")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
-local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 local LocalPlayer = Players.LocalPlayer
 

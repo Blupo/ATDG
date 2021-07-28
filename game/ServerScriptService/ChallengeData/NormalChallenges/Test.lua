@@ -3,7 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
@@ -95,9 +95,9 @@ return {
 	AttributeModifiers = {
 		--[[
 		[1] = {
-			[GameEnums.UnitType.FieldUnit] = {
+			[GameEnum.UnitType.FieldUnit] = {
 				DEF = {
-					Type = GameEnums.AttributeModifierType.Additive,
+					Type = GameEnum.AttributeModifierType.Additive,
 					
 					Modifier = function()
 						return 5
@@ -107,7 +107,7 @@ return {
 		},
 		
 		[2] = {
-			[GameEnums.UnitType.FieldUnit] = {
+			[GameEnum.UnitType.FieldUnit] = {
 				DEF = false,
 			}
 		}

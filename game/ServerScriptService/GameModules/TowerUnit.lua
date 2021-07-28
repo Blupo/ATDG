@@ -4,7 +4,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
@@ -22,7 +22,7 @@ local getModelBottom = function(model): Vector3
 end
 
 local SORT_CALLBACKS = {
-	[GameEnums.UnitTargeting.Closest] = function(unit)
+	[GameEnum.UnitTargeting.Closest] = function(unit)
 		local thisUnitModel: Model = unit.Model
 		local thisModelBottom: Vector3 = getModelBottom(thisUnitModel)
 		
@@ -40,7 +40,7 @@ local SORT_CALLBACKS = {
 		end
 	end,
 	
-	[GameEnums.UnitTargeting.Farthest] = function(unit)
+	[GameEnum.UnitTargeting.Farthest] = function(unit)
 		local thisUnitModel: Model = unit.Model
 		local thisModelBottom: Vector3 = getModelBottom(thisUnitModel)
 
@@ -58,7 +58,7 @@ local SORT_CALLBACKS = {
 		end
 	end,
 	
-	[GameEnums.UnitTargeting.First] = function()
+	[GameEnum.UnitTargeting.First] = function()
 		return function(a, b)
 			local aPursuitInfo, bPursuitInfo = Path.GetPursuitInfo(a), Path.GetPursuitInfo(b)
 
@@ -74,7 +74,7 @@ local SORT_CALLBACKS = {
 		end
 	end,
 
-	[GameEnums.UnitTargeting.Last] = function()
+	[GameEnum.UnitTargeting.Last] = function()
 		return function(a, b)
 			local aPursuitInfo, bPursuitInfo = Path.GetPursuitInfo(a), Path.GetPursuitInfo(b)
 
@@ -90,13 +90,13 @@ local SORT_CALLBACKS = {
 		end
 	end,
 	
-	[GameEnums.UnitTargeting.Strongest] = function()
+	[GameEnum.UnitTargeting.Strongest] = function()
 		return function(a, b)
 			return a:GetAttribute("HP") > b:GetAttribute("HP")
 		end
 	end,
 	
-	[GameEnums.UnitTargeting.Fastest] = function()
+	[GameEnum.UnitTargeting.Fastest] = function()
 		return function(a, b)
 			return a:GetAttribute("SPD") > b:GetAttribute("SPD")
 		end
@@ -119,7 +119,7 @@ local unitDamageCallback = function(thisUnit)
 	local unitTargeting = thisUnit:GetAttribute("UnitTargeting")
 	
 	local unitsInRange = Unit.GetUnits(function(unit)
-		if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return false end
+		if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return false end
 		if (unit:GetAttribute("HP") <= 0) then return false end
 		
 		local unitModel: Model = unit.Model
@@ -131,7 +131,7 @@ local unitDamageCallback = function(thisUnit)
 	if (#unitsInRange < 1) then return end
 	local targetUnit
 	
-	if (unitTargeting == GameEnums.UnitTargeting.Random) then
+	if (unitTargeting == GameEnum.UnitTargeting.Random) then
 		targetUnit = unitsInRange[math.random(1, #unitsInRange)]
 	else
 		table.sort(unitsInRange, SORT_CALLBACKS[unitTargeting](thisUnit))
@@ -147,7 +147,7 @@ local unitDamageCallback = function(thisUnit)
 end
 
 local initUnit = function(unit)
-	if (unit.Type ~= GameEnums.UnitType.TowerUnit) then return end
+	if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return end
 
 	local unitId = unit.Id
 	local lastCheckpoint = os.clock()
@@ -193,7 +193,7 @@ Unit.UnitAdded:Connect(function(unitId)
 end)
 
 Unit.UnitRemoving:Connect(function(unitId)
-	if (Unit.fromId(unitId).Type ~= GameEnums.UnitType.TowerUnit) then return end
+	if (Unit.fromId(unitId).Type ~= GameEnum.UnitType.TowerUnit) then return end
 	
 	local unitTimer = unitTimers[unitId]
 	local unitAttributeChangedConnection = unitAttributeChangedConnections[unitId]

@@ -3,12 +3,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
 return {
-	Type = GameEnums.UnitType.TowerUnit,
+	Type = GameEnum.UnitType.TowerUnit,
 	
 	Progression = {
 		[1] = {
@@ -20,8 +20,8 @@ return {
 				RANGE = 50,
 				SPD = 0,
 
-				UnitTargeting = GameEnums.UnitTargeting.First,
-				PathType = GameEnums.PathType.Ground,
+				UnitTargeting = GameEnum.UnitTargeting.First,
+				PathType = GameEnum.PathType.Ground,
 			},
 		},
 		

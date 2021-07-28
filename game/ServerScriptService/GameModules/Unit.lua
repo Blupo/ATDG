@@ -9,7 +9,7 @@ local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
@@ -33,7 +33,7 @@ local abilitiesCache = {}
 
 local attributeChangedCallbacks = {
 	HP = function(unit, newHP)
-		if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return end
+		if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
 		
 		if (newHP <= 0) then
 			unit.__diedEvent:Fire()
@@ -261,9 +261,9 @@ Unit.GetAttribute = function(self, attributeName: string)
 	local attributeModifiers = self.__attributeModifiers[attributeName]
 	
 	if (attributeModifiers) then
-		local multiplicativeModifiers = attributeModifiers[GameEnums.AttributeModifierType.Multiplicative]
-		local additiveModifiers = attributeModifiers[GameEnums.AttributeModifierType.Additive]
-		local setModifiers = attributeModifiers[GameEnums.AttributeModifierType.Set]
+		local multiplicativeModifiers = attributeModifiers[GameEnum.AttributeModifierType.Multiplicative]
+		local additiveModifiers = attributeModifiers[GameEnum.AttributeModifierType.Additive]
+		local setModifiers = attributeModifiers[GameEnum.AttributeModifierType.Set]
 		
 		if (dictionaryCount(setModifiers) > 0) then		
 			local _, modification = next(setModifiers)
@@ -351,9 +351,9 @@ Unit.ApplyAttributeModifier = function(self, id: string, attributeName: string, 
 	
 	if (not attributeModifiers) then
 		self.__attributeModifiers[attributeName] = {
-			[GameEnums.AttributeModifierType.Multiplicative] = {},
-			[GameEnums.AttributeModifierType.Additive] = {},
-			[GameEnums.AttributeModifierType.Set] = {},
+			[GameEnum.AttributeModifierType.Multiplicative] = {},
+			[GameEnum.AttributeModifierType.Additive] = {},
+			[GameEnum.AttributeModifierType.Set] = {},
 		}
 		
 		attributeModifiers = self.__attributeModifiers[attributeName]
@@ -365,13 +365,13 @@ Unit.ApplyAttributeModifier = function(self, id: string, attributeName: string, 
 	
 	local oldAttributeValue = self:GetAttribute(attributeName)
 	
-	if ((type(oldAttributeValue) ~= "number") and (modifierType ~= GameEnums.AttributeModifierType.Set)) then
+	if ((type(oldAttributeValue) ~= "number") and (modifierType ~= GameEnum.AttributeModifierType.Set)) then
 		return
 	end
 	
 	specificAttributeModifiers[id] = modifier
 	
-	if ((modifierType == GameEnums.AttributeModifierType.Set) and (dictionaryCount(specificAttributeModifiers) > 1)) then
+	if ((modifierType == GameEnum.AttributeModifierType.Set) and (dictionaryCount(specificAttributeModifiers) > 1)) then
 		warn("Multiple attribute modifiers of type Set are present, there should be at most 1")
 	end
 	
@@ -467,7 +467,7 @@ System.addFunction("SetAttribute", t.wrap(function(player: Player, unitId: strin
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return end
 	if (unit.Owner ~= player.UserId) then return end
-	if (unit.Type ~= GameEnums.UnitType.TowerUnit) then return end
+	if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return end
 	if (attributeName ~= "UnitTargeting") then return end
 	
 	unit:SetAttribute(attributeName, newValue)

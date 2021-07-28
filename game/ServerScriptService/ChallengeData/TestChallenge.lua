@@ -3,7 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
@@ -77,13 +77,13 @@ return {
 	
 	Abilities = {
 		[1] = {
-			[GameEnums.UnitType.FieldUnit] = {
+			[GameEnum.UnitType.FieldUnit] = {
 				TestAbility = true,
 			}
 		},
 		
 		[3] = {
-			[GameEnums.UnitType.FieldUnit] = {
+			[GameEnum.UnitType.FieldUnit] = {
 				TestAbility = false,
 			}
 		}
@@ -94,11 +94,11 @@ return {
 		[1] = {
 			-- Key = Unit name or a UnitType
 			-- Value: dictionary
-			[GameEnums.UnitType.FieldUnit] = {
+			[GameEnum.UnitType.FieldUnit] = {
 				-- Key = Stat name
 				-- Value: false = Remove modifier, dictionary = Add/change modifier, nil = Do nothing
 				HP = {
-					Type = GameEnums.AttributeModifierType.Multiplicative,
+					Type = GameEnum.AttributeModifierType.Multiplicative,
 					
 					Modifier = function(hp)
 						return hp * 2
@@ -106,7 +106,7 @@ return {
 				},
 				
 				DEF = {
-					Type = GameEnums.AttributeModifierType.Multiplicative,
+					Type = GameEnum.AttributeModifierType.Multiplicative,
 					
 					Modifiers = function(def)
 						return def * 2
@@ -121,7 +121,7 @@ return {
 		[1] = {
 			-- Key: Unit name or a UnitType
 			-- Value: dictionary
-			[GameEnums.UnitType.FieldUnit] = {
+			[GameEnum.UnitType.FieldUnit] = {
 				-- Key = Effect name
 				-- Value: number = Apply, false = Remove, nil = Do nothing
 				Immune = 86400,

@@ -3,23 +3,23 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
 local BURST_RATIO = 10/100
 
 return {
-	EffectType = GameEnums.StatusEffectType.Lingering,
+	EffectType = GameEnum.StatusEffectType.Lingering,
 	
 	OnApplying = function(unit)
-		unit:ApplyAttributeModifier("Frozen", "SPD", GameEnums.AttributeModifierType.Set, function()
+		unit:ApplyAttributeModifier("Frozen", "SPD", GameEnum.AttributeModifierType.Set, function()
 			return 0
 		end)
 	end,
 	
 	OnRemoving = function(unit)
-		unit:RemoveAttributeModifier("Frozen", "SPD", GameEnums.AttributeModifierType.Set)
+		unit:RemoveAttributeModifier("Frozen", "SPD", GameEnum.AttributeModifierType.Set)
 	end,
 	
 	Interactions = {
@@ -27,7 +27,7 @@ return {
 			StatusEffects.RemoveEffect(unit, "Burning")
 			unit:TakeDamage(unit:GetAttribute("HP") * BURST_RATIO)
 			
-			return GameEnums.StatusEffectInteractionResult.DoNotApply
+			return GameEnum.StatusEffectInteractionResult.DoNotApply
 		end,
 	}
 }

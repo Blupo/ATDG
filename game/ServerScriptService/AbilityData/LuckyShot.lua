@@ -5,15 +5,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
 local CHANCE = 20/100
 
 return {
-	UnitType = GameEnums.UnitType.TowerUnit,
-	AbilityType = GameEnums.AbilityType.OnHit,
+	UnitType = GameEnum.UnitType.TowerUnit,
+	AbilityType = GameEnum.AbilityType.OnHit,
 	
 	Callback = function()
 		local roll = math.random()

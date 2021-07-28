@@ -8,7 +8,7 @@ local Workspace = game:GetService("Workspace")
 local Paths = Workspace:FindFirstChild("Paths")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
@@ -32,14 +32,14 @@ export type PursuitInfo = {
 local activePursuits: {[string]: PursuitInfo} = {}
 
 local getPathDistance = function(pathNumber: number, pathType: string, direction: string?, upToWaypoint: number?): number
-	direction = direction or GameEnums.PursuitDirection.Forward 
+	direction = direction or GameEnum.PursuitDirection.Forward 
 		
 	local waypoints = Paths:FindFirstChild(pathType):FindFirstChild(pathNumber)
 	if (not waypoints) then return -1 end
 	
 	local distance = 0
 	
-	if (direction == GameEnums.PursuitDirection.Forward) then
+	if (direction == GameEnum.PursuitDirection.Forward) then
 		for i = 0, (upToWaypoint or (#waypoints:GetChildren() - 2)) do
 			local waypoint = waypoints:FindFirstChild(tostring(i))
 			local nextWaypoint = waypoints:FindFirstChild(tostring(i + 1))
@@ -70,9 +70,9 @@ Path.GetPursuitInfo = function(unit): PursuitInfo?
 end
 
 Path.PursuePath = function(unit, pathNumber: number, direction: string?)
-	direction = direction or GameEnums.PursuitDirection.Forward
+	direction = direction or GameEnum.PursuitDirection.Forward
 	
-	if (unit.Type ~= GameEnums.UnitType.FieldUnit) then return end
+	if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
 	if (activePursuits[unit.Id] ~= nil) then return end
 	
 	local waypoints = Paths:FindFirstChild(unit:GetAttribute("PathType")):FindFirstChild(pathNumber)
@@ -89,8 +89,8 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
 	local primaryPartCenterOffset = primaryPart.Position - boundingBoxCFrame.Position
 	local primaryPartHeightOffset = (boundingBoxSize.Y / 2) + primaryPartCenterOffset.Y
 	
-	local firstWaypointNum = (direction == GameEnums.PursuitDirection.Forward) and 0 or (#waypoints:GetChildren() - 1)
-	local secondWaypointNum = firstWaypointNum + ((direction == GameEnums.PursuitDirection.Forward) and 1 or -1)
+	local firstWaypointNum = (direction == GameEnum.PursuitDirection.Forward) and 0 or (#waypoints:GetChildren() - 1)
+	local secondWaypointNum = firstWaypointNum + ((direction == GameEnum.PursuitDirection.Forward) and 1 or -1)
 	
 	local unitSPDChanged = unit.AttributeChanged:Connect(function(attributeName: string, newValue: any)
 		if (attributeName ~= "SPD") then return end
@@ -201,17 +201,17 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
 						if (
 							(
 								(pursuitInfo.NextWaypoint == (#waypoints:GetChildren() - 1)) and 
-								(pursuitInfo.Direction == GameEnums.PursuitDirection.Forward)
+								(pursuitInfo.Direction == GameEnum.PursuitDirection.Forward)
 							) or (
 								(pursuitInfo.NextWaypoint == 0) and 
-								(pursuitInfo.Direction == GameEnums.PursuitDirection.Reverse)
+								(pursuitInfo.Direction == GameEnum.PursuitDirection.Reverse)
 							)
 						) then
 							-- done
 							cleanup(true)
 						else
 							local thisWaypoint = pursuitInfo.NextWaypoint
-							local nextWaypoint = thisWaypoint + ((pursuitInfo.Direction == GameEnums.PursuitDirection.Forward) and 1 or -1)
+							local nextWaypoint = thisWaypoint + ((pursuitInfo.Direction == GameEnum.PursuitDirection.Forward) and 1 or -1)
 							
 							pursuitInfo.NextWaypoint = nextWaypoint
 							waypointAttachment.Parent = waypoints:FindFirstChild(tostring(nextWaypoint))
@@ -234,9 +234,9 @@ Path.SwitchPursuitDirection = function(unit)
 	
 	local oldDirection = activePursuits[unit.Id].Direction
 	
-	activePursuits[unit.Id].Direction = (oldDirection == GameEnums.PursuitDirection.Forward) and
-		GameEnums.PursuitDirection.Reverse
-	or GameEnums.PursuitDirection.Forward 
+	activePursuits[unit.Id].Direction = (oldDirection == GameEnum.PursuitDirection.Forward) and
+		GameEnum.PursuitDirection.Reverse
+	or GameEnum.PursuitDirection.Forward 
 end
 
 Path.PausePursuit = function(unit)
@@ -281,15 +281,15 @@ coroutine.resume(coroutine.create(function()
 				local pathDistance = getPathDistance(pursuitInfo.Path, pathType)
 				
 				local nextWaypoint = pursuitInfo.NextWaypoint
-				local currentWaypoint = nextWaypoint + ((pursuitInfo.Direction == GameEnums.PursuitDirection.Forward) and -1 or 1)
+				local currentWaypoint = nextWaypoint + ((pursuitInfo.Direction == GameEnum.PursuitDirection.Forward) and -1 or 1)
 				local distanceUpToLastWaypoint = getPathDistance(pursuitInfo.Path, pathType, pursuitInfo.Direction,
-					nextWaypoint + ((pursuitInfo.Direction == GameEnums.PursuitDirection.Forward) and -2 or 2))
+					nextWaypoint + ((pursuitInfo.Direction == GameEnum.PursuitDirection.Forward) and -2 or 2))
 				
 				local waypointPosition = waypoints:FindFirstChild(tostring(currentWaypoint)).Position
 				local currentPosition = boundingBoxCFrame.Position - Vector3.new(0, boundingBoxSize.Y / 2, 0)
 				
 				pursuitInfo.Progress = (distanceUpToLastWaypoint + (currentPosition - waypointPosition).Magnitude) / pathDistance
-				pursuitInfo.AbsoluteProgress = (pursuitInfo.Direction == GameEnums.PursuitDirection.Forward) and pursuitInfo.Progress or (1 - pursuitInfo.Progress)
+				pursuitInfo.AbsoluteProgress = (pursuitInfo.Direction == GameEnum.PursuitDirection.Forward) and pursuitInfo.Progress or (1 - pursuitInfo.Progress)
 			end
 		end
 		

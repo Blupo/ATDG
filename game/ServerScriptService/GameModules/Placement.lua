@@ -5,7 +5,7 @@ local Workspace = game:GetService("Workspace")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local TowerUnitSurfaces = require(SharedModules:FindFirstChild("TowerUnitSurfaces"))
 
 local RoadblockModels = ReplicatedStorage:FindFirstChild("RoadblockModels")
@@ -33,7 +33,7 @@ raycastParams.IgnoreWater = true
 local makePlacementResult = function(failureReason: string?): PlacementResult
 	return {
 		CanPlace = (not failureReason) and true or false,
-		FailureReason = failureReason or GameEnums.PlacementFailureReason.None
+		FailureReason = failureReason or GameEnum.PlacementFailureReason.None
 	}
 end
 
@@ -123,15 +123,15 @@ Placement.CanPlace = function(owner: number, objType: string, objName: string, p
 	local thisObjPlacementArea
 
 	-- check that the model exists
-	if (objType == GameEnums.ObjectType.Unit) then
+	if (objType == GameEnum.ObjectType.Unit) then
 		thisObjModel = UnitModels:FindFirstChild(objName)
-	elseif (objType == GameEnums.ObjectType.Roadblock) then
+	elseif (objType == GameEnum.ObjectType.Roadblock) then
 		thisObjModel = RoadblockModels:FindFirstChild(objName)
 	else
-		return makePlacementResult(GameEnums.PlacementFailureReason.ObjectDoesNotExist)
+		return makePlacementResult(GameEnum.PlacementFailureReason.ObjectDoesNotExist)
 	end
 
-	if (not thisObjModel) then return makePlacementResult(GameEnums.PlacementFailureReason.ObjectDoesNotExist) end
+	if (not thisObjModel) then return makePlacementResult(GameEnum.PlacementFailureReason.ObjectDoesNotExist) end
 	thisObjPlacementArea = thisObjModel:FindFirstChild("PlacementArea")
 
 	--[[
@@ -152,21 +152,21 @@ Placement.CanPlace = function(owner: number, objType: string, objName: string, p
 
 	local raycastResult = Workspace:Raycast(position + Vector3.new(0, 1, 0), Vector3.new(0, -2, 0), raycastParams)
 
-	if (not raycastResult) then return makePlacementResult(GameEnums.PlacementFailureReason.InvalidPosition) end
-	if (not raycastResult.Position:FuzzyEq(position)) then return makePlacementResult(GameEnums.PlacementFailureReason.InvalidPosition) end
-	if (not raycastResult.Normal:FuzzyEq(Vector3.new(0, 1, 0), 1E-1)) then return makePlacementResult(GameEnums.PlacementFailureReason.NotPointingUp) end
+	if (not raycastResult) then return makePlacementResult(GameEnum.PlacementFailureReason.InvalidPosition) end
+	if (not raycastResult.Position:FuzzyEq(position)) then return makePlacementResult(GameEnum.PlacementFailureReason.InvalidPosition) end
+	if (not raycastResult.Normal:FuzzyEq(Vector3.new(0, 1, 0), 1E-1)) then return makePlacementResult(GameEnum.PlacementFailureReason.NotPointingUp) end
 
 	local raycastResultPart = raycastResult.Instance
 
 	if (not CollectionService:HasTag(
 		raycastResultPart,
-		(objType == GameEnums.ObjectType.Unit) and TowerUnitSurfaces[objName] or GameEnums.SurfaceType.Path
+		(objType == GameEnum.ObjectType.Unit) and TowerUnitSurfaces[objName] or GameEnum.SurfaceType.Path
 		)) then
-		return makePlacementResult(GameEnums.PlacementFailureReason.IncorrectSurfaceType)
+		return makePlacementResult(GameEnum.PlacementFailureReason.IncorrectSurfaceType)
 	end
 
 	if (not isEnclosed(CFrame.new(position) * CFrame.fromEulerAnglesXYZ(0, rotation, 0), thisObjPlacementArea.Size, raycastResultPart.CFrame, raycastResultPart.Size)) then
-		return makePlacementResult(GameEnums.PlacementFailureReason.NotBounded)
+		return makePlacementResult(GameEnum.PlacementFailureReason.NotBounded)
 	end
 
 	local _, thisObjBoundingBoxSize = thisObjModel:GetBoundingBox()
@@ -177,12 +177,12 @@ Placement.CanPlace = function(owner: number, objType: string, objName: string, p
 	)
 
 	if (verticalClearanceRaycastResult and (not verticalClearanceRaycastResult.Position:FuzzyEq(position))) then
-		return makePlacementResult(GameEnums.PlacementFailureReason.NoVerticalClearance)
+		return makePlacementResult(GameEnum.PlacementFailureReason.NoVerticalClearance)
 	end
 
-	local objectsInProximity = (objType == GameEnums.ObjectType.Unit) and
+	local objectsInProximity = (objType == GameEnum.ObjectType.Unit) and
 		Unit.GetUnits(function(unit)
-			if (unit.Type ~= GameEnums.UnitType.TowerUnit) then return false end
+			if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return false end
 
 			local objModel = unit.Model
 			local objPlacementArea = objModel:FindFirstChild("PlacementArea")
@@ -209,7 +209,7 @@ Placement.CanPlace = function(owner: number, objType: string, objName: string, p
 		end)
 	or {}
 
-	if (#objectsInProximity > 0) then return makePlacementResult(GameEnums.PlacementFailureReason.ObjectCollision) end
+	if (#objectsInProximity > 0) then return makePlacementResult(GameEnum.PlacementFailureReason.ObjectCollision) end
 
 	return makePlacementResult()
 end
@@ -228,11 +228,11 @@ Placement.PlaceObject = function(owner: number, objType: string, objName: string
 	
 	local objModel
 
-	if (objType == GameEnums.ObjectType.Unit) then
+	if (objType == GameEnum.ObjectType.Unit) then
 		local newUnit = Unit.new(objName, owner)
 		
 		objModel = newUnit.Model
-	elseif (objType == GameEnums.ObjectType.Roadblock) then
+	elseif (objType == GameEnum.ObjectType.Roadblock) then
 		objModel = RoadblockModels:FindFirstChild(objName)
 	end
 	

@@ -1,4 +1,4 @@
-local GameEnums = require(game.ReplicatedStorage.Shared.GameEnums)
+local GameEnum = require(game.ReplicatedStorage.Shared.GameEnum)
 local Path = require(script.Parent.GameModules.Path)
 local StatusEffects = require(script.Parent.GameModules.StatusEffects)
 local Unit = require(script.Parent.GameModules.Unit)
@@ -25,7 +25,7 @@ while true do
 
 	newUnit.Model.Parent = workspace
 	newUnit.Model.PrimaryPart:SetNetworkOwner(nil)
-	Path.PursuePath(newUnit, 1, GameEnums.PursuitDirection.Reverse)
+	Path.PursuePath(newUnit, 1, GameEnum.PursuitDirection.Reverse)
 	
 	if (math.random() < RND_SE_CHANCE) then
 		spawn(function()
@@ -39,7 +39,7 @@ end
 
 --[[
 do
-	local newUnit = Unit.new(GameEnums.UnitType.FieldUnit, "TestFieldUnit")
+	local newUnit = Unit.new(GameEnum.UnitType.FieldUnit, "TestFieldUnit")
 
 	newUnit.Model.Parent = workspace
 	newUnit.Model.HumanoidRootPart:SetNetworkOwner(nil)

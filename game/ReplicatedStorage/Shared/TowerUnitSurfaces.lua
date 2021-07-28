@@ -3,11 +3,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ---
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnums = require(SharedModules:FindFirstChild("GameEnums"))
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
 return {
-	TestTowerUnit = GameEnums.SurfaceType.Terrain,
-	TestHeavyTowerUnit = GameEnums.SurfaceType.Terrain,
+	TestTowerUnit = GameEnum.SurfaceType.Terrain,
+	TestHeavyTowerUnit = GameEnum.SurfaceType.Terrain,
 }
