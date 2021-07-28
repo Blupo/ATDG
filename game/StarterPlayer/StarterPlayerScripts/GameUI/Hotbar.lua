@@ -17,10 +17,12 @@ local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
-local PlacementFlow = require(GameModules:WaitForChild("PlacementFlow"))
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
-local PreviewAttributes = require(GameModules:WaitForChild("PreviewAttributes"))
 local Unit = require(GameModules:WaitForChild("Unit"))
+
+local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
+local PlacementFlow = require(PlayerModules:WaitForChild("PlacementFlow"))
+local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"))
 
 ---
 

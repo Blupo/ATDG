@@ -15,8 +15,8 @@ local Padding = require(root:WaitForChild("Padding"))
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))
 
-local Util = PlayerScripts:WaitForChild("Util")
-local TimeSyncService = require(Util:WaitForChild("TimeSyncService"))
+local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
+local TimeSyncService = require(PlayerModules:WaitForChild("TimeSyncService"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnums = require(SharedModules:WaitForChild("GameEnums"))

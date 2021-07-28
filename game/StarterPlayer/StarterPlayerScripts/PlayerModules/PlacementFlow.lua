@@ -9,7 +9,10 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
-local GameModules = script.Parent
+local LocalPlayer = Players.LocalPlayer
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+
+local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Placement = require(GameModules:WaitForChild("Placement"))
 local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
@@ -20,11 +23,10 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
 local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 -- local RoadblockModels = ReplicatedStorage:WaitForChild("RoadblockModels")
 
+local CurrentCamera = Workspace.CurrentCamera
+
 local StartedEvent = Instance.new("BindableEvent")
 local StoppedEvent = Instance.new("BindableEvent")
-
-local LocalPlayer = Players.LocalPlayer
-local CurrentCamera = Workspace.CurrentCamera
 
 local PointerPart = Instance.new("Part")
 PointerPart.CFrame = CFrame.new(0, math.huge, 0)

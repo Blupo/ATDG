@@ -17,11 +17,13 @@ local Roact = require(root:WaitForChild("Roact"))
 local Style = require(root:WaitForChild("Style"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
-local PlacementFlow = require(GameModules:WaitForChild("PlacementFlow"))
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
-local PreviewAttributes = require(GameModules:WaitForChild("PreviewAttributes"))
 local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
+
+local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
+local PlacementFlow = require(PlayerModules:WaitForChild("PlacementFlow"))
+local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnums"))
