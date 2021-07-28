@@ -70,6 +70,8 @@ local Unit = {}
 Unit.UnitAdded = UnitAddedEvent.Event
 Unit.UnitRemoving = UnitRemovingEvent.Event
 
+--- Static
+
 Unit.fromModel = function(model: Model)
 	for _, unit in pairs(units) do
 		if (unit.Model == model) then
@@ -162,9 +164,29 @@ Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictiona
 	return attributes
 end
 
+Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local progressionData = unitPersistentUpgradeLevels[owner]
+
+	if (not progressionData) then
+		unitPersistentUpgradeLevels[owner] = {}
+		progressionData = unitPersistentUpgradeLevels[owner]
+	end
+
+	local nextLevel = (progressionData[unitName] or 1) + 1
+	local nextLevelProgression = unitDataCache[unitName].Progression[nextLevel]
+	if (not nextLevelProgression) then return end
+
+	progressionData[unitName] = nextLevel
+	UnitPersistentUpgradedEvent:Fire(owner, unitName, nextLevel)
+end
+
+--- Class
+
 Unit.new = function(unitName: string, owner: number?)
 	owner = owner or 0
-	assert(Unit.DoesUnitExist(unitName), unitName .. " is not a valid unit")
+	assert(Unit.DoesUnitExist(unitName), unitName .. " is not a valid Unit")
 
 	local unitData = unitDataCache[unitName]
 	local unitModel = UnitModels:FindFirstChild(unitName)
@@ -173,9 +195,28 @@ Unit.new = function(unitName: string, owner: number?)
 	if (unitPersistentUpgradeLevels[owner]) then
 		newUnitLevel = unitPersistentUpgradeLevels[owner][unitName] or 1
 	end
-	
-	local newBaseAttributes = copy(unitData.Progression[newUnitLevel].Attributes)
-	newBaseAttributes.HP = newBaseAttributes.MaxHP
+
+	local attributes = {}
+	local abilities = {}
+
+	for level = 1, newUnitLevel do
+		local unitProgression = unitData.Progression[level]
+
+		if (unitProgression) then
+			local levelAttributes = unitProgression.Attributes or {}
+			local levelAbilities = unitProgression.Abilities or {}
+
+			for attribute, value in pairs(levelAttributes) do
+				attributes[attribute] = value
+			end
+
+			for ability in pairs(levelAbilities) do
+				abilities[ability] = true
+			end
+		end
+	end
+
+	attributes.HP = attributes.MaxHP
 	
 	local newBaseModel = unitModel:Clone()
 	local diedEvent = Instance.new("BindableEvent")
@@ -197,9 +238,9 @@ Unit.new = function(unitName: string, owner: number?)
 		__diedEvent = diedEvent,
 		__attributeChangedEvent = attributeChangedEvent,
 		__upgradedEvent = upgradedEvent,
-		__baseAttributes = newBaseAttributes,
+		__baseAttributes = attributes,
 		__attributeModifiers = {},
-		__abilities = {},
+		__abilities = abilities,
 	}, {
 		__index = Unit,
 		
@@ -401,6 +442,8 @@ Unit.RemoveAttributeModifier = function(self, id: string, attributeName: string,
 end
 
 Unit.Upgrade = function(self)
+	if (self.Type == GameEnum.UnitType.FieldUnit) then return end -- Field Units cannot be upgraded once deployed
+
 	local nextLevel = self.Level + 1
 	local nextLevelProgression = unitDataCache[self.Name].Progression[nextLevel]
 	if (not nextLevelProgression) then return end
@@ -424,25 +467,6 @@ Unit.Upgrade = function(self)
 	self.Level = nextLevel
 	self.__upgradedEvent:Fire(nextLevel)
 	self.Model:SetAttribute("Level", nextLevel)
-end
-
-Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)
-	if (not Unit.DoesUnitExist(unitName)) then return end
-
-	local progressionData = unitPersistentUpgradeLevels[owner]
-
-	if (not progressionData) then
-		unitPersistentUpgradeLevels[owner] = {}
-		progressionData = unitPersistentUpgradeLevels[owner]
-	end
-
-	local nextLevel = (progressionData[unitName] or 1) + 1
-	local nextLevelProgression = unitDataCache[unitName].Progression[nextLevel]
-	if (not nextLevelProgression) then return end
-
-	progressionData[unitName] = nextLevel
-	UnitPersistentUpgradedEvent:Fire(owner, unitName, nextLevel)
-
 end
 
 ---

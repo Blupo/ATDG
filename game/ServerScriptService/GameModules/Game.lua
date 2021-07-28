@@ -40,13 +40,6 @@ local CentralTowerHealthChangedRemoteEvent = System.addEvent("CentralTowerHealth
 local CentralTowerDestroyedRemoteEvent = System.addEvent("CentralTowerDestroyed")
 local PhaseChangedRemoteEvent = System.addEvent("PhaseChanged") 
 
---[[
-local HasStartedRemoteFunction = Instance.new("RemoteFunction")
-local GetDerivedGameStateRemoteFunction = Instance.new("RemoteFunction")
-local TEST_SkipToNextRoundRemoteFunction = Instance.new("RemoteFunction")
-local TEST_ReviveRemoteFunction = Instance.new("RemoteFunction")
---]]
-
 ---
 
 type array<T> = {[number]: T}

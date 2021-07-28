@@ -115,18 +115,19 @@ Shop.PurchaseObjectPlacement = function(userId: number, objectType: ObjectType, 
     if (not Game.HasStarted()) then return end
 
     local placementPrice = Shop.GetObjectPlacementPrice(objectType, objectName)
-    print(placementPrice)
     if (not placementPrice) then return false end
 
     local pointsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Points)
-    print(pointsBalance)
     if (not pointsBalance) then return false end
 
     if (placementPrice > pointsBalance) then
         return false
     else
         PlayerData.WithdrawCurrencyFromPlayer(userId, GameEnum.CurrencyType.Points, placementPrice)
+
+        -- todo: handle roadblocks and field units
         Placement.PlaceObject(userId, objectType, objectName, position, rotation)
+
         return true
     end
 end
@@ -137,6 +138,7 @@ Shop.PurchaseUnitUpgrade = function(userId: number, unitId: string): boolean
     local unit = Unit.fromId(unitId)
     if (not unit) then return false end
     if (unit.Owner ~= userId) then return false end
+    if (unit.Type == GameEnum.UnitType.FieldUnit) then return false end -- Field Units cannot be upgraded once deployed
 
     local upgradePrice = Shop.GetUnitUpgradePrice(unitId)
     if (not upgradePrice) then return false end
