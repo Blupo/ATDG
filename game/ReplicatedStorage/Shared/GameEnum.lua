@@ -25,7 +25,7 @@ return setmetatable({
 	UnitType = makeEnum("GameEnum.UnitType", { "FieldUnit", "TowerUnit" }),
 	ObjectType = makeEnum("GameEnum.ObjectType", { "Unit", "Roadblock" }),
 	PathType = makeEnum("GameEnum.PathType", { "Ground", "Air", "GroundAndAir", "*" }),
-	UnitTargeting = makeEnum("GameEnum.UnitTargeting", { "Closest", "Farthest", "First", "Last", "Strongest", "Fastest", "Random", "None" }),
+	UnitTargeting = makeEnum("GameEnum.UnitTargeting", { "Closest", "Farthest", "First", "Last", "Strongest", "Fastest", "Random", "AreaOfEffect", "None" }),
 	Difficulty = makeEnum("GameEnum.Difficulty", { "Easy", "Normal", "Hard", "Special" }),
 	SurfaceType = makeEnum("GameEnum.SurfaceType", { "Path", "Terrain", "ElevatedTerrain" }),
 	StatusEffectType = makeEnum("GameEnum.StatusEffectType", { "Instant", "Periodic", "Lingering" }),

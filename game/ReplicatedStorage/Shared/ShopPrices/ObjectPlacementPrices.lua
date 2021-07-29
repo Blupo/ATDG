@@ -13,6 +13,7 @@ return {
     [GameEnum.ObjectType.Unit] = {
         TestTowerUnit = 100,
         TestHeavyTowerUnit = 300,
+        TestAoETowerUnit = 220,
 
         TestFieldUnit = 10,
     },

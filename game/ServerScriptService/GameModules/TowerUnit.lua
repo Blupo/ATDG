@@ -129,21 +129,33 @@ local unitDamageCallback = function(thisUnit)
 	end)
 	
 	if (#unitsInRange < 1) then return end
-	local targetUnit
-	
-	if (unitTargeting == GameEnum.UnitTargeting.Random) then
-		targetUnit = unitsInRange[math.random(1, #unitsInRange)]
+
+	if (unitTargeting == GameEnum.UnitTargeting.AreaOfEffect) then
+		for i = 1, #unitsInRange do
+			local targetUnit = unitsInRange[i]
+
+			if (targetUnit:GetAttribute("HP") > 0) then
+				targetUnit:TakeDamage(thisUnit:GetAttribute("DMG"))
+				HitEvent:Fire(thisUnit.Id, targetUnit.Id)
+			end
+		end
 	else
-		table.sort(unitsInRange, SORT_CALLBACKS[unitTargeting](thisUnit))
-		targetUnit = unitsInRange[1]				
+		local targetUnit
+		
+		if (unitTargeting == GameEnum.UnitTargeting.Random) then
+			targetUnit = unitsInRange[math.random(1, #unitsInRange)]
+		else
+			table.sort(unitsInRange, SORT_CALLBACKS[unitTargeting](thisUnit))
+			targetUnit = unitsInRange[1]				
+		end
+		
+		-- make sure that the target wasn't destroyed or died in the time it took to calculate all that
+		if (not Unit.fromId(targetUnit.Id)) then return end
+		if (targetUnit:GetAttribute("HP") <= 0) then return end
+		
+		targetUnit:TakeDamage(thisUnit:GetAttribute("DMG"))
+		HitEvent:Fire(thisUnit.Id, targetUnit.Id)
 	end
-	
-	-- make sure that the target wasn't destroyed or died in the time it took to calculate all that
-	if (not Unit.fromId(targetUnit.Id)) then return end
-	if (targetUnit:GetAttribute("HP") <= 0) then return end
-	
-	targetUnit:TakeDamage(thisUnit:GetAttribute("DMG"))
-	HitEvent:Fire(thisUnit.Id, targetUnit.Id)
 end
 
 local initUnit = function(unit)

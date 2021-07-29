@@ -13,6 +13,18 @@ return {
         }
     },
 
+    TestAoETowerUnit = {
+        [2] = {
+            Individual = 150,
+            Persistent = 1250,
+        },
+
+        [3] = {
+            Individual = 250,
+            Persistent = 1750,
+        }
+    },
+
     TestHeavyTowerUnit = {
         [2] = {
             Individual = 500,
