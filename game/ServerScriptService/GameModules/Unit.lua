@@ -483,7 +483,11 @@ for _, abilityDataScript in pairs(AbilityData:GetChildren()) do
 end
 
 for _, unitDataScript in pairs(UnitData:GetChildren()) do
-	unitDataCache[unitDataScript.Name] = require(unitDataScript)
+	local unitName = unitDataScript.Name
+
+	if (unitDataScript:IsA("ModuleScript") and (not unitDataCache[unitName])) then
+		unitDataCache[unitDataScript.Name] = require(unitDataScript)
+	end
 end
 
 UnitPersistentUpgradedEvent.Event:Connect(function(owner: number, ...)

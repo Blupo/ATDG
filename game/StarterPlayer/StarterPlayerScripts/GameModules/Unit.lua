@@ -205,12 +205,25 @@ end
 localPlayerUnitPersistentUpgradeLevels = Unit.GetAllUnitsPersistentUpgradeLevels(LocalPlayer.UserId)
 
 for _, unitDataScript in pairs(UnitData:GetChildren()) do
-	unitDataCache[unitDataScript.Name] = require(unitDataScript)
+	local unitName = unitDataScript.Name
+
+	if (unitDataScript:IsA("ModuleScript") and (not unitDataCache[unitName])) then
+		unitDataCache[unitDataScript.Name] = require(unitDataScript)
+	end
 end
 
 for _, unitModel in pairs(CollectionService:GetTagged("Unit")) do
 	constructUnit(unitModel)
 end
+
+UnitData.ChildAdded:Connect(function(unitDataScript)
+	if (not unitDataScript:IsA("ModuleScript")) then return end
+
+	local unitName = unitDataScript.Name
+	if (unitDataCache[unitName]) then return end
+
+	unitDataCache[unitName] = require(unitDataScript)
+end)
 
 CollectionService:GetInstanceAddedSignal("Unit"):Connect(constructUnit)
 
