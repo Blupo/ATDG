@@ -89,6 +89,36 @@ return {
 					TestBiggerFieldUnit = { [2] = 1, }
 				},
 			}
+		},
+
+		[3] = {
+			Length = 60,
+
+			SpawnSequence = {
+				[0] = {
+					TestFieldUnit = { [1] = 1, }
+				},
+
+				[1] = {
+					TestFieldUnit = { [1] = 1, }
+				},
+
+				[2] = {
+					TestFieldUnit = { [1] = 1, }
+				},
+
+				[3] = {
+					TestFieldUnit = { [1] = 1, }
+				},
+
+				[4] = {
+					TestFieldUnit = { [1] = 1, }
+				},
+
+				[5] = {
+					TestBiggerFieldUnit = { [2] = 1, }
+				},
+			}
 		}
 	},
 	

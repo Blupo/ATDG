@@ -1,3 +1,9 @@
+--[[
+	Notes
+
+		All Units spawned by the game have an owner ID of 0
+]]
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -505,12 +511,19 @@ Game.Revive = function()
 end
 
 Game.SkipToNextRound = function()
-	-- todo: can only be called if all the enemies from previous rounds have been eliminated
-
 	if (not currentGameData) then return end
 	if (currentGameData.GamePhase ~= GameEnum.GamePhase.Round) then return end
-	if (#currentRoundSpawnPromises > 0) then return end
-	if (currentGameData.CurrentRound == #challengeData.Rounds) then return end
+	if (#currentRoundSpawnPromises > 0) then return end -- Cannot skip if there are still Units to spawn
+	if (currentGameData.CurrentRound == #challengeData.Rounds) then return end -- Cannot skip the final round
+
+	local gameFieldUnits = Unit.GetUnits(function(unit)
+		return ((unit.Type == GameEnum.UnitType.FieldUnit) and (unit.Owner == 0))
+	end)
+
+	for i = 1, #gameFieldUnits do
+		-- Cannot skip if there are Units from previous rounds
+		if (not table.find(currentRoundUnits, gameFieldUnits[i].Id)) then return end
+	end
 	
 	gamePhasePromise:cancel()
 	advanceGamePhase()
