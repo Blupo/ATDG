@@ -138,11 +138,16 @@ StatIndicator.init = function(self)
         newPromise:andThen(function()
             self.animator.Motor:setGoal({
                 rotation = Otter.spring(randomValueInRange(-180, 180), {
-                    frequency = 0.25,
+                    frequency = math.random(2, 4),
                 }),
 
-                xOffset = Otter.spring(randomValueInRange(-5, 5)),
-                yOffset = Otter.spring(randomValueInRange(-5, 5)),
+                xOffset = Otter.spring(randomValueInRange(-5, 5), {
+                    frequency = math.random(3, 4),
+                }),
+
+                yOffset = Otter.spring(randomValueInRange(-5, 5), {
+                    frequency = math.random(3, 4),
+                }),
             })
         end):andThen(self.scheduleCallback)
 
@@ -151,11 +156,16 @@ StatIndicator.init = function(self)
 
     self.animator.Motor:setGoal({
         rotation = Otter.spring(randomValueInRange(-180, 180), {
-            frequency = 0.25,
+            frequency = math.random(2, 4),
         }),
 
-        xOffset = Otter.spring(randomValueInRange(-5, 5)),
-        yOffset = Otter.spring(randomValueInRange(-5, 5)),
+        xOffset = Otter.spring(randomValueInRange(-5, 5), {
+            frequency = math.random(3, 4),
+        }),
+
+        yOffset = Otter.spring(randomValueInRange(-5, 5), {
+            frequency = math.random(3, 4),
+        }),
     })
 
     self.scheduleCallback()

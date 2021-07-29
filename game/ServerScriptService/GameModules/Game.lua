@@ -600,8 +600,6 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
 				PhaseChangedEvent:Fire(currentGameData.GamePhase)
 			end
 		end
-	else
-		-- todo
 	end
 	
 	unit:Destroy()
