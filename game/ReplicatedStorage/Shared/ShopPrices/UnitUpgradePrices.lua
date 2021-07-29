@@ -35,5 +35,17 @@ return {
             Individual = 600,
             Persistent = 6000,
         }
+    },
+
+    TestAirTargetingTowerUnit = {
+        [2] = {
+            Individual = 550,
+            Persistent = 5000,
+        },
+
+        [3] = {
+            Individual = 780,
+            Persistent = 9000,
+        }
     }
 }

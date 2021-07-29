@@ -14,8 +14,10 @@ return {
         TestTowerUnit = 100,
         TestHeavyTowerUnit = 300,
         TestAoETowerUnit = 220,
+        TestAirTargetingTowerUnit = 370,
 
         TestFieldUnit = 10,
+        TestAirFieldUnit = 30,
     },
 
     [GameEnum.ObjectType.Roadblock] = {

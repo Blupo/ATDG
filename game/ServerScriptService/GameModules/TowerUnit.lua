@@ -116,11 +116,23 @@ end
 local unitDamageCallback = function(thisUnit)
 	local range: number = thisUnit:GetAttribute("RANGE")
 	local thisModelBottom: Vector3 = getModelBottom(thisUnit.Model)
+	local thisUnitPathType = thisUnit:GetAttribute("PathType")
 	local unitTargeting = thisUnit:GetAttribute("UnitTargeting")
-	
+
 	local unitsInRange = Unit.GetUnits(function(unit)
 		if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return false end
 		if (unit:GetAttribute("HP") <= 0) then return false end
+
+		if (thisUnitPathType ~= GameEnum.PathType.GroundAndAir) then
+			local unitPathType = unit:GetAttribute("PathType")
+
+			if (
+				((thisUnitPathType == GameEnum.PathType.Ground) and (unitPathType ~= GameEnum.PathType.Ground)) or
+				((thisUnitPathType == GameEnum.PathType.Air) and (unitPathType ~= GameEnum.PathType.Air))
+			) then
+				return false
+			end
+		end
 		
 		local unitModel: Model = unit.Model
 		local unitModelBottom: Vector3 = getModelBottom(unitModel)

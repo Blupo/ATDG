@@ -14,7 +14,10 @@ local Workspace = game:GetService("Workspace")
 
 local ChallengeData = ServerScriptService:FindFirstChild("ChallengeData")
 local MapData = ServerStorage:FindFirstChild("MapData")
-local Paths = Workspace:FindFirstChild("Paths")
+
+local Paths = Instance.new("Folder")
+Paths.Name = "Paths"
+Paths.Parent = Workspace
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))

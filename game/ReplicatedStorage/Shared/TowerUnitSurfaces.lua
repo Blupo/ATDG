@@ -11,4 +11,5 @@ return {
 	TestTowerUnit = GameEnum.SurfaceType.Terrain,
 	TestHeavyTowerUnit = GameEnum.SurfaceType.Terrain,
 	TestAoETowerUnit = GameEnum.SurfaceType.Terrain,
+	TestAirTargetingTowerUnit = GameEnum.SurfaceType.ElevatedTerrain,
 }

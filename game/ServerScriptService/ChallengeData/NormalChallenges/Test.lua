@@ -52,7 +52,8 @@ return {
 				},
 
 				[4] = {
-					TestFieldUnit = { [1] = 1, }
+					TestFieldUnit = { [1] = 1, },
+					TestAirFieldUnit = { [1] = 1, }
 				},
 				
 				[5] = {
@@ -82,7 +83,8 @@ return {
 				},
 
 				[4] = {
-					TestFieldUnit = { [1] = 1, }
+					TestFieldUnit = { [1] = 1, },
+					TestAirFieldUnit = { [1] = 1, }
 				},
 
 				[5] = {
@@ -112,7 +114,8 @@ return {
 				},
 
 				[4] = {
-					TestFieldUnit = { [1] = 1, }
+					TestFieldUnit = { [1] = 1, },
+					TestAirFieldUnit = { [1] = 1, }
 				},
 
 				[5] = {

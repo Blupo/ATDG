@@ -5,7 +5,7 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
-local Paths = Workspace:FindFirstChild("Paths")
+local Paths = Workspace:WaitForChild("Paths")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))

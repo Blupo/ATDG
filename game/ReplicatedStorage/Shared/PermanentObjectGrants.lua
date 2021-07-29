@@ -11,6 +11,8 @@ return {
     [GameEnum.ObjectType.Unit] = {
         TestTowerUnit = true,
         TestHeavyTowerUnit = true,
+        TestAoETowerUnit = true,
+        TestAirTargetingTowerUnit = true,
     },
 
     [GameEnum.ObjectType.Roadblock] = {
