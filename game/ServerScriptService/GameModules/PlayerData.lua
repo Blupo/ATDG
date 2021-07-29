@@ -81,7 +81,7 @@ local PlayerDataTemplate: PlayerData = {
 }
 
 local ProfileStore = ProfileService.GetProfileStore("PlayerData", PlayerDataTemplate)
-ProfileService = ProfileStore.Mock --RunService:IsStudio() and ProfileStore.Mock or ProfileStore
+ProfileStore = ProfileStore.Mock --RunService:IsStudio() and ProfileStore.Mock or ProfileStore
 
 local playerProfiles = {}
 local ephemeralCurrenciesBalances = {}
