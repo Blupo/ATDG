@@ -67,10 +67,11 @@ end
 
 local Unit = {}
 
-Unit.UnitAdded = UnitAddedEvent.Event
-Unit.UnitRemoving = UnitRemovingEvent.Event
 
 --- Static
+
+Unit.UnitAdded = UnitAddedEvent.Event
+Unit.UnitRemoving = UnitRemovingEvent.Event
 
 Unit.fromModel = function(model: Model)
 	for _, unit in pairs(units) do
@@ -123,7 +124,7 @@ Unit.GetAllUnitsPersistentUpgradeLevels = function(owner: number): {[string]: nu
 	persistentUpgradeLevels = CopyTable(persistentUpgradeLevels)
 
 	for unitName in pairs(unitDataCache) do
-		if (not persistentUpgradeLevels[unitName]) then
+		if ((not persistentUpgradeLevels[unitName]) and Unit.DoesUnitExist(unitName)) then
 			persistentUpgradeLevels[unitName] = 1
 		end
 	end
@@ -162,6 +163,12 @@ Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictiona
 	end
 
 	return attributes
+end
+
+Unit.GetUnitMaxLevel = function(unitName: string): number?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	return #unitDataCache[unitName].Progression
 end
 
 Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)

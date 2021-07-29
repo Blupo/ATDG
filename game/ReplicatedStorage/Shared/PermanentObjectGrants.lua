@@ -2,8 +2,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
+local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 ---
 

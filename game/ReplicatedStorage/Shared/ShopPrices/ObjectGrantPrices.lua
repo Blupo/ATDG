@@ -7,12 +7,14 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 ---
 
+-- Prices in Tickets
+
 return {
     [GameEnum.ObjectType.Unit] = {
-        TestTowerUnit = 100,
-        TestHeavyTowerUnit = 300,
+        TestTowerUnit = 10,
+        TestHeavyTowerUnit = 30,
 
-        TestFieldUnit = 10,
+        TestFieldUnit = 2,
     },
 
     [GameEnum.ObjectType.Roadblock] = {

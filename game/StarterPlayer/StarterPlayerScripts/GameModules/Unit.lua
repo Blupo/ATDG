@@ -35,6 +35,8 @@ local localPlayerUnitPersistentUpgradeLevels = {}
 
 ---
 
+--- Static
+
 Unit.UnitAdded = UnitAddedEvent.Event
 Unit.UnitRemoving = UnitRemovingEvent.Event
 
@@ -107,6 +109,14 @@ Unit.GetUnitType = function(unitName: string): string?
 
 	return unitDataCache[unitName].Type
 end
+
+Unit.GetUnitMaxLevel = function(unitName: string): number?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	return #unitDataCache[unitName].Progression
+end
+
+--- Class
 
 Unit.GetAttribute = function(self, attributeName: string)
 	if (IGNORED_ATTRIBUTES[attributeName] and (attributeName ~= "Level")) then return end

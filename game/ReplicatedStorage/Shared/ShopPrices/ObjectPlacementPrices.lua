@@ -7,6 +7,8 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 ---
 
+-- Prices in Points
+
 return {
     [GameEnum.ObjectType.Unit] = {
         TestTowerUnit = 100,

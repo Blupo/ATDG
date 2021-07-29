@@ -1,3 +1,5 @@
+-- Prices in Points
+
 return {
     TestTowerUnit = {
         [2] = {
