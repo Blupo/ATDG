@@ -20,7 +20,6 @@ return {
 				RANGE = 12.5,
 				SPD = 0,
 
-				UnitTargeting = GameEnum.UnitTargeting.First,
 				PathType = GameEnum.PathType.Air,
 			},
 		},

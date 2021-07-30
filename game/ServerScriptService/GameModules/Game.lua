@@ -115,7 +115,7 @@ type DerivedGameState = {
 
 ---
 
-local PREPARATION_TIME = 10 -- temp: 60
+local PREPARATION_TIME = 30
 local INTERMISSION_TIME = 10
 local FINAL_INTERMISSION_TIME = 30
 

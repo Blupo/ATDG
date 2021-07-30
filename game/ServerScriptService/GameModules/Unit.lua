@@ -196,6 +196,7 @@ Unit.new = function(unitName: string, owner: number?)
 	assert(Unit.DoesUnitExist(unitName), unitName .. " is not a valid Unit")
 
 	local unitData = unitDataCache[unitName]
+	local unitType = unitData.Type
 	local unitModel = UnitModels:FindFirstChild(unitName)
 	local newUnitLevel = 1
 	
@@ -223,6 +224,12 @@ Unit.new = function(unitName: string, owner: number?)
 		end
 	end
 
+	if (unitType == GameEnum.UnitType.FieldUnit) then
+		attributes.UnitTargeting = GameEnum.UnitTargeting.None
+	elseif ((unitType == GameEnum.UnitType.TowerUnit) and (not unitData.Progression[1].UnitTargeting)) then
+		attributes.UnitTargeting = GameEnum.UnitTargeting.First
+	end
+
 	attributes.HP = attributes.MaxHP
 	
 	local newBaseModel = unitModel:Clone()
@@ -233,7 +240,7 @@ Unit.new = function(unitName: string, owner: number?)
 	local self = setmetatable({
 		Id = HttpService:GenerateGUID(false),
 		Name = unitName,
-		Type = unitData.Type,
+		Type = unitType,
 		Owner = owner,
 		Level = newUnitLevel,
 		Model = newBaseModel,

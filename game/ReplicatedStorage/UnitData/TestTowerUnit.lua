@@ -20,7 +20,6 @@ return {
 				RANGE = 10,
 				SPD = 0,
 
-				UnitTargeting = GameEnum.UnitTargeting.First,
 				PathType = GameEnum.PathType.Ground,
 			},
 		},
