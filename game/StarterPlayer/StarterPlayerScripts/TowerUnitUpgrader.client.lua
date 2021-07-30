@@ -20,7 +20,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local GameUI = PlayerScripts:WaitForChild("GameUI")
 local Roact = require(GameUI:WaitForChild("Roact"))
-local TowerUnitUpgradeBillboard = require(GameUI:WaitForChild("TowerUnitUpgradeBillboard"))
+local TowerUnitUpgrader = require(GameUI:WaitForChild("TowerUnitUpgrader"))
 
 local CurrentCamera = Workspace.CurrentCamera
 
@@ -60,12 +60,10 @@ local mountUpgradeGui = function(x, y)
     end
 
     local unitId
-    local unitModel
 
     for id, model in pairs(towerUnitModels) do
         if (raycastPart:IsDescendantOf(model)) then
             unitId = id
-            unitModel = model
             break
         end
     end
@@ -79,15 +77,9 @@ local mountUpgradeGui = function(x, y)
     if (lastUnitId == unitId) then return end
     lastUnitId = unitId
 
-    local _, boundingBoxSize = unitModel:GetBoundingBox()
-
     dismountUpgradeGui()
-    guiTree = Roact.mount(Roact.createElement(TowerUnitUpgradeBillboard, {
+    guiTree = Roact.mount(Roact.createElement(TowerUnitUpgrader, {
         unitId = unitId,
-
-        Adornee = unitModel.PrimaryPart,
-        Size = UDim2.new(3.5, 0, 3.5, 0),
-        StudsOffsetWorldSpace = Vector3.new(0, ((boundingBoxSize.Y + 3.5) / 2) + 0.5, 0)
     }), PlayerGui, unitId .. "_Billboard")
 end
 

@@ -76,7 +76,7 @@ end
 
 Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): number?
 	if (owner ~= LocalPlayer.UserId) then
-		return GetUnitPersistentUpgradeLevelRemoteFunction:InvokeServer(owner, unitName)
+		return GetUnitPersistentUpgradeLevelRemoteFunction(owner, unitName)
 	end
 
 	if (not Unit.DoesUnitExist(unitName)) then return end
@@ -125,7 +125,7 @@ Unit.GetAttribute = function(self, attributeName: string)
 end
 
 Unit.SetAttribute = function(self, attributeName: string, newValue: any)
-	SetAttributeRemoteFunction:InvokeServer(self.Id, attributeName, newValue)
+	SetAttributeRemoteFunction(self.Id, attributeName, newValue)
 end
 
 local constructUnit = function(unitModel)
