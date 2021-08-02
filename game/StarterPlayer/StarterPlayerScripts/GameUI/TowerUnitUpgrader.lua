@@ -46,8 +46,7 @@ TowerUnitUpgradeBillboard.init = function(self)
         name = "",
         level = 1,
         target = "First",
-
-        upgradePrice = 0,
+        
         attributeChanges = {},
     })
 end
@@ -59,7 +58,9 @@ TowerUnitUpgradeBillboard.didMount = function(self)
 
     local unitName = unit.Name
     local unitLevel = unit.Level
-    local thisLevelBaseAttributes, nextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, unitLevel), Unit.GetUnitBaseAttributes(unitName, unitLevel + 1)
+
+    local thisLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, unitLevel)
+    local nextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, unitLevel + 1)
 
     local attributeChanges = {}
 
@@ -70,7 +71,8 @@ TowerUnitUpgradeBillboard.didMount = function(self)
     end
 
     self.unitUpgraded = unit.Upgraded:Connect(function(newLevel)
-        local newLevelBaseAttributes, newNextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel), Unit.GetUnitBaseAttributes(unitName, newLevel + 1)
+        local newLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel)
+        local newNextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel + 1)
         local newUpgradePrice = Shop.GetUnitUpgradePrice(unitId)
         local newAttributeChanges = {}
 

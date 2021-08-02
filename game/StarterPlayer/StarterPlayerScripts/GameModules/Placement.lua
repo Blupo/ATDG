@@ -6,7 +6,6 @@ local Workspace = game:GetService("Workspace")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
-local TowerUnitSurfaces = require(SharedModules:WaitForChild("TowerUnitSurfaces"))
 
 local RoadblockModels = ReplicatedStorage:WaitForChild("RoadblockModels")
 local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
@@ -170,7 +169,7 @@ Placement.CanPlace = function(objType: string, objName: string, position: Vector
 	
 	if (not CollectionService:HasTag(
 		raycastResultPart,
-		(objType == GameEnum.ObjectType.Unit) and TowerUnitSurfaces[objName] or GameEnum.SurfaceType.Path
+		(objType == GameEnum.ObjectType.Unit) and Unit.GetTowerUnitSurfaceType(objName) or GameEnum.SurfaceType.Path
 	)) then
 		return makePlacementResult(GameEnum.PlacementFailureReason.IncorrectSurfaceType)
 	end

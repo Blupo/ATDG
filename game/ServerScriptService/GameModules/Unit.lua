@@ -1,10 +1,10 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
 ---
 
+local UnitData = ReplicatedStorage:FindFirstChild("UnitData")
 local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
@@ -13,9 +13,6 @@ local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
-
-local AbilityData = ServerScriptService:FindFirstChild("AbilityData")
-local UnitData = ReplicatedStorage:FindFirstChild("UnitData")
 
 local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
@@ -29,7 +26,6 @@ local UnitPersistentUpgradedRemoteEvent = System.addEvent("UnitPersistentUpgrade
 local units = {}
 local unitPersistentUpgradeLevels = {}
 local unitDataCache = {}
-local abilitiesCache = {}
 
 local attributeChangedCallbacks = {
 	HP = function(unit, newHP)
@@ -67,7 +63,6 @@ end
 
 local Unit = {}
 
-
 --- Static
 
 Unit.UnitAdded = UnitAddedEvent.Event
@@ -95,11 +90,11 @@ Unit.DoesUnitExist = function(unitName: string): boolean
 	return true
 end
 
-Unit.GetUnits = function(filterCallback: (any) -> boolean)
+Unit.GetUnits = function(filterCallback: ((any) -> boolean)?)
 	local unitList = {}
 
 	for _, unit in pairs(units) do
-		if (filterCallback and filterCallback(unit)) then
+		if ((not filterCallback) and true or filterCallback(unit)) then
 			table.insert(unitList, unit)
 		end
 	end
@@ -111,6 +106,75 @@ Unit.GetUnitType = function(unitName: string): string?
 	if (not Unit.DoesUnitExist(unitName)) then return end
 
 	return unitDataCache[unitName].Type
+end
+
+Unit.GetTowerUnitSurfaceType = function(unitName: string): string?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+	if (Unit.GetUnitType(unitName) ~= GameEnum.UnitType.TowerUnit) then return end
+
+	return unitDataCache[unitName].SurfaceType
+end
+
+Unit.GetUnitMaxLevel = function(unitName: string): number?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	return #unitDataCache[unitName].Progression
+end
+
+Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local unitData = unitDataCache[unitName]
+	local immutableAttributes = unitData.ImmutableAttributes or {}
+	local attributes = {}
+
+	local maxLevel = Unit.GetUnitMaxLevel(unitName)
+	level = (level <= maxLevel) and level or maxLevel
+
+	for i = 1, level do
+		local progressionData = unitData.Progression[i]
+		local progressionDataAttributes = progressionData.Attributes or {}
+
+		for attributeName, baseValue in pairs(progressionDataAttributes) do
+			if (immutableAttributes[attributeName] == nil) then
+				attributes[attributeName] = baseValue
+			end
+		end
+	end
+
+	for attributeName, baseValue in pairs(immutableAttributes) do
+		attributes[attributeName] = baseValue
+	end
+
+	return attributes
+end
+
+Unit.GetUnitAbilities = function(unitName: string, level: number): {[string]: boolean}?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local unitData = unitDataCache[unitName]
+	local abilities = {}
+
+	local maxLevel = Unit.GetUnitMaxLevel(unitName)
+	level = (level <= maxLevel) and level or maxLevel
+
+	for i = 1, level do
+		local unitProgression = unitData.Progression[i]
+
+		if (unitProgression) then
+			local levelAbilities = unitProgression.Abilities or {}
+
+			for ability, action in pairs(levelAbilities) do
+				if (action == true) then
+					abilities[ability] = true
+				elseif (action == false) then
+					abilities[ability] = nil
+				end
+			end
+		end
+	end
+
+	return abilities
 end
 
 Unit.GetAllUnitsPersistentUpgradeLevels = function(owner: number): {[string]: number}?
@@ -143,32 +207,6 @@ Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): 
 	end
 
 	return persistentUpgradeLevels[unitName] or 1
-end
-
-Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
-	if (not Unit.DoesUnitExist(unitName)) then return end
-
-	local unitData = unitDataCache[unitName]
-	local attributes = {}
-
-	for i = 1, level do
-		local progressionData = unitData.Progression[i]
-		local progressionDataAttributes = progressionData and progressionData.Attributes or nil
-
-		if (progressionDataAttributes) then
-			for attributeName, baseValue in pairs(progressionDataAttributes) do
-				attributes[attributeName] = baseValue
-			end
-		end
-	end
-
-	return attributes
-end
-
-Unit.GetUnitMaxLevel = function(unitName: string): number?
-	if (not Unit.DoesUnitExist(unitName)) then return end
-
-	return #unitDataCache[unitName].Progression
 end
 
 Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)
@@ -204,29 +242,11 @@ Unit.new = function(unitName: string, owner: number?)
 		newUnitLevel = unitPersistentUpgradeLevels[owner][unitName] or 1
 	end
 
-	local attributes = {}
-	local abilities = {}
-
-	for level = 1, newUnitLevel do
-		local unitProgression = unitData.Progression[level]
-
-		if (unitProgression) then
-			local levelAttributes = unitProgression.Attributes or {}
-			local levelAbilities = unitProgression.Abilities or {}
-
-			for attribute, value in pairs(levelAttributes) do
-				attributes[attribute] = value
-			end
-
-			for ability in pairs(levelAbilities) do
-				abilities[ability] = true
-			end
-		end
-	end
+	local attributes = Unit.GetUnitBaseAttributes(unitName, newUnitLevel)
 
 	if (unitType == GameEnum.UnitType.FieldUnit) then
 		attributes.UnitTargeting = GameEnum.UnitTargeting.None
-	elseif ((unitType == GameEnum.UnitType.TowerUnit) and (not unitData.Progression[1].UnitTargeting)) then
+	elseif ((unitType == GameEnum.UnitType.TowerUnit) and (not attributes.UnitTargeting)) then
 		attributes.UnitTargeting = GameEnum.UnitTargeting.First
 	end
 
@@ -254,7 +274,6 @@ Unit.new = function(unitName: string, owner: number?)
 		__upgradedEvent = upgradedEvent,
 		__baseAttributes = attributes,
 		__attributeModifiers = {},
-		__abilities = abilities,
 	}, {
 		__index = Unit,
 		
@@ -370,35 +389,6 @@ Unit.TakeDamage = function(self, damage: number, ignoreDEF: boolean?)
 	self:SetAttribute("HP", hp - effectiveDamage)
 end
 
-Unit.HasAbility = function(self, abilityName: string): boolean
-	return self.__abilities[abilityName] and true or false
-end
-
-Unit.GetAbilities = function(self, abilityType: string?): {string}
-	local abilities = {}
-	
-	for ability in pairs(self.__abilities) do
-		if (abilitiesCache[ability].Type == abilityType) then
-			table.insert(abilities, ability)
-		end
-	end
-	
-	return abilities
-end
-
-Unit.GiveAbility = function(self, abilityName: string)
-	if (not abilitiesCache[abilityName]) then return end
-	if (self:HasAbility(abilityName)) then return end
-	
-	self.__abilities[abilityName] = true
-end
-
-Unit.RemoveAbility = function(self, abilityName: string)
-	if (not self:HasAbility(abilityName)) then return end
-
-	self.__abilities[abilityName] = nil
-end
-
 Unit.ApplyAttributeModifier = function(self, id: string, attributeName: string, modifierType: string, modifier: (any) -> any)
 	if ((attributeName == "HP") or (attributeName == "MaxHP")) then return end
 	
@@ -467,16 +457,6 @@ Unit.Upgrade = function(self)
 			self:SetAttribute(attributeName, newValue)
 		end
 	end
-	
-	if (nextLevelProgression.Abilities) then
-		for abilityName, action in pairs(nextLevelProgression.Abilities) do
-			if (action == true) then
-				self:GiveAbility(abilityName)
-			elseif (action == false) then
-				self:RemoveAbility(abilityName)
-			end
-		end
-	end
 
 	self.Level = nextLevel
 	self.__upgradedEvent:Fire(nextLevel)
@@ -484,10 +464,6 @@ Unit.Upgrade = function(self)
 end
 
 ---
-
-for _, abilityDataScript in pairs(AbilityData:GetChildren()) do
-	abilitiesCache[abilityDataScript.Name] = require(abilityDataScript)
-end
 
 for _, unitDataScript in pairs(UnitData:GetChildren()) do
 	local unitName = unitDataScript.Name

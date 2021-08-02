@@ -27,6 +27,7 @@ local TimeSyncService = require(SharedModules:FindFirstChild("Nevermore"))("Time
 TimeSyncService:Init()
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
+local Abilities = require(GameModules:FindFirstChild("Abilities"))
 local Path = require(GameModules:FindFirstChild("Path"))
 local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
 local StatusEffects = require(GameModules:FindFirstChild("StatusEffects"))
@@ -247,6 +248,17 @@ advanceGamePhase = function()
 		
 		-- award points
 		PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Points, pointsToAward)
+
+		-- trigger RoundStart abilities
+		do
+			local units = Unit.GetUnits()
+
+			for i = 1, #units do
+				local unit = units[i]
+				
+				Abilities.ActivateAbilities(unit, GameEnum.AbilityType.RoundStart)
+			end
+		end
 		
 		-- spawn Field units
 		table.clear(currentRoundUnits)

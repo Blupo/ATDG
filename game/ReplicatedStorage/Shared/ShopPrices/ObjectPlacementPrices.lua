@@ -15,6 +15,8 @@ return {
         TestHeavyTowerUnit = 300,
         TestAoETowerUnit = 220,
         TestAirTargetingTowerUnit = 370,
+        TestPassiveIncomeTowerUnit = 200,
+        TestFreezerTowerUnit = 200,
 
         TestFieldUnit = 10,
         TestAirFieldUnit = 30,

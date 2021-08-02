@@ -8,6 +8,7 @@ local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
+local Abilities = require(GameModules:FindFirstChild("Abilities"))
 local Path = require(GameModules:FindFirstChild("Path"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
@@ -117,7 +118,9 @@ local unitDamageCallback = function(thisUnit)
 	local range: number = thisUnit:GetAttribute("RANGE")
 	local thisModelBottom: Vector3 = getModelBottom(thisUnit.Model)
 	local thisUnitPathType = thisUnit:GetAttribute("PathType")
+
 	local unitTargeting = thisUnit:GetAttribute("UnitTargeting")
+	if (unitTargeting == GameEnum.UnitTargeting.None) then return end
 
 	local unitsInRange = Unit.GetUnits(function(unit)
 		if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return false end
@@ -208,6 +211,15 @@ local TowerUnit = {}
 TowerUnit.Hit = HitEvent.Event
 
 ---
+
+HitEvent.Event:Connect(function(unitId, targetUnitId)
+	local unit, targetUnit = Unit.fromId(unitId), Unit.fromId(targetUnitId)
+	if (not (unit and targetUnit)) then return end
+
+	Abilities.ActivateAbilities(unit, GameEnum.AbilityType.OnHit, {
+		TargetUnit = targetUnit
+	})
+end)
 
 Unit.UnitAdded:Connect(function(unitId)
 	local unit = Unit.fromId(unitId)

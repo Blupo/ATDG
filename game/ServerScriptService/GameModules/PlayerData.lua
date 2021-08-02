@@ -60,7 +60,7 @@ type PlayerData = {
 local HOTBAR_SIZE = 5
 
 local DEFAULT_HOTBARS = {
-    [GameEnum.UnitType.TowerUnit] = {"TestTowerUnit", "TestHeavyTowerUnit", "TestAoETowerUnit", "TestAirTargetingTowerUnit", "TestTowerUnit"},
+    [GameEnum.UnitType.TowerUnit] = {"TestTowerUnit", "TestFreezerTowerUnit", "TestAoETowerUnit", "TestAirTargetingTowerUnit", "TestPassiveIncomeTowerUnit"},
     [GameEnum.UnitType.FieldUnit] = {"TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit"},
     [GameEnum.ObjectType.Roadblock] = {"", "", "", "", ""}
 }

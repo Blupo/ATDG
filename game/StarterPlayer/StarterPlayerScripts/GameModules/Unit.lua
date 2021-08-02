@@ -8,6 +8,7 @@ local UnitData = ReplicatedStorage:WaitForChild("UnitData")
 local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local Promise = require(SharedModules:WaitForChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
@@ -56,7 +57,7 @@ Unit.GetUnits = function(filterCallback: (any) -> boolean)
 	local unitList = {}
 
 	for _, unit in pairs(units) do
-		if (filterCallback and filterCallback(unit)) then
+		if ((not filterCallback) and true or filterCallback(unit)) then
 			table.insert(unitList, unit)
 		end
 	end
@@ -84,36 +85,79 @@ Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): 
 	return localPlayerUnitPersistentUpgradeLevels[unitName] or 1
 end
 
-Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
-	if (not Unit.DoesUnitExist(unitName)) then return end
-
-	local unitData = unitDataCache[unitName]
-	local attributes = {}
-
-	for i = 1, level do
-		local progressionData = unitData.Progression[i]
-		local progressionDataAttributes = progressionData and progressionData.Attributes or nil
-
-		if (progressionDataAttributes) then
-			for attributeName, baseValue in pairs(progressionDataAttributes) do
-				attributes[attributeName] = baseValue
-			end
-		end
-	end
-
-	return attributes
-end
-
 Unit.GetUnitType = function(unitName: string): string?
 	if (not Unit.DoesUnitExist(unitName)) then return end
 
 	return unitDataCache[unitName].Type
 end
 
+Unit.GetTowerUnitSurfaceType = function(unitName: string): string?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+	if (Unit.GetUnitType(unitName) ~= GameEnum.UnitType.TowerUnit) then return end
+
+	return unitDataCache[unitName].SurfaceType
+end
+
 Unit.GetUnitMaxLevel = function(unitName: string): number?
 	if (not Unit.DoesUnitExist(unitName)) then return end
 
 	return #unitDataCache[unitName].Progression
+end
+
+Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local unitData = unitDataCache[unitName]
+	local immutableAttributes = unitData.ImmutableAttributes or {}
+	local attributes = {}
+
+	local maxLevel = Unit.GetUnitMaxLevel(unitName)
+	level = (level <= maxLevel) and level or maxLevel
+
+	for i = 1, level do
+		local progressionData = unitData.Progression[i]
+		local progressionDataAttributes = progressionData.Attributes or {}
+
+		for attributeName, baseValue in pairs(progressionDataAttributes) do
+			if (immutableAttributes[attributeName] == nil) then
+				attributes[attributeName] = baseValue
+			end
+		end
+	end
+
+	for attributeName, baseValue in pairs(immutableAttributes) do
+		attributes[attributeName] = baseValue
+	end
+
+	return attributes
+end
+
+Unit.GetUnitAbilities = function(unitName: string, level: number): {string}?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local unitData = unitDataCache[unitName]
+	local abilities = {}
+
+	local maxLevel = Unit.GetUnitMaxLevel(unitName)
+	level = (level <= maxLevel) and level or maxLevel
+
+	for i = 1, level do
+		local unitProgression = unitData.Progression[i]
+
+		if (unitProgression) then
+			local levelAbilities = unitProgression.Abilities or {}
+
+			for ability, action in pairs(levelAbilities) do
+				if (action == true) then
+					abilities[ability] = true
+				elseif (action == false) then
+					abilities[ability] = nil
+				end
+			end
+		end
+	end
+
+	return abilities
 end
 
 --- Class
