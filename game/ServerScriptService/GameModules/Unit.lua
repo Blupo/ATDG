@@ -27,16 +27,6 @@ local units = {}
 local unitPersistentUpgradeLevels = {}
 local unitDataCache = {}
 
-local attributeChangedCallbacks = {
-	HP = function(unit, newHP)
-		if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
-		
-		if (newHP <= 0) then
-			unit:Destroy()
-		end
-	end,
-}
-
 local dictionaryCount = function(dictionary)
 	local count = 0
 	
@@ -255,6 +245,7 @@ Unit.new = function(unitName: string, owner: number?)
 	local attributeChangedEvent = Instance.new("BindableEvent")
 	local upgradedEvent = Instance.new("BindableEvent")
 	local damageTakenEvent = Instance.new("BindableEvent")
+	local diedEvent = Instance.new("BindableEvent")
 	
 	local self = setmetatable({
 		Id = HttpService:GenerateGUID(false),
@@ -267,10 +258,13 @@ Unit.new = function(unitName: string, owner: number?)
 		AttributeChanged = attributeChangedEvent.Event,
 		Upgraded = upgradedEvent.Event,
 		DamageTaken = damageTakenEvent.Event,
+		Died = diedEvent.Event,
 		
 		__attributeChangedEvent = attributeChangedEvent,
 		__upgradedEvent = upgradedEvent,
 		__damageTakenEvent = damageTakenEvent,
+		__diedEvent = diedEvent,
+
 		__baseAttributes = attributes,
 		__attributeModifiers = {},
 	}, {
@@ -298,11 +292,6 @@ Unit.new = function(unitName: string, owner: number?)
 	
 	self.AttributeChanged:Connect(function(attributeName: string, newValue: any)
 		newBaseModel:SetAttribute(attributeName, newValue)
-		
-		local attributeChangedCallback = attributeChangedCallbacks[attributeName]
-		if (not attributeChangedCallback) then return end
-		
-		attributeChangedCallback(self, newValue)
 	end)
 	
 	-- temp?
@@ -320,6 +309,7 @@ Unit.Destroy = function(self)
 	self.__attributeChangedEvent:Destroy()
 	self.__upgradedEvent:Destroy()
 	self.__damageTakenEvent:Destroy()
+	self.__diedEvent:Destroy()
 	self.Model:Destroy()
 	
 	-- defer so that subscriptions have a chance to obtain the Unit for cleanup
@@ -393,10 +383,16 @@ Unit.TakeDamage = function(self, damage: number, damageSourceType: string?, dama
 	if (effectiveDamage <= 0) then return end
 
 	local newHP = hp - effectiveDamage
+	newHP = (newHP >= 0) and newHP or 0
 
 	self.__baseAttributes.HP = newHP
 	self.__attributeChangedEvent:Fire("HP", newHP)
 	self.__damageTakenEvent:Fire(effectiveDamage, damageSourceType or GameEnum.DamageSourceType.Almighty, damageSource)
+
+	if (newHP <= 0) then
+		self.__diedEvent:Fire()
+		self:Destroy()
+	end
 end
 
 Unit.ApplyAttributeModifier = function(self, id: string, attributeName: string, modifierType: string, modifier: (any) -> any)

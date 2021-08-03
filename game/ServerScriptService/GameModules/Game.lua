@@ -157,6 +157,7 @@ local currentRoundUnits = {}
 local currentRoundSpawnPromises = {}
 
 local unitDamageTakenConnections = {}
+local unitDiedConnections = {}
 local pointPayoutAccumulators = {}
 
 local combine = function(...)
@@ -564,8 +565,17 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 Unit.UnitAdded:Connect(function(unitId)
+	if (not Game.HasStarted()) then return end
+
 	local unit = Unit.fromId(unitId)
 	if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
+
+	unitDiedConnections[unitId] = unit.Died:Connect(function()
+		unitDiedConnections[unitId]:Disconnect()
+		unitDiedConnections[unitId] = nil
+		
+		PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Points, math.floor(1.25 * unit:GetAttribute("MaxHP")))
+	end)
 
 	unitDamageTakenConnections[unitId] = unit.DamageTaken:Connect(function(damage, damageSourceType, damageSource)
 		if (damageSourceType ~= GameEnum.DamageSourceType.Unit) then return end
@@ -607,7 +617,7 @@ Unit.UnitRemoving:Connect(function(unitId)
 		unitDamageTakenConnections[unitId] = nil
 	end
 
-	if (not currentGameData) then return end
+	if (not Game.HasStarted()) then return end
 	if (currentGameData.GamePhase ~= GameEnum.GamePhase.Round) then return end
 	
 	local unit = Unit.fromId(unitId)
