@@ -32,7 +32,6 @@ local attributeChangedCallbacks = {
 		if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
 		
 		if (newHP <= 0) then
-			unit.__diedEvent:Fire()
 			unit:Destroy()
 		end
 	end,
@@ -253,9 +252,9 @@ Unit.new = function(unitName: string, owner: number?)
 	attributes.HP = attributes.MaxHP
 	
 	local newBaseModel = unitModel:Clone()
-	local diedEvent = Instance.new("BindableEvent")
 	local attributeChangedEvent = Instance.new("BindableEvent")
 	local upgradedEvent = Instance.new("BindableEvent")
+	local damageTakenEvent = Instance.new("BindableEvent")
 	
 	local self = setmetatable({
 		Id = HttpService:GenerateGUID(false),
@@ -265,13 +264,13 @@ Unit.new = function(unitName: string, owner: number?)
 		Level = newUnitLevel,
 		Model = newBaseModel,
 		
-		Died = diedEvent.Event,
 		AttributeChanged = attributeChangedEvent.Event,
 		Upgraded = upgradedEvent.Event,
+		DamageTaken = damageTakenEvent.Event,
 		
-		__diedEvent = diedEvent,
 		__attributeChangedEvent = attributeChangedEvent,
 		__upgradedEvent = upgradedEvent,
+		__damageTakenEvent = damageTakenEvent,
 		__baseAttributes = attributes,
 		__attributeModifiers = {},
 	}, {
@@ -318,9 +317,9 @@ end
 Unit.Destroy = function(self)
 	UnitRemovingEvent:Fire(self.Id)
 	
-	self.__diedEvent:Destroy()
 	self.__attributeChangedEvent:Destroy()
 	self.__upgradedEvent:Destroy()
+	self.__damageTakenEvent:Destroy()
 	self.Model:Destroy()
 	
 	-- defer so that subscriptions have a chance to obtain the Unit for cleanup
@@ -367,6 +366,15 @@ Unit.GetAttribute = function(self, attributeName: string)
 end
 
 Unit.SetAttribute = function(self, attributeName: string, newValue: any)
+	if ((attributeName == "HP") or (attributeName == "MaxHP")) then return end
+
+	local unitData = unitDataCache[self.Name]
+	local immutableAttributes = unitData.ImmutableAttributes
+
+	if (immutableAttributes) then
+		if (immutableAttributes[attributeName] ~= nil) then return end
+	end
+
 	local oldValue = self:GetAttribute(attributeName)
 	if (type(oldValue) ~= type(newValue)) then return end
 	if (oldValue == newValue) then return end
@@ -375,22 +383,31 @@ Unit.SetAttribute = function(self, attributeName: string, newValue: any)
 	self.__attributeChangedEvent:Fire(attributeName, self:GetAttribute(attributeName))
 end
 
-Unit.TakeDamage = function(self, damage: number, ignoreDEF: boolean?)
+Unit.TakeDamage = function(self, damage: number, damageSourceType: string?, damageSource: string | number | nil, ignoreDEF: boolean?)
 	if (damage <= 0) then return end
 	
 	local hp = self:GetAttribute("HP")
 	local def = ignoreDEF and 0 or self:GetAttribute("DEF")
 
-	-- effective damage in whole numbers only
 	local effectiveDamage = (damage * damage) / (damage + def)
-	effectiveDamage = math.floor(effectiveDamage + 0.5)
 	if (effectiveDamage <= 0) then return end
 
-	self:SetAttribute("HP", hp - effectiveDamage)
+	local newHP = hp - effectiveDamage
+
+	self.__baseAttributes.HP = newHP
+	self.__attributeChangedEvent:Fire("HP", newHP)
+	self.__damageTakenEvent:Fire(effectiveDamage, damageSourceType or GameEnum.DamageSourceType.Almighty, damageSource)
 end
 
 Unit.ApplyAttributeModifier = function(self, id: string, attributeName: string, modifierType: string, modifier: (any) -> any)
 	if ((attributeName == "HP") or (attributeName == "MaxHP")) then return end
+
+	local unitData = unitDataCache[self.Name]
+	local immutableAttributes = unitData.ImmutableAttributes
+
+	if (immutableAttributes) then
+		if (immutableAttributes[attributeName] ~= nil) then return end
+	end
 	
 	local attributeModifiers = self.__attributeModifiers[attributeName]
 	

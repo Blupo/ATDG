@@ -3,7 +3,7 @@ local RunService = game:GetService("RunService")
 
 ---
 
-local CommunicatorsFolder
+local SystemsFolder
 
 local systems = {}
 
@@ -65,7 +65,7 @@ if (RunService:IsServer()) then
         end
 
         systems[name] = self
-        systemFolder.Parent = CommunicatorsFolder
+        systemFolder.Parent = SystemsFolder
         return self
     end
 end
@@ -89,11 +89,11 @@ end
 ---
 
 if (RunService:IsServer()) then
-    CommunicatorsFolder = Instance.new("Folder")
-    CommunicatorsFolder.Name = "SystemCommunicators"
-    CommunicatorsFolder.Parent = ReplicatedStorage
+    SystemsFolder = Instance.new("Folder")
+    SystemsFolder.Name = "Systems"
+    SystemsFolder.Parent = ReplicatedStorage
 elseif (RunService:IsClient()) then
-    CommunicatorsFolder = ReplicatedStorage:WaitForChild("SystemCommunicators")
+    SystemsFolder = ReplicatedStorage:WaitForChild("Systems")
 
     local systemFolderItemAdded = function(system)
         return function(systemItem)
@@ -129,13 +129,13 @@ elseif (RunService:IsClient()) then
     end
 
     -- init systems
-    local systemFolders = CommunicatorsFolder:GetChildren()
+    local systemFolders = SystemsFolder:GetChildren()
 
     for i = 1, #systemFolders do
         systemFolderAdded(systemFolders[i])
     end
 
-    CommunicatorsFolder.ChildAdded:Connect(systemFolderAdded)
+    SystemsFolder.ChildAdded:Connect(systemFolderAdded)
 end
 
 return SystemCoordinator

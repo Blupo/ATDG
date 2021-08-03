@@ -3,25 +3,23 @@ local ServerScriptService = game:GetService(("ServerScriptService"))
 
 ---
 
-local EffectData = ServerScriptService:FindFirstChild("EffectData")
-local StatusEffectsCommunicators = ReplicatedStorage:FindFirstChild("Communicators"):FindFirstChild("StatusEffects")
-
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
+local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
-local RemoteUtils = require(GameModules:FindFirstChild("RemoteUtils"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
+
+local EffectData = ServerScriptService:FindFirstChild("EffectData")
 
 local EffectAppliedEvent = Instance.new("BindableEvent")
 local EffectRemovedEvent = Instance.new("BindableEvent")
 
-local EffectAppliedRemoteEvent = Instance.new("RemoteEvent")
-local EffectRemovedRemoteEvent = Instance.new("RemoteEvent")
-local UnitHasEffectRemoteFunction = Instance.new("RemoteFunction")
-local GetUnitEffectsRemoteFunction = Instance.new("RemoteFunction")
+local System = SystemCoordinator.newSystem("StatusEffects")
+local EffectAppliedRemoteEvent = System.addEvent("EffectApplied")
+local EffectRemovedRemoteEvent = System.addEvent("EffectRemoved")
 
 ---
 
@@ -168,31 +166,18 @@ EffectRemovedEvent.Event:Connect(function(unit, effectName: string)
 	EffectRemovedRemoteEvent:FireAllClients(unit.Id, effectName)
 end)
 
-UnitHasEffectRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(_: Player, unitId: string, effectName: string): boolean
+System.addFunction("UnitHasEffect", t.wrap(function(_: Player, unitId: string, effectName: string): boolean
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return false end
 	
 	return StatusEffects.UnitHasEffect(unit, effectName)
-end, t.tuple(t.instanceOf("Player"), t.string, t.string)))
+end, t.tuple(t.instanceOf("Player"), t.string, t.string)), true)
 
-GetUnitEffectsRemoteFunction.OnServerInvoke = RemoteUtils.ConnectPlayerDebounce(t.wrap(function(_: Player, unitId: string): {string}
+System.addFunction("GetUnitEffects", t.wrap(function(_: Player, unitId: string): {string}
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return {} end
 	
 	return StatusEffects.GetUnitEffects(unit)
-end, t.tuple(t.instanceOf("Player"), t.string)))
-
-EffectAppliedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-EffectRemovedRemoteEvent.OnServerEvent:Connect(RemoteUtils.NoOp)
-
-EffectAppliedRemoteEvent.Name = "EffectApplied"
-EffectRemovedRemoteEvent.Name = "EffectRemoved"
-UnitHasEffectRemoteFunction.Name = "UnitHasEffect"
-GetUnitEffectsRemoteFunction.Name = "GetUnitEffects"
-
-EffectAppliedRemoteEvent.Parent = StatusEffectsCommunicators
-EffectRemovedRemoteEvent.Parent = StatusEffectsCommunicators
-UnitHasEffectRemoteFunction.Parent = StatusEffectsCommunicators
-GetUnitEffectsRemoteFunction.Parent = StatusEffectsCommunicators
+end, t.tuple(t.instanceOf("Player"), t.string)), true)
 
 return StatusEffects

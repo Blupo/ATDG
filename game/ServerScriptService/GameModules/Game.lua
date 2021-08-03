@@ -156,6 +156,9 @@ local currentUnitAbilities = {}
 local currentRoundUnits = {}
 local currentRoundSpawnPromises = {}
 
+local unitDamageTakenConnections = {}
+local pointPayoutAccumulators = {}
+
 local combine = function(...)
 	local cumulativeTable = {}
 	local tables = {...}
@@ -556,7 +559,54 @@ end
 
 Players.PlayerAdded:Connect(playerAdded)
 
+Players.PlayerRemoving:Connect(function(player)
+	pointPayoutAccumulators[player.UserId] = nil
+end)
+
+Unit.UnitAdded:Connect(function(unitId)
+	local unit = Unit.fromId(unitId)
+	if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
+
+	unitDamageTakenConnections[unitId] = unit.DamageTaken:Connect(function(damage, damageSourceType, damageSource)
+		if (damageSourceType ~= GameEnum.DamageSourceType.Unit) then return end
+
+		local attackerUnit = Unit.fromId(damageSource)
+		if (not attackerUnit) then return end
+
+		local playerId = attackerUnit.Owner
+		if (not Players:GetPlayerByUserId(playerId)) then return end
+
+		local payoutAccumulator = pointPayoutAccumulators[playerId]
+		
+		if (not payoutAccumulator) then
+			pointPayoutAccumulators[playerId] = {
+				Total = 0,
+				Payout = 0,
+			}
+
+			payoutAccumulator = pointPayoutAccumulators[playerId]
+		end
+
+		local newTotal = payoutAccumulator.Total + damage
+		local difference = newTotal - payoutAccumulator.Payout
+
+		if (difference >= 1) then
+			local wholeDifference = math.floor(difference + 0.5)
+
+			PlayerData.DepositCurrencyToPlayer(playerId, GameEnum.CurrencyType.Points, wholeDifference)
+			payoutAccumulator.Payout = payoutAccumulator.Payout + wholeDifference
+		end
+		
+		payoutAccumulator.Total = newTotal
+	end)
+end)
+
 Unit.UnitRemoving:Connect(function(unitId)
+	if (unitDamageTakenConnections[unitId]) then
+		unitDamageTakenConnections[unitId]:Disconnect()
+		unitDamageTakenConnections[unitId] = nil
+	end
+
 	if (not currentGameData) then return end
 	if (currentGameData.GamePhase ~= GameEnum.GamePhase.Round) then return end
 	

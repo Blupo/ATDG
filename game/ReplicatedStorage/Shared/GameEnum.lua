@@ -39,7 +39,8 @@ return setmetatable({
 	CurrencyType = makeEnum("GameEnum.CurrencyType", { "Tickets", "Points" }),
 	ItemType = makeEnum("GameEnum.ItemType", { "SpecialAction" }),
 	PurchaseFailureReason = makeEnum("GameEnum.PurchaseFailureReason", { "None", "CannotAcquireProfile", "AlreadyPurchased" }),
-	ObjectViewportTitleType = makeEnum("GameEnum.UnitViewportTitleType", { "PlacementPrice", "ObjectName" })
+	ObjectViewportTitleType = makeEnum("GameEnum.ObjectViewportTitleType", { "PlacementPrice", "ObjectName" }),
+	DamageSourceType = makeEnum("GameEnum.DamageSourceType", { "Unit", "Almighty" }),
 }, {
 	__index = function(_, key)
 		error(tostring(key) .. " is not a valid enum")

@@ -150,7 +150,7 @@ local unitDamageCallback = function(thisUnit)
 			local targetUnit = unitsInRange[i]
 
 			if (targetUnit:GetAttribute("HP") > 0) then
-				targetUnit:TakeDamage(thisUnit:GetAttribute("DMG"))
+				targetUnit:TakeDamage(thisUnit:GetAttribute("DMG"), GameEnum.DamageSourceType.Unit, thisUnit.Id)
 				HitEvent:Fire(thisUnit.Id, targetUnit.Id)
 			end
 		end
@@ -168,7 +168,7 @@ local unitDamageCallback = function(thisUnit)
 		if (not Unit.fromId(targetUnit.Id)) then return end
 		if (targetUnit:GetAttribute("HP") <= 0) then return end
 		
-		targetUnit:TakeDamage(thisUnit:GetAttribute("DMG"))
+		targetUnit:TakeDamage(thisUnit:GetAttribute("DMG"), GameEnum.DamageSourceType.Unit, thisUnit.Id)
 		HitEvent:Fire(thisUnit.Id, targetUnit.Id)
 	end
 end
