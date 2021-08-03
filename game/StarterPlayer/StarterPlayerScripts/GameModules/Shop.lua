@@ -7,6 +7,7 @@ local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
@@ -46,6 +47,22 @@ Shop.GetUnitPersistentUpgradePrice = function(owner: number, unitName: string): 
     if (not prices) then return end
 
     return prices.Persistent
+end
+
+Shop.GetUnitSellingPrice = function(unitId: string): number?
+    local unit = Unit.fromId(unitId)
+    if (not unit) then return end
+
+    local unitSpending = ShopPrices.ObjectPlacementPrices[GameEnum.ObjectType.Unit][unit.Name]
+    local unitUpgradePrices = ShopPrices.UnitUpgradePrices[unit.Name]
+
+    for i = 2, unit.Level do
+        local levelUpgradePrices = unitUpgradePrices[i]
+
+        unitSpending = unitSpending + (levelUpgradePrices and levelUpgradePrices.Individual or 0)
+    end
+
+    return (unitSpending / 2)
 end
 
 ---

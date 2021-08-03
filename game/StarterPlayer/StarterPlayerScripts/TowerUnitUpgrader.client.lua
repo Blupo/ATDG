@@ -112,5 +112,10 @@ Unit.UnitAdded:Connect(function(unitId)
 end)
 
 Unit.UnitRemoving:Connect(function(unitId)
+    if (unitId == lastUnitId) then
+        dismountUpgradeGui()
+        lastUnitId = nil
+    end
+
     towerUnitModels[unitId] = nil
 end)

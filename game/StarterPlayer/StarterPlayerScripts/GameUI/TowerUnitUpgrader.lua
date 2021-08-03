@@ -55,6 +55,7 @@ TowerUnitUpgradeBillboard.didMount = function(self)
     local unitId = self.props.unitId
     local unit = Unit.fromId(unitId)
     local upgradePrice = Shop.GetUnitUpgradePrice(unitId)
+    local sellingPrice = Shop.GetUnitSellingPrice(unitId)
 
     local unitName = unit.Name
     local unitLevel = unit.Level
@@ -74,6 +75,7 @@ TowerUnitUpgradeBillboard.didMount = function(self)
         local newLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel)
         local newNextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel + 1)
         local newUpgradePrice = Shop.GetUnitUpgradePrice(unitId)
+        local newSellingPrice = Shop.GetUnitSellingPrice(unitId)
         local newAttributeChanges = {}
 
         for i = 1, #ATTRIBUTE_PREVIEW do
@@ -86,6 +88,7 @@ TowerUnitUpgradeBillboard.didMount = function(self)
             level = newLevel,
 
             upgradePrice = newUpgradePrice or Roact.None,
+            sellingPrice = newSellingPrice,
             attributeChanges = newAttributeChanges,
         })
     end)
@@ -104,6 +107,7 @@ TowerUnitUpgradeBillboard.didMount = function(self)
         target = unit:GetAttribute("UnitTargeting"),
 
         upgradePrice = upgradePrice,
+        sellingPrice = sellingPrice,
         attributeChanges = attributeChanges,
     })
 end
@@ -120,6 +124,7 @@ TowerUnitUpgradeBillboard.render = function(self)
 
     local target = self.state.target
     local upgradePrice = self.state.upgradePrice
+    local sellingPrice = self.state.sellingPrice
 
     local changesListChildren = {}
 
@@ -261,7 +266,7 @@ TowerUnitUpgradeBillboard.render = function(self)
 
             TargetingToggle = Roact.createElement("Frame", {
                 AnchorPoint = Vector2.new(0, 1),
-                Size = UDim2.new(0.5, -8, 0, 56),
+                Size = UDim2.new(0.5, -4, 0, 56),
                 Position = UDim2.new(0, 0, 1, 0),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
@@ -316,7 +321,7 @@ TowerUnitUpgradeBillboard.render = function(self)
 
             UpgradeButton = Roact.createElement("TextButton", {
                 AnchorPoint = Vector2.new(1, 1),
-                Size = UDim2.new(0.5, -8, 0, 32),
+                Size = UDim2.new(0.5, -4, 0, 32),
                 Position = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 0,
                 BorderSizePixel = 0,
@@ -329,7 +334,7 @@ TowerUnitUpgradeBillboard.render = function(self)
                 [Roact.Event.Activated] = function()
                     if (not upgradePrice) then return end
 
-                    Shop.PurchaseUnitUpgrade(unit.Owner, unitId)
+                    Shop.PurchaseUnitUpgrade(unitId)
                 end,
             }, {
                 UICorner = Roact.createElement("UICorner", {
@@ -356,6 +361,54 @@ TowerUnitUpgradeBillboard.render = function(self)
                     BorderSizePixel = 0,
 
                     Text = upgradePrice or "MAX",
+                    Font = Style.Constants.MainFont,
+                    TextSize = 16,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+                })
+            }),
+
+            SellButton = Roact.createElement("TextButton", {
+                AnchorPoint = Vector2.new(1, 1),
+                Size = UDim2.new(0.5, -4, 0, 32),
+                Position = UDim2.new(1, 0, 1, -40),
+                BackgroundTransparency = 0,
+                BorderSizePixel = 0,
+
+                Text = "",
+                TextTransparency = 1,
+
+                BackgroundColor3 = Color3.fromRGB(230, 230, 230),
+
+                [Roact.Event.Activated] = function()
+                    if (not sellingPrice) then return end
+
+                    Shop.SellUnit(unitId)
+                end,
+            }, {
+                UICorner = Roact.createElement("UICorner", {
+                    CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius)
+                }),
+
+                Icon = Roact.createElement("ImageLabel", {
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Size = UDim2.new(0, 20, 0, 20),
+                    Position = UDim2.new(0, 6, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Image = "rbxassetid://7198417722",
+                    ImageColor3 = Color3.new(0, 0, 0),
+                }),
+
+                SellingPriceLabel = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    Size = UDim2.new(0.75, 0, 0.75, 0),
+                    Position = UDim2.new(1, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Text = sellingPrice or "?",
                     Font = Style.Constants.MainFont,
                     TextSize = 16,
                     TextXAlignment = Enum.TextXAlignment.Center,

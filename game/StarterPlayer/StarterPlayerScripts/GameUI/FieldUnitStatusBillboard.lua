@@ -75,6 +75,8 @@ FieldUnitBillboard.willUnmount = function(self)
 end
 
 FieldUnitBillboard.render = function(self)
+    local hp, maxHP = self.state.hp, self.state.maxHP
+
     return Roact.createElement("BillboardGui", {
         Adornee = self.props.Adornee,
         Size = self.props.Size,
@@ -123,7 +125,7 @@ FieldUnitBillboard.render = function(self)
             })
         }),
 
-        HPBar = Roact.createElement("Frame", {
+        HPContainer = Roact.createElement("Frame", {
             AnchorPoint = Vector2.new(0.5, 1),
             Size = UDim2.new(1, 0, 0.5, 0),
             Position = UDim2.new(0.5, 0, 1, 0),
@@ -136,6 +138,16 @@ FieldUnitBillboard.render = function(self)
                 CornerRadius = UDim.new(Style.Constants.StandardCornerRadius / 50, 0)
             }),
 
+            HPBar = Roact.createElement("Frame", {
+                AnchorPoint = Vector2.new(0.5, 1),
+                Size = UDim2.new((hp / maxHP) * 0.9, 0, 0.05, 0),
+                Position = UDim2.new(0.5, 0, 1, 0),
+                BackgroundTransparency = 0,
+                BorderSizePixel = 0,
+
+                BackgroundColor3 = Color3.new(0, 0, 0),
+            }),
+
             HPReadout = Roact.createElement("TextLabel", {
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Size = UDim2.new(0.75, 0, 0.5, 0),
@@ -143,7 +155,7 @@ FieldUnitBillboard.render = function(self)
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
 
-                Text = string.format("%d/%d", self.state.hp, self.state.maxHP),
+                Text = string.format("%d/%d", math.floor(hp + 0.5), math.floor(maxHP + 0.5)),
                 Font = Style.Constants.MainFont,
                 TextScaled = true,
                 TextXAlignment = Enum.TextXAlignment.Center,

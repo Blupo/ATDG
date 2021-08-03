@@ -22,7 +22,7 @@ return {
 	Progression = {
 		[1] = {
 			Attributes = {
-				DMG = 1,
+				DMG = 0.1,
 				CD = 0.1,
 				RANGE = 10,
 			},
@@ -30,7 +30,7 @@ return {
 		
 		[2] = {
 			Attributes = {
-				CD = 0.25,
+				CD = 0.05,
 			},
 		},
 		

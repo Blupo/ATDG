@@ -71,6 +71,22 @@ Shop.GetUnitPersistentUpgradePrice = function(owner: number, unitName: string): 
     return prices.Persistent
 end
 
+Shop.GetUnitSellingPrice = function(unitId: string): number?
+    local unit = Unit.fromId(unitId)
+    if (not unit) then return end
+
+    local unitSpending = ShopPrices.ObjectPlacementPrices[GameEnum.ObjectType.Unit][unit.Name]
+    local unitUpgradePrices = ShopPrices.UnitUpgradePrices[unit.Name]
+
+    for i = 2, unit.Level do
+        local levelUpgradePrices = unitUpgradePrices[i]
+
+        unitSpending = unitSpending + (levelUpgradePrices and levelUpgradePrices.Individual or 0)
+    end
+
+    return (unitSpending / 2)
+end
+
 Shop.PurchaseTickets = function(userId: number, ticketItemId: string): PurchaseResult
 
 end
@@ -112,7 +128,7 @@ Shop.PurchaseSpecialActionToken = function(userId: number, actionName: string): 
 end
 
 Shop.PurchaseObjectPlacement = function(userId: number, objectType: ObjectType, objectName: string, position: Vector3, rotation: number): boolean
-    if (not Game.HasStarted()) then return end
+    if (not Game.HasStarted()) then return false end
 
     local placementPrice = Shop.GetObjectPlacementPrice(objectType, objectName)
     if (not placementPrice) then return false end
@@ -132,31 +148,33 @@ Shop.PurchaseObjectPlacement = function(userId: number, objectType: ObjectType, 
     end
 end
 
-Shop.PurchaseUnitUpgrade = function(userId: number, unitId: string): boolean
-    if (not Game.HasStarted()) then return end
+Shop.PurchaseUnitUpgrade = function(unitId: string): boolean
+    if (not Game.HasStarted()) then return false end
 
     local unit = Unit.fromId(unitId)
     if (not unit) then return false end
-    if (unit.Owner ~= userId) then return false end
+    if (unit.Owner == 0) then return false end
     if (unit.Type == GameEnum.UnitType.FieldUnit) then return false end -- Field Units cannot be upgraded once deployed
+
+    local ownerId = unit.Owner
 
     local upgradePrice = Shop.GetUnitUpgradePrice(unitId)
     if (not upgradePrice) then return false end
 
-    local pointsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Points)
+    local pointsBalance = PlayerData.GetPlayerCurrencyBalance(ownerId, GameEnum.CurrencyType.Points)
     if (not pointsBalance) then return false end
 
     if (upgradePrice > pointsBalance) then
         return false
     else
-        PlayerData.WithdrawCurrencyFromPlayer(userId, GameEnum.CurrencyType.Points, upgradePrice)
+        PlayerData.WithdrawCurrencyFromPlayer(ownerId, GameEnum.CurrencyType.Points, upgradePrice)
         unit:Upgrade()
         return true
     end
 end
 
 Shop.PurchaseUnitPersistentUpgrade = function(userId: number, unitName: string): boolean
-    if (not Game.HasStarted()) then return end
+    if (not Game.HasStarted()) then return false end
 
     local upgradePrice = Shop.GetUnitPersistentUpgradePrice(userId, unitName)
     if (not upgradePrice) then return false end
@@ -171,6 +189,19 @@ Shop.PurchaseUnitPersistentUpgrade = function(userId: number, unitName: string):
         Unit.DoUnitPersistentUpgrade(userId, unitName)
         return true
     end
+end
+
+Shop.SellUnit = function(unitId: string): boolean
+    if (not Game.HasStarted()) then return false end
+
+    local unit = Unit.fromId(unitId)
+    if (not unit) then return false end
+    if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return false end
+    if (unit.Owner == 0) then return false end
+
+    PlayerData.DepositCurrencyToPlayer(unit.Owner, GameEnum.CurrencyType.Points, Shop.GetUnitSellingPrice(unitId))
+    unit:Destroy()
+    return true
 end
 
 ---
@@ -193,21 +224,31 @@ System.addFunction("PurchaseSpecialActionToken", t.wrap(function(callingPlayer: 
 end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
 System.addFunction("PurchaseObjectPlacement", t.wrap(function(callingPlayer: Player, userId: number, objectType: string, objectName: string, position: Vector3, rotation: number)
-    if (callingPlayer.UserId ~= userId) then return end
+    if (callingPlayer.UserId ~= userId) then return false end
 
     return Shop.PurchaseObjectPlacement(userId, objectType, objectName, position, rotation)
 end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string, t.Vector3, t.number)), true)
 
-System.addFunction("PurchaseUnitUpgrade", t.wrap(function(callingPlayer: Player, userId: number, unitId: string)
-    if (callingPlayer.UserId ~= userId) then return end
+System.addFunction("PurchaseUnitUpgrade", t.wrap(function(callingPlayer: Player, unitId: string)
+    local unit = Unit.fromId(unitId)
+    if (not unit) then return false end
+    if (unit.Owner ~= callingPlayer.UserId) then return false end
 
-    return Shop.PurchaseUnitUpgrade(userId, unitId)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
+    return Shop.PurchaseUnitUpgrade(unitId)
+end, t.tuple(t.instanceOf("Player"), t.string)), true)
 
 System.addFunction("PurchaseUnitPersistentUpgrade", t.wrap(function(callingPlayer: Player, userId: number, unitName: string)
     if (callingPlayer.UserId ~= userId) then return end
 
     return Shop.PurchaseUnitPersistentUpgrade(userId, unitName)
 end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
+
+System.addFunction("SellUnit", t.wrap(function(callingPlayer: Player, unitId: string)
+    local unit = Unit.fromId(unitId)
+    if (not unit) then return false end
+    if (unit.Owner ~= callingPlayer.UserId) then return false end
+
+    return Shop.SellUnit(unitId)
+end, t.tuple(t.instanceOf("Player"), t.string)), true)
 
 return Shop
