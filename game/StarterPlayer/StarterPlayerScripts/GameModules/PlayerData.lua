@@ -18,12 +18,12 @@ local PlayerData = SystemCoordinator.getSystem("PlayerData")
 local localPlayerData = {}
 local localPlayerEphemeralCurrenciesBalances = {}
 
-local localPlayerProxy = function(callback, fallback)
+local localPlayerProxy = function(proxyCallback, mainCallback)
     return function(userId, ...)
-        if (userId ~= LocalPlayer.UserId) then
-            return callback(userId, ...)
+        if (userId == LocalPlayer.UserId) then
+            return proxyCallback(userId, ...)
         else
-            return fallback(userId, ...)
+            return mainCallback(userId, ...)
         end
     end
 end
