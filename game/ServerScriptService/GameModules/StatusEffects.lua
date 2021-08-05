@@ -39,17 +39,17 @@ local StatusEffects = {}
 StatusEffects.EffectApplied = EffectAppliedEvent.Event
 StatusEffects.EffectRemoved = EffectRemovedEvent.Event
 
-StatusEffects.UnitHasEffect = function(unit, effectName: string): boolean
-	local unitEffects = unitEffectPromises[unit.Id]
+StatusEffects.UnitHasEffect = function(unitId: string, effectName: string): boolean
+	local unitEffects = unitEffectPromises[unitId]
 	if (not unitEffects) then return false end
 	
 	return unitEffects[effectName] and true or false
 end
 
-StatusEffects.GetUnitEffects = function(unit): {string}
+StatusEffects.GetUnitEffects = function(unitId: string): {string}
 	local effectNames = {}
-	
-	local unitEffects = unitEffectPromises[unit.Id]
+
+	local unitEffects = unitEffectPromises[unitId]
 	if (not unitEffects) then return effectNames end
 	
 	for effectName in pairs(unitEffects) do
@@ -59,12 +59,15 @@ StatusEffects.GetUnitEffects = function(unit): {string}
 	return effectNames
 end
 
-StatusEffects.ApplyEffect = function(unit, effectName: string, duration: number, effectConfig: {[string]: any}?)
-	local unitEffects = unitEffectPromises[unit.Id]
+StatusEffects.ApplyEffect = function(unitId: string, effectName: string, duration: number, effectConfig: {[string]: any}?)
+	local unit = Unit.fromId(unitId)
+	if (not unit) then return end
+
+	local unitEffects = unitEffectPromises[unitId]
 	
 	if (not unitEffects) then
-		unitEffectPromises[unit.Id] = {}
-		unitEffects = unitEffectPromises[unit.Id]
+		unitEffectPromises[unitId] = {}
+		unitEffects = unitEffectPromises[unitId]
 	end
 	
 	if (unitEffects[effectName]) then return end
@@ -78,7 +81,7 @@ StatusEffects.ApplyEffect = function(unit, effectName: string, duration: number,
 	
 	-- interactions
 	for interactingEffectName, interaction in pairs(interactions) do
-		if (StatusEffects.UnitHasEffect(unit, interactingEffectName)) then
+		if (StatusEffects.UnitHasEffect(unitId, interactingEffectName)) then
 			local result = interaction(StatusEffects, unit)
 			
 			if (result == GameEnum.StatusEffectInteractionResult.DoNotApply) then
@@ -102,6 +105,7 @@ StatusEffects.ApplyEffect = function(unit, effectName: string, duration: number,
 			end
 			
 			unitEffects[effectName] = nil
+			EffectRemovedEvent:Fire(unitId, effectName)
 		end, duration)
 	elseif (effectType == GameEnum.StatusEffectType.Periodic) then
 		local totalElapsed = 0
@@ -121,11 +125,11 @@ StatusEffects.ApplyEffect = function(unit, effectName: string, duration: number,
 		unitEffects[effectName] = scheduleCallback(periodicCallback, nil, effectData.Interval)
 	end
 	
-	EffectAppliedEvent:Fire(unit.Id, effectName)
+	EffectAppliedEvent:Fire(unitId, effectName)
 end
 
-StatusEffects.RemoveEffect = function(unit, effectName: string)
-	local unitEffects = unitEffectPromises[unit.Id]
+StatusEffects.RemoveEffect = function(unitId: string, effectName: string)
+	local unitEffects = unitEffectPromises[unitId]
 	if (not unitEffects) then return end
 	
 	local effectPromise = unitEffects[effectName]
@@ -134,50 +138,53 @@ StatusEffects.RemoveEffect = function(unit, effectName: string)
 	effectPromise:cancel()
 	unitEffects[effectName] = nil
 	
-	EffectRemovedEvent:Fire(unit, effectName)
+	EffectRemovedEvent:Fire(unitId, effectName)
 end
 
-StatusEffects.ClearEffects = function(unit)
-	local unitEffects = unitEffectPromises[unit.Id]
+StatusEffects.ClearEffects = function(unitId: string)
+	local unitEffects = unitEffectPromises[unitId]
 	if (not unitEffects) then return end
 	
 	for effectName, effectPromise in pairs(unitEffects) do
 		effectPromise:cancel()
 		unitEffects[effectName] = nil
 		
-		EffectRemovedEvent:Fire(unit, effectName)
+		EffectRemovedEvent:Fire(unitId, effectName)
 	end
 end
 
 ---
 
-Unit.UnitRemoving:Connect(function(unitId)
-	if (not unitEffectPromises[unitId]) then return end
+Unit.UnitAdded:Connect(function(unitId: string)
+	unitEffectPromises[unitId] = {}
+end)
+
+Unit.UnitRemoving:Connect(function(unitId: string)
+	local unitEffects = unitEffectPromises[unitId]
+	if (not unitEffects) then return end
 	
-	StatusEffects.ClearEffects(Unit.fromId(unitId))
+	for effectName, effectPromise in pairs(unitEffects) do
+		effectPromise:cancel()
+		unitEffects[effectName] = nil
+	end
+	
 	unitEffectPromises[unitId] = nil
 end)
 
-EffectAppliedEvent.Event:Connect(function(unit, effectName: string)
-	EffectAppliedRemoteEvent:FireAllClients(unit.Id, effectName)
+EffectAppliedEvent.Event:Connect(function(unitId: string, effectName: string)
+	EffectAppliedRemoteEvent:FireAllClients(unitId, effectName)
 end)
 
-EffectRemovedEvent.Event:Connect(function(unit, effectName: string)
-	EffectRemovedRemoteEvent:FireAllClients(unit.Id, effectName)
+EffectRemovedEvent.Event:Connect(function(unitId: string, effectName: string)
+	EffectRemovedRemoteEvent:FireAllClients(unitId, effectName)
 end)
 
 System.addFunction("UnitHasEffect", t.wrap(function(_: Player, unitId: string, effectName: string): boolean
-	local unit = Unit.fromId(unitId)
-	if (not unit) then return false end
-	
-	return StatusEffects.UnitHasEffect(unit, effectName)
+	return StatusEffects.UnitHasEffect(unitId, effectName)
 end, t.tuple(t.instanceOf("Player"), t.string, t.string)), true)
 
 System.addFunction("GetUnitEffects", t.wrap(function(_: Player, unitId: string): {string}
-	local unit = Unit.fromId(unitId)
-	if (not unit) then return {} end
-	
-	return StatusEffects.GetUnitEffects(unit)
+	return StatusEffects.GetUnitEffects(unitId)
 end, t.tuple(t.instanceOf("Player"), t.string)), true)
 
 return StatusEffects

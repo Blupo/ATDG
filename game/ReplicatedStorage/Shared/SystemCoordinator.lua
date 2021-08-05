@@ -74,8 +74,28 @@ end
 
 local SystemCoordinator = {}
 
-SystemCoordinator.getSystem = function(systemName)
+SystemCoordinator.getSystem = function(systemName: string)
     return systems[systemName]
+end
+
+SystemCoordinator.waitForSystem = function(systemName: string)
+    local system = systems[systemName]
+    if (system) then return system end
+
+    local elapsed = 0
+    local notifiedInfiniteWait = false
+
+    repeat
+        system = systems[systemName]
+        elapsed = elapsed + RunService.Heartbeat:Wait()
+
+        if ((not notifiedInfiniteWait) and (elapsed >= 5)) then
+            notifiedInfiniteWait = true
+            warn("Infinite yield possible on system " .. systemName)
+        end
+    until (system)
+    
+    return system
 end
 
 if (RunService:IsServer()) then

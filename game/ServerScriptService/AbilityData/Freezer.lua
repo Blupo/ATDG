@@ -16,6 +16,6 @@ return {
     AbilityType = GameEnum.AbilityType.OnHit,
 
     Callback = function(_, data)
-        StatusEffects.ApplyEffect(data.TargetUnit, "Frozen", 2)
+        StatusEffects.ApplyEffect(data.TargetUnit.Id, "Frozen", 2)
     end
 }

@@ -17,7 +17,7 @@ local LocalPlayer = Players.LocalPlayer
 local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
 
-local Unit = SystemCoordinator.getSystem("Unit")
+local Unit = SystemCoordinator.waitForSystem("Unit")
 local GetUnitPersistentUpgradeLevelRemoteFunction = Unit.GetUnitPersistentUpgradeLevel
 local SetAttributeRemoteFunction = Unit.SetAttribute
 

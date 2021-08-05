@@ -23,7 +23,7 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local Promise = require(SharedModules:WaitForChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
-local Game = SystemCoordinator.getSystem("Game")
+local Game = SystemCoordinator.waitForSystem("Game")
 
 ---
 

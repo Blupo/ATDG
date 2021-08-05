@@ -22,7 +22,7 @@ return {
 	
 	Interactions = {
 		Frozen = function(StatusEffects, unit)
-			StatusEffects.RemoveEffect(unit, "Frozen")
+			StatusEffects.RemoveEffect(unit.Id, "Frozen")
 			unit:TakeDamage(unit:GetAttribute("HP") * BURST_RATIO)
 
 			return GameEnum.StatusEffectInteractionResult.DoNotApply

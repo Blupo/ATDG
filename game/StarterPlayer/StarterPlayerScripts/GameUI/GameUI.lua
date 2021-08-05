@@ -14,7 +14,7 @@ local Padding = require(root:WaitForChild("Padding"))
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
-local Game = SystemCoordinator.getSystem("Game")
+local Game = SystemCoordinator.waitForSystem("Game")
 
 ---
 

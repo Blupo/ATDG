@@ -11,7 +11,7 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
-local Shop = SystemCoordinator.getSystem("Shop")
+local Shop = SystemCoordinator.waitForSystem("Shop")
 
 ---
 

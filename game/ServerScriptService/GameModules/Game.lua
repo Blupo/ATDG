@@ -328,11 +328,11 @@ advanceGamePhase = function()
 							end
 
 							for effectName, duration in pairs(unitStatusEffects) do
-								StatusEffects.ApplyEffect(effectName, duration)
+								StatusEffects.ApplyEffect(newUnit.Id, effectName, duration)
 							end
 
 							for abilityName in pairs(unitAbilities) do
-								newUnit:GiveAbility(abilityName)
+								Abilities.GiveAbility(newUnit.Id, abilityName)
 							end
 							
 							Path.PursuePath(newUnit, pathNum)
@@ -403,6 +403,8 @@ local loadMap = function(mapData)
 end
 
 local playerAdded = function(player)
+	if (not challengeData) then return end -- todo: properly fix this
+
 	local userId = player.UserId
 
 	PlayerData.WaitForPlayerProfile(userId):andThen(function()

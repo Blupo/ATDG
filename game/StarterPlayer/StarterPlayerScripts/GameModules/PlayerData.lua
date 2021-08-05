@@ -11,7 +11,7 @@ local PermanentObjectGrants = require(SharedModules:FindFirstChild("PermanentObj
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerData = SystemCoordinator.getSystem("PlayerData")
+local PlayerData = SystemCoordinator.waitForSystem("PlayerData")
 
 ---
 
