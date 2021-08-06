@@ -1,15 +1,17 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local GameUI = script.Parent
-local PlayerScripts = GameUI.Parent
-
-local Roact = require(GameUI:WaitForChild("Roact"))
-local Style = require(GameUI:WaitForChild("Style"))
-
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+
+local GameUI = PlayerScripts:WaitForChild("GameUI")
+local Roact = require(GameUI:WaitForChild("Roact"))
+local Style = require(GameUI:WaitForChild("Style"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))
@@ -47,18 +49,6 @@ FieldUnitBillboard.didMount = function(self)
     local thisUnitId = self.props.unitId
     local thisUnit = Unit.fromId(self.props.unitId)
     if (not thisUnit) then return end
-
-    self.unitRemoving = Unit.UnitRemoving:Connect(function(unitId)
-        if (unitId ~= thisUnit) then return end
-
-        if (self.hpChanged) then
-            self.hpChanged:Disconnect()
-            self.hpChanged = nil
-        end
-
-        self.unitRemoving:Disconnect()
-        self.unitRemoving = nil
-    end)
 
     self.hpChanged = thisUnit.AttributeChanged:Connect(function(attributeName, newValue)
         if (attributeName ~= "HP") then return end
@@ -119,7 +109,6 @@ FieldUnitBillboard.didMount = function(self)
 end
 
 FieldUnitBillboard.willUnmount = function(self)
-    self.unitRemoving:Disconnect()
     self.hpChanged:Disconnect()
     self.effectApplied:Disconnect()
     self.effectRemoved:Disconnect()

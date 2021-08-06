@@ -18,6 +18,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local GameUI = PlayerScripts:WaitForChild("GameUI")
 local Roact = require(GameUI:WaitForChild("Roact"))
 local FieldUnitStatusBillboard = require(GameUI:WaitForChild("FieldUnitStatusBillboard"))
+local TowerUnitStatusBillboard = require(GameUI:WaitForChild("TowerUnitStatusBillboard"))
 
 local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 
@@ -27,8 +28,8 @@ local unitBillboardTrees = {}
 
 Unit.UnitAdded:Connect(function(unitId)
     local unit = Unit.fromId(unitId)
-    if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
 
+    local unitType = unit.Type
     local unitModel = unit.Model
     local templateUnitModel = UnitModels:FindFirstChild(unit.Name)
     
@@ -39,11 +40,11 @@ Unit.UnitAdded:Connect(function(unitId)
 
     local _, boundingBoxSize = unitModel:GetBoundingBox()
 
-    unitBillboardTrees[unitId] = Roact.mount(Roact.createElement(FieldUnitStatusBillboard, {
+    unitBillboardTrees[unitId] = Roact.mount(Roact.createElement((unitType == GameEnum.UnitType.FieldUnit) and FieldUnitStatusBillboard or TowerUnitStatusBillboard, {
         unitId = unitId,
 
-        Adornee = unitModel.PrimaryPart,
-        Size = UDim2.new(2.5, 0, 1, 0),
+        Adornee = unitModel,
+        Size = UDim2.new(2.5, 0, (unitType == GameEnum.UnitType.FieldUnit) and 1 or 0.2, 0),
         StudsOffsetWorldSpace = Vector3.new(0, ((boundingBoxSize.Y + 1) / 2) + 0.5, 0)
     }), PlayerGui, unitId .. "_Billboard")
 end)
