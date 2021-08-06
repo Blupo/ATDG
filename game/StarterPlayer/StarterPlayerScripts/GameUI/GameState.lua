@@ -870,7 +870,7 @@ GameState.render = function(self)
                 LayoutOrder = 1,
                 Image = "rbxassetid://6711444602",
                 ImageColor3 = Color3.new(1, 0, 0),
-                Text = math.floor(self.state.centralTowerHP + 0.5),
+                Text = math.ceil(self.state.centralTowerHP),
 
                 BkgColor = Color3.new(1, 0, 0),
             })

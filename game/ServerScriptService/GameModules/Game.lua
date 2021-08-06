@@ -189,6 +189,31 @@ local mergeUnitDataTable = function(from, to)
 	end
 end
 
+local addPointsToPlayerAccumulator = function(playerId: number, points: number)
+	local payoutAccumulator = pointPayoutAccumulators[playerId]
+
+	if (not payoutAccumulator) then
+		pointPayoutAccumulators[playerId] = {
+			Total = 0,
+			Payout = 0,
+		}
+
+		payoutAccumulator = pointPayoutAccumulators[playerId]
+	end
+
+	local newTotal = payoutAccumulator.Total + points
+	local difference = newTotal - payoutAccumulator.Payout
+
+	if (difference >= 1) then
+		local wholeDifference = math.floor(difference + 0.5)
+
+		PlayerData.DepositCurrencyToPlayer(playerId, GameEnum.CurrencyType.Points, wholeDifference)
+		payoutAccumulator.Payout = payoutAccumulator.Payout + wholeDifference
+	end
+	
+	payoutAccumulator.Total = newTotal
+end
+
 local calculateUnitRoundData = function()
 	if (not currentGameData) then return end
 	
@@ -251,6 +276,24 @@ advanceGamePhase = function()
 		local roundData = challengeData.Rounds[currentRound]
 		
 		-- award points
+		if (difficulty == GameEnum.Difficulty.Hard) then
+			pointsToAward = pointsToAward / 2
+
+			local wholePoints = math.floor(pointsToAward)
+			local difference = pointsToAward - wholePoints
+
+			-- add the difference into the accumulators
+			if (difference > 0) then
+				local players = Players:GetPlayers()
+
+				for i = 1, #players do
+					addPointsToPlayerAccumulator(players[i].UserId, difference)
+				end
+			end
+
+			pointsToAward = wholePoints
+		end
+
 		PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Points, pointsToAward)
 
 		-- trigger RoundStart abilities
@@ -403,8 +446,8 @@ local loadMap = function(mapData)
 end
 
 local playerAdded = function(player)
-	if (not challengeData) then return end -- todo: properly fix this
-
+	if (not challengeData) then return end -- todo: properly handle this
+	
 	local userId = player.UserId
 
 	PlayerData.WaitForPlayerProfile(userId):andThen(function()
@@ -588,28 +631,7 @@ Unit.UnitAdded:Connect(function(unitId)
 		local playerId = attackerUnit.Owner
 		if (not Players:GetPlayerByUserId(playerId)) then return end
 
-		local payoutAccumulator = pointPayoutAccumulators[playerId]
-		
-		if (not payoutAccumulator) then
-			pointPayoutAccumulators[playerId] = {
-				Total = 0,
-				Payout = 0,
-			}
-
-			payoutAccumulator = pointPayoutAccumulators[playerId]
-		end
-
-		local newTotal = payoutAccumulator.Total + damage
-		local difference = newTotal - payoutAccumulator.Payout
-
-		if (difference >= 1) then
-			local wholeDifference = math.floor(difference + 0.5)
-
-			PlayerData.DepositCurrencyToPlayer(playerId, GameEnum.CurrencyType.Points, wholeDifference)
-			payoutAccumulator.Payout = payoutAccumulator.Payout + wholeDifference
-		end
-		
-		payoutAccumulator.Total = newTotal
+		addPointsToPlayerAccumulator(playerId, damage)
 	end)
 end)
 

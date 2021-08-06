@@ -151,8 +151,10 @@ PlacementFlow.Start = function(objType: string, objName: string)
 		if (not raycastResult) then return end
 		if (not Placement.CanPlace(objType, objName, raycastResult.Position, objRotation).CanPlace) then return end
 
-		Shop.PurchaseObjectPlacement(LocalPlayer.UserId, objType, objName, raycastResult.Position, objRotation)
+		local cacheObjRotation = objRotation -- PlacementFlow.Stop clears objRotation
+
 		PlacementFlow.Stop()
+		Shop.PurchaseObjectPlacement(LocalPlayer.UserId, objType, objName, raycastResult.Position, cacheObjRotation)
 	end)
 
 	local PlacementArea = objModel:FindFirstChild("PlacementArea")
