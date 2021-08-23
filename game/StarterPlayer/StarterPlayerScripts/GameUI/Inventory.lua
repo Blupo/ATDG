@@ -217,7 +217,7 @@ Inventory.render = function(self)
         CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
 
         FillDirection = Enum.FillDirection.Horizontal,
-        FillDirectionMaxCells = 2,
+        FillDirectionMaxCells = 3,
         SortOrder = Enum.SortOrder.LayoutOrder,
         StartCorner = Enum.StartCorner.TopLeft,
         HorizontalAlignment = Enum.HorizontalAlignment.Left,

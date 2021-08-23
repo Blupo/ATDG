@@ -55,6 +55,11 @@ type PlayerData = {
     Transactions: dictionary<string, boolean>
 }
 
+type TransactionRecordingResult = {
+    Success: boolean,
+    FailureReason: string,
+}
+
 ---
 
 local HOTBAR_SIZE = 5
@@ -85,6 +90,13 @@ ProfileStore = ProfileStore.Mock --RunService:IsStudio() and ProfileStore.Mock o
 
 local playerProfiles = {}
 local ephemeralCurrenciesBalances = {}
+
+local makeTransactionRecordingResult = function(failureReason: string?): TransactionRecordingResult
+	return {
+		Success = (not failureReason) and true or false,
+		FailureReason = failureReason or GameEnum.TransactionRecordingFailureReason.None
+	}
+end
 
 local playerAdded = function(player: Player)
     local userId = player.UserId
@@ -150,6 +162,20 @@ PlayerData.WaitForPlayerData = function(userId: number)
     end
 
     return playerProfiles[userId].Data
+end
+
+PlayerData.RecordTransaction = function(userId: number, transactionType: string, transactionId: string, transactionInfo: {[string]: any}): TransactionRecordingResult
+    local profile = playerProfiles[userId]
+    if (not profile) then return makeTransactionRecordingResult(GameEnum.TransactionRecordingFailureReason.ProfileNotReady) end
+
+    local transactions = profile.Data.Transactions
+    if (transactions[transactionId]) then return makeTransactionRecordingResult(GameEnum.TransactionRecordingFailureReason.TransactionAlreadyRecorded) end
+
+    transactionInfo = CopyTable(transactionInfo)
+    transactionInfo.TransactionType = transactionType
+    transactions[transactionId] = transactionInfo
+
+    return makeTransactionRecordingResult()
 end
 
 PlayerData.GetPlayerInventory = function(userId: number): PlayerInventory?

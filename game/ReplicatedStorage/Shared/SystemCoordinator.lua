@@ -40,7 +40,12 @@ if (RunService:IsServer()) then
                     end 
                 end
 
-                local result = callback(player, ...)
+                -- callbacks can only return at most one value
+                local success, result = pcall(callback, player, ...)
+
+                if (not success) then
+                    warn(result)
+                end
 
                 if (playerDebounce) then
                     debounceTable[player.UserId] = nil

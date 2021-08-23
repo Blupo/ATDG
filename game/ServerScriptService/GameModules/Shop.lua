@@ -1,4 +1,5 @@
 local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -31,6 +32,35 @@ type TransactionLog = {
     Status: TransactionStatus,
     PurchaseType: PurchaseType,
     Price: number,
+}
+
+---
+
+local devProductTypes = {}
+local devProductPromotions = {}
+
+local devProducts = {
+    [GameEnum.DevProductType.Ticket] = {
+        [GameEnum.PromotionalPricing.None] = {
+            [5] = 1195695901,
+            [10] = 1195695933,
+            [25] = 1195695982,
+            [100] = 1195697350,
+            [250] = 1195698157,
+        },
+
+        [GameEnum.PromotionalPricing.Summer] = {
+            [5] = 1195698990,
+            [10] = 1195699016,
+            [25] = 1195699094,
+            [100] = 1195699199,
+            [250] = 1195699341,
+        }
+    },
+
+    [GameEnum.DevProductType.ValuePack] = {
+
+    }
 }
 
 ---
@@ -87,8 +117,22 @@ Shop.GetUnitSellingPrice = function(unitId: string): number?
     return (unitSpending / 2)
 end
 
-Shop.PurchaseTickets = function(userId: number, ticketItemId: string): PurchaseResult
+-- Displays the appropriate dev product to prompt, Marketplace.ProcessReceipt handles the actual purchases
+Shop.PurchaseTickets = function(userId: number, quantity: number)
+    local player = Players:GetPlayerByUserId(userId)
+    if (not player) then return end
 
+    -- todo: do some magic to get the current sale
+    local now = DateTime.now().UnixTimestamp
+
+    local currentPromotion = GameEnum.PromotionalPricing.None
+    local products = devProducts[GameEnum.DevProductType.Ticket][currentPromotion]
+    if (not products) then return end
+
+    local productId = products[quantity]
+    if (not productId) then return end
+
+    MarketplaceService:PromptProductPurchase(player, productId, false)
 end
 
 Shop.PurchaseObjectGrant = function(userId: number, objectType: ObjectType, objectName: string): PurchaseResult
@@ -206,14 +250,83 @@ end
 
 ---
 
-MarketplaceService.ProcessReceipt = function(receiptInfo)
-    warn("implement pls")
-    return Enum.ProductPurchaseDecision.NotProcessedYet
+for productType, promotions in pairs(devProducts) do
+    for promotion, products in pairs(promotions) do
+        for _, productId in pairs(products) do
+            devProductTypes[productId] = productType
+            devProductPromotions[productId] = promotion
+        end
+    end
 end
 
-System.addFunction("PurchaseTickets", t.wrap(function(callingPlayer: Player, userId: number)
+MarketplaceService.ProcessReceipt = function(receiptInfo)
+    local purchaseId = receiptInfo.PurchaseId
+    local productId = receiptInfo.ProductId
+    local playerId = receiptInfo.PlayerId
 
-end, t.tuple(t.instanceOf("Player"), t.number)), true)
+    local productType = devProductTypes[productId]
+    local promotionType = devProductPromotions[productId]
+
+    if (not productType) then
+        warn("Unable to process purchase " .. purchaseId .. ": Attempted to purchase an invalid product")
+        return Enum.ProductPurchaseDecision.NotProcessedYet
+    end
+
+    -- check if the product is purchasable
+    -- todo: do some magic to get the current sale
+    local now = DateTime.now().UnixTimestamp
+
+    local currentPromotion = GameEnum.PromotionalPricing.None
+
+    if (promotionType ~= currentPromotion) then
+        warn("Unable to process purchase " .. purchaseId .. ": Attempted to purchase a product outside if its promotion period")
+        return Enum.ProductPurchaseDecision.NotProcessedYet
+    end
+
+    -- record purchase
+    local recordTransactionResult = PlayerData.RecordTransaction(playerId, GameEnum.TransactionType.DevProductPurchase, purchaseId, {
+        ProductType = productType,
+        ProductId = productId,
+        AmountPaid = receiptInfo.CurrencySpent,
+    })
+
+    if (not recordTransactionResult.Success) then
+        if (recordTransactionResult.FailureReason == GameEnum.TransactionRecordingFailureReason.TransactionAlreadyRecorded) then
+            return Enum.ProductPurchaseDecision.PurchaseGranted 
+        else
+            warn("Unable to process purchase " .. purchaseId .. ": Could not record transaction, " .. recordTransactionResult.FailureReason)
+            return Enum.ProductPurchaseDecision.NotProcessedYet
+        end
+    end
+
+    -- todo: the purchase should also be recorded by a third party
+
+    -- grant product
+    if (productType == GameEnum.DevProductType.Ticket) then
+        local ticketAmount
+        local ticketProducts = devProducts[GameEnum.DevProductType.Ticket][currentPromotion]
+
+        for amount, ticketProductId in pairs(ticketProducts) do
+            if (productId == ticketProductId) then
+                ticketAmount = amount
+            end
+        end
+
+        -- todo: how do we handle this failing?
+        PlayerData.DepositCurrencyToPlayer(playerId, GameEnum.CurrencyType.Tickets, ticketAmount)
+    elseif (productType == GameEnum.DevProductType.ValuePack) then
+        -- todo
+    end
+
+    -- todo: notify the user that their purchase was successful, and give them the purchase ID to record
+    return Enum.ProductPurchaseDecision.PurchaseGranted
+end
+
+System.addFunction("PurchaseTickets", t.wrap(function(callingPlayer: Player, userId: number, quantity: number)
+    if (callingPlayer.UserId ~= userId) then return end
+
+    Shop.PurchaseTickets(userId, quantity)
+end, t.tuple(t.instanceOf("Player"), t.number, t.number)), true)
 
 System.addFunction("PurchaseObjectGrant", t.wrap(function(callingPlayer: Player, userId: number)
 
