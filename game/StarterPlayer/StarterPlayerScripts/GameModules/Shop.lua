@@ -23,6 +23,10 @@ Shop.GetObjectPlacementPrice = function(objectType: string, objectName: string):
     return ShopPrices.ObjectPlacementPrices[objectType][objectName]
 end
 
+Shop.GetItemPrice = function(itemType: string, itemName: string): number?
+    return ShopPrices.ItemPrices[itemType][itemName]
+end
+
 Shop.GetUnitUpgradePrice = function(unitId: string): number?
     local unit = Unit.fromId(unitId)
     if (not unit) then return end

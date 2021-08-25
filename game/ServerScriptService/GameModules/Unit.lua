@@ -482,7 +482,7 @@ for _, unitDataScript in pairs(UnitData:GetChildren()) do
 	local unitName = unitDataScript.Name
 
 	if (unitDataScript:IsA("ModuleScript") and (not unitDataCache[unitName])) then
-		unitDataCache[unitDataScript.Name] = require(unitDataScript)
+		unitDataCache[unitName] = require(unitDataScript)
 	end
 end
 

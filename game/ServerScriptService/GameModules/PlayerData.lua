@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -11,6 +12,7 @@ local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local EphemeralCurrencies = require(SharedModules:FindFirstChild("EphemeralCurrencies"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
+local MakeActionResult = require(SharedModules:FindFirstChild("MakeActionResult"))
 local PermanentObjectGrants = require(SharedModules:FindFirstChild("PermanentObjectGrants"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
@@ -71,17 +73,22 @@ local DEFAULT_HOTBARS = {
 }
 
 local PlayerDataTemplate: PlayerData = {
-    Currencies = {},
     Transactions = {},
     Hotbars = DEFAULT_HOTBARS,
+    
+    Currencies = {
+        [GameEnum.CurrencyType.Tickets] = 10, -- DEBUG
+    },
 
     ObjectGrants = {
-        Unit = {},
-        Roadblock = {},
+        [GameEnum.ObjectType.Unit] = {},
+        [GameEnum.ObjectType.Roadblock] = {},
     },
     
     Inventory = {
-        SpecialAction = {},
+        [GameEnum.ItemType.SpecialAction] = {
+            Expel_TEST = 99,
+        },
     },
 }
 
@@ -90,13 +97,6 @@ ProfileStore = ProfileStore.Mock --RunService:IsStudio() and ProfileStore.Mock o
 
 local playerProfiles = {}
 local ephemeralCurrenciesBalances = {}
-
-local makeTransactionRecordingResult = function(failureReason: string?): TransactionRecordingResult
-	return {
-		Success = (not failureReason) and true or false,
-		FailureReason = failureReason or GameEnum.TransactionRecordingFailureReason.None
-	}
-end
 
 local playerAdded = function(player: Player)
     local userId = player.UserId
@@ -109,6 +109,7 @@ local playerAdded = function(player: Player)
 
         profile:ListenToRelease(function()
             playerProfiles[userId] = nil
+
             -- todo: come up with a better message than this
             player:Kick("User profile was released")
         end)
@@ -164,18 +165,31 @@ PlayerData.WaitForPlayerData = function(userId: number)
     return playerProfiles[userId].Data
 end
 
-PlayerData.RecordTransaction = function(userId: number, transactionType: string, transactionId: string, transactionInfo: {[string]: any}): TransactionRecordingResult
+PlayerData.RecordTransaction = function(userId: number, transactionType: string, transactionId: string, transactionInfo: {[string]: any})
+    transactionId = transactionId or HttpService:GenerateGUID(false)
+
     local profile = playerProfiles[userId]
-    if (not profile) then return makeTransactionRecordingResult(GameEnum.TransactionRecordingFailureReason.ProfileNotReady) end
+    if (not profile) then return MakeActionResult(GameEnum.TransactionRecordingFailureReason.ProfileNotReady) end
 
     local transactions = profile.Data.Transactions
-    if (transactions[transactionId]) then return makeTransactionRecordingResult(GameEnum.TransactionRecordingFailureReason.TransactionAlreadyRecorded) end
+    if (transactions[transactionId]) then return MakeActionResult(GameEnum.TransactionRecordingFailureReason.TransactionAlreadyRecorded) end
 
     transactionInfo = CopyTable(transactionInfo)
     transactionInfo.TransactionType = transactionType
+    transactionInfo.TransactionDate = DateTime.now():ToIsoDate()
     transactions[transactionId] = transactionInfo
 
-    return makeTransactionRecordingResult()
+    --- FOR DEBUG ONLY
+    print("Transaction " .. transactionId .. " Information")
+
+    for k, v in pairs(transactionInfo) do
+        print(k .. ": ", v)
+    end
+
+    print("--------------------")
+    ---
+
+    return MakeActionResult()
 end
 
 PlayerData.GetPlayerInventory = function(userId: number): PlayerInventory?

@@ -27,7 +27,7 @@ local Style = {
         CDAttributeIcon = "rbxassetid://6869243794",
         PathTypeAttributeIcon = "rbxassetid://6869214399",
         DEFAttributeIcon = "rbxassetid://6869202551",
-        HPAttributeIcon = "rbxassetid://6711444602",
+        MaxHPAttributeIcon = "rbxassetid://6711444602",
         DMGAttributeIcon = "rbxassetid://6967009882",
 
         InventoryIcon = "rbxassetid://6967724371",
@@ -42,7 +42,7 @@ local Style = {
         SPDAttributeIconColor = Color3.fromRGB(255, 170, 0),
         CDAttributeIconColor = Color3.fromRGB(255, 170, 0),
 
-        HPAttributeIconColor = Color3.new(1, 0, 0),
+        MaxHPAttributeIconColor = Color3.new(1, 0, 0),
         DMGAttributeIconColor = Color3.new(1, 0, 0),
 
         PathTypeAttributeIconColor = Color3.fromRGB(0, 170, 0),

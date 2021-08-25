@@ -35,16 +35,19 @@ return setmetatable({
 	AbilityActionResult = makeEnum("GameRnums.AbilityActionResult", { "CancelEvent", "None" }),
 	GamePhase = makeEnum("GameEnum.GamePhase", { "NotStarted", "Preparation", "Round", "Intermission", "FinalIntermission", "Ended" }),
 	GameMode = makeEnum("GameEnum.GameMode", { "TowerDefense", "Endless" }),
-	PlacementFailureReason = makeEnum("GameEnum.PlacementFailureReason", { "ObjectDoesNotExist", "InvalidPosition", "IncorrectSurfaceType", "NotPointingUp", "NotBounded", "NoVerticalClearance", "ObjectCollision", "LimitExceeded", "None", "Fallback" }),
+	PlacementFailureReason = makeEnum("GameEnum.PlacementFailureReason", { "ObjectDoesNotExist", "InvalidPosition", "IncorrectSurfaceType", "NotPointingUp", "NotBounded", "NoVerticalClearance", "ObjectCollision", "LimitExceeded" }),
 	CurrencyType = makeEnum("GameEnum.CurrencyType", { "Tickets", "Points" }),
 	ItemType = makeEnum("GameEnum.ItemType", { "SpecialAction" }),
-	PurchaseFailureReason = makeEnum("GameEnum.PurchaseFailureReason", { "None", "CannotAcquireProfile", "AlreadyPurchased" }),
+	PurchaseFailureReason = makeEnum("GameEnum.PurchaseFailureReason", { "CannotAcquireProfile", "AlreadyPurchased" }),
 	ObjectViewportTitleType = makeEnum("GameEnum.ObjectViewportTitleType", { "PlacementPrice", "ObjectName" }),
 	DamageSourceType = makeEnum("GameEnum.DamageSourceType", { "Unit", "Almighty" }),
 	PromotionalPricing = makeEnum("GameEnum.PromotionalPricing", { "None", "Summer" }),
 	DevProductType = makeEnum("GameEnum.DevProductType", { "Ticket", "ValuePack" }),
 	TransactionType = makeEnum("GameEnum.DevProductType", { "DevProductPurchase", "TicketSpending" }),
-	TransactionRecordingFailureReason = makeEnum("GameEnum.TransactionRecordingFailureReason", { "ProfileNotReady", "TransactionAlreadyRecorded", "None", "Fallback" }),
+	TransactionRecordingFailureReason = makeEnum("GameEnum.TransactionRecordingFailureReason", { "CannotAcquireProfile", "TransactionAlreadyRecorded" }),
+	GenericActionResult = makeEnum("GameEnum.GenericActionResult", { "None" }),
+	SpecialActionUsageResult = makeEnum("GameEnum.SpecialActionUsageResult", { "InvalidActionName", "NoInventory", "PlayerLimited", "GameLimited", "PlayerCooldown", "GameCooldown" }),
+	SpecialActionLimitType = makeEnum("GameEnum.SpecialActionLimitType", { "PlayerLimit", "GameLimit", "PlayerCooldown", "GameCooldown" })
 }, {
 	__index = function(_, key)
 		error(tostring(key) .. " is not a valid enum")

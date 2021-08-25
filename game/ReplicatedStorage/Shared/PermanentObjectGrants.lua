@@ -15,6 +15,10 @@ return {
         TestAirTargetingTowerUnit = true,
         TestPassiveIncomeTowerUnit = true,
         TestFreezerTowerUnit = true,
+
+        TestFieldUnit = true,
+        TestBiggerFieldUnit = true,
+        TestAirFieldUnit = true,
     },
 
     [GameEnum.ObjectType.Roadblock] = {

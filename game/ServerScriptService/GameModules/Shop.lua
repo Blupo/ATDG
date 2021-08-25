@@ -21,21 +21,6 @@ local System = SystemCoordinator.newSystem("Shop")
 
 ---
 
-type PurchaseResult = {
-    Success: boolean,
-    FailureReason: PurchaseFailureReason,
-    TransactionId: string?
-}
-
-type TransactionLog = {
-    Id: string,
-    Status: TransactionStatus,
-    PurchaseType: PurchaseType,
-    Price: number,
-}
-
----
-
 local devProductTypes = {}
 local devProductPromotions = {}
 
@@ -73,6 +58,10 @@ end
 
 Shop.GetObjectPlacementPrice = function(objectType: string, objectName: string): number?
     return ShopPrices.ObjectPlacementPrices[objectType][objectName]
+end
+
+Shop.GetItemPrice = function(itemType: string, itemName: string): number?
+    return ShopPrices.ItemPrices[itemType][itemName]
 end
 
 Shop.GetUnitUpgradePrice = function(unitId: string): number?
@@ -135,38 +124,53 @@ Shop.PurchaseTickets = function(userId: number, quantity: number)
     MarketplaceService:PromptProductPurchase(player, productId, false)
 end
 
-Shop.PurchaseObjectGrant = function(userId: number, objectType: ObjectType, objectName: string): PurchaseResult
+Shop.PurchaseObjectGrant = function(userId: number, objectType: ObjectType, objectName: string): boolean
     local alreadyHasGrant = PlayerData.PlayerHasObjectGrant(userId, objectType, objectName)
-    if (alreadyHasGrant) then return end
+    if (alreadyHasGrant) then return false end
 
     local grantPrice = Shop.GetObjectGrantPrice(objectType, objectName)
-    if (not grantPrice) then return end -- item does not have a listed price
+    if (not grantPrice) then return false end -- item does not have a listed price
     
     local ticketsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Tickets)
-    if (not ticketsBalance) then return end -- ???
+    if (not ticketsBalance) then return false end -- ???
 
     if (grantPrice > ticketsBalance) then
         return false
     else
         -- is it possible that one of these succeeds and one doesn't?
+        PlayerData.RecordTransaction(userId, GameEnum.TransactionType.TicketSpending, nil, {
+            ObjectType = objectType,
+            ObjectName = objectName,
+            AmountPaid = grantPrice,
+        })
+
         PlayerData.WithdrawCurrencyFromPlayer(userId, GameEnum.CurrencyType.Tickets, grantPrice)
         PlayerData.GrantObjectToPlayer(userId, objectType, objectName)
+
+        return true
     end
 end
 
-Shop.PurchaseSpecialActionToken = function(userId: number, actionName: string): PurchaseResult
-    local tokenPrice = ShopPrices.ItemPrices[GameEnum.ItemType.SpecialAction][actionName] -- todo: replace
-    if (not tokenPrice) then return end -- item does not have a listed price
+Shop.PurchaseItem = function(userId: number, itemType: string, itemName: string): boolean
+    local itemPrice = Shop.GetItemPrice(itemType, itemName)
+    if (not itemPrice) then return false end -- item does not have a listed price
     
     local ticketsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Tickets)
-    if (not ticketsBalance) then return end -- ???
+    if (not ticketsBalance) then return false end -- ???
 
-    if (tokenPrice > ticketsBalance) then
+    if (itemPrice > ticketsBalance) then
         return false
     else
         -- is it possible that one of these succeeds and one doesn't?
-        PlayerData.WithdrawCurrencyFromPlayer(userId, GameEnum.CurrencyType.Tickets, tokenPrice)
-        PlayerData.GiveSpecialActionToken(userId, actionName)
+        PlayerData.RecordTransaction(userId, GameEnum.TransactionType.TicketSpending, nil, {
+            ItemType = itemType,
+            ItemName = itemName,
+            AmountPaid = itemPrice,
+        })
+
+        PlayerData.WithdrawCurrencyFromPlayer(userId, GameEnum.CurrencyType.Tickets, itemPrice)
+        PlayerData.AddItemToPlayerInventory(userId, itemType, itemName, 1)
+
         return true
     end
 end
@@ -243,8 +247,8 @@ Shop.SellUnit = function(unitId: string): boolean
     if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return false end
     if (unit.Owner == 0) then return false end
 
-    PlayerData.DepositCurrencyToPlayer(unit.Owner, GameEnum.CurrencyType.Points, Shop.GetUnitSellingPrice(unitId))
     unit:Destroy()
+    PlayerData.DepositCurrencyToPlayer(unit.Owner, GameEnum.CurrencyType.Points, Shop.GetUnitSellingPrice(unitId))
     return true
 end
 
@@ -329,12 +333,14 @@ System.addFunction("PurchaseTickets", t.wrap(function(callingPlayer: Player, use
 end, t.tuple(t.instanceOf("Player"), t.number, t.number)), true)
 
 System.addFunction("PurchaseObjectGrant", t.wrap(function(callingPlayer: Player, userId: number)
-
+    -- todo
 end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
-System.addFunction("PurchaseSpecialActionToken", t.wrap(function(callingPlayer: Player, userId: number)
+System.addFunction("PurchaseItem", t.wrap(function(callingPlayer: Player, userId: number, itemType: string, itemName: string)
+    if (callingPlayer.UserId ~= userId) then return end
 
-end, t.tuple(t.instanceOf("Player"), t.number)), true)
+    return Shop.PurchaseItem(userId, itemType, itemName)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.string)), true)
 
 System.addFunction("PurchaseObjectPlacement", t.wrap(function(callingPlayer: Player, userId: number, objectType: string, objectName: string, position: Vector3, rotation: number)
     if (callingPlayer.UserId ~= userId) then return false end

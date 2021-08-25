@@ -120,7 +120,7 @@ PlacementFlow.Start = function(objType: string, objName: string)
 			:ToWorldSpace(CFrame.Angles(-math.pi / 2, objRotation, 0) * CFrame.new(0, primaryPartHeightOffset, 0))
 		)
 		
-		PointerPart.Color = placementResult.CanPlace and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+		PointerPart.Color = placementResult.Success and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
 		PointerPart.CFrame = CFrame.lookAt(raycastPosition, raycastPosition + raycastResult.Normal):ToWorldSpace(CFrame.Angles(-math.pi / 2, 0, 0))
 		RadiusPart.CFrame = CFrame.new(raycastPosition)
 	end)
@@ -149,7 +149,7 @@ PlacementFlow.Start = function(objType: string, objName: string)
 		local ray = CurrentCamera:ScreenPointToRay(inputPosition.X, inputPosition.Y, 0)
 		local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 5000, raycastParams)
 		if (not raycastResult) then return end
-		if (not Placement.CanPlace(objType, objName, raycastResult.Position, objRotation).CanPlace) then return end
+		if (not Placement.CanPlace(objType, objName, raycastResult.Position, objRotation).Success) then return end
 
 		local cacheObjRotation = objRotation -- PlacementFlow.Stop clears objRotation
 

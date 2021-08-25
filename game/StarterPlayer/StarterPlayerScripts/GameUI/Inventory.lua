@@ -28,6 +28,9 @@ local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
+local SpecialAction = SystemCoordinator.waitForSystem("SpecialAction")
+
 ---
 
 local Inventory = Roact.Component:extend("Inventory")
@@ -37,15 +40,20 @@ Inventory.init = function(self)
 
     self.updateObjectList = function()
         local objectList = {}
+        local category = self.state.category
 
-        if (self.state.category == GameEnum.UnitType.TowerUnit) then
+        if ((category == GameEnum.UnitType.TowerUnit) or (category == GameEnum.UnitType.FieldUnit)) then
             local objectListDictionary = PlayerData.GetPlayerObjectGrants(LocalPlayer.UserId)
 
             for name in pairs(objectListDictionary[GameEnum.ObjectType.Unit]) do
-                table.insert(objectList, name)
+                if (Unit.GetUnitType(name) == category) then
+                    table.insert(objectList, name)
+                end
             end
-        else
-            -- todo
+        elseif (category == GameEnum.ItemType.SpecialAction) then
+            objectList = PlayerData.GetPlayerInventory(LocalPlayer.UserId)[category]
+        elseif (category == GameEnum.ObjectType.Roadblock) then
+            -- todo?
         end
 
         table.sort(objectList, function(a, b)
@@ -112,7 +120,7 @@ Inventory.render = function(self)
     local objectListChildren = {}
     local attributesPreviewChildren = {}
 
-    if (category == GameEnum.UnitType.TowerUnit) then
+    if ((category == GameEnum.UnitType.TowerUnit) or (category == GameEnum.UnitType.FieldUnit)) then
         for i = 1, #objects do
             local objectName = objects[i]
 
@@ -135,8 +143,138 @@ Inventory.render = function(self)
                 onMouseLeave = function() end,
             })
         end
-    else
-        -- todo
+    elseif (category == GameEnum.ItemType.SpecialAction) then
+        for actionName, quantity in pairs(objects) do
+            objectListChildren[actionName] = Roact.createElement("Frame", {
+                Size = UDim2.new(1, 0, 0, 72),
+                BackgroundTransparency = 0,
+                BorderSizePixel = 0,
+
+                BackgroundColor3 = Color3.new(math.random(), math.random(), math.random())
+            }, {
+                UIPadding = Roact.createElement(Padding, {Style.Constants.MinorElementPadding}),
+
+                UICorner = Roact.createElement("UICorner", {
+                    CornerRadius = UDim.new(0, Style.Constants.StandardCornerRadius),
+                }),
+
+                ActionImage = Roact.createElement("ImageLabel", {
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Size = UDim2.new(0, 48, 0, 48),
+                    Position = UDim2.new(0, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+
+                    Image = "rbxassetid://3043812414",
+                    ImageColor3 = Color3.new(0, 0, 0),
+                }),
+
+                ActionName = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(0, 0),
+                    Size = UDim2.new(1, -96, 0, 24),
+                    Position = UDim2.new(0, 64, 0, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Text = actionName,
+                    Font = Style.Constants.MainFont,
+                    TextSize = 16,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+
+                    TextColor3 = Color3.new(0, 0, 0),
+                }),
+
+                ActionQuantity = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(1, 0),
+                    Size = UDim2.new(0, 32, 0, 24),
+                    Position = UDim2.new(1, 0, 0, 0),
+                    BackgroundTransparency = 0,
+                    BorderSizePixel = 0,
+
+                    Text = PlayerData.GetPlayerInventoryItemCount(LocalPlayer.UserId, category, actionName) or "?",
+                    Font = Style.Constants.MainFont,
+                    TextSize = 16,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+
+                    BackgroundColor3 = Color3.new(1, 1, 1),
+                    TextColor3 = Color3.new(0, 0, 0),
+                }, {
+                    UICorner = Roact.createElement("UICorner", {
+                        CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius),
+                    }),
+                }),
+
+                Buttons = Roact.createElement("Frame", {
+                    AnchorPoint = Vector2.new(1, 1),
+                    Size = UDim2.new(1, -64, 0, 24),
+                    Position = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                }, {
+                    UIListLayout = Roact.createElement("UIListLayout", {
+                        Padding = UDim.new(0, Style.Constants.MinorElementPadding),
+            
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right,
+                        VerticalAlignment = Enum.VerticalAlignment.Center,
+                    }),
+
+                    UseButton = Roact.createElement("TextButton", {
+                        Size = UDim2.new(0, 60, 0, 24),
+                        BackgroundTransparency = 0,
+                        BorderSizePixel = 0,
+                        LayoutOrder = 2,
+
+                        Text = "Use",
+                        Font = Style.Constants.MainFont,
+                        TextSize = 16,
+                        TextXAlignment = Enum.TextXAlignment.Center,
+                        TextYAlignment = Enum.TextYAlignment.Center,
+
+                        BackgroundColor3 = Color3.new(1, 1, 1),
+                        TextColor3 = Color3.new(0, 0, 0),
+
+                        [Roact.Event.Activated] = function()
+                            local result = SpecialAction.UseSpecialAction(LocalPlayer.UserId, actionName)
+
+                            print(result.FailureReason)
+                        end,
+                    }, {
+                        UICorner = Roact.createElement("UICorner", {
+                            CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius),
+                        }),
+                    }),
+
+                    BuyButton = Roact.createElement("TextButton", {
+                        Size = UDim2.new(0, 70, 0, 24),
+                        BackgroundTransparency = 0,
+                        BorderSizePixel = 0,
+                        LayoutOrder = 1,
+
+                        Text = "Buy (" .. (Shop.GetItemPrice(GameEnum.ItemType.SpecialAction, actionName) or "?") .. ")",
+                        Font = Style.Constants.MainFont,
+                        TextSize = 16,
+                        TextXAlignment = Enum.TextXAlignment.Center,
+                        TextYAlignment = Enum.TextYAlignment.Center,
+
+                        BackgroundColor3 = Color3.new(1, 1, 1),
+                        TextColor3 = Color3.new(0, 0, 0),
+
+                        [Roact.Event.Activated] = function()
+                            Shop.PurchaseItem(LocalPlayer.UserId, category, actionName)
+                        end,
+                    }, {
+                        UICorner = Roact.createElement("UICorner", {
+                            CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius),
+                        }),
+                    }),
+                }),
+            })
+        end
+    elseif (category == GameEnum.ObjectType.Roadblock) then
+        -- todo?
     end
 
     if (selectedName) then
@@ -148,14 +286,16 @@ Inventory.render = function(self)
                 local attribute = previewAttributes[i]
                 local value = attributes[attribute]
 
-                if ((attribute ~= "HP") and tonumber(value)) then
+                if (tonumber(value) and (attribute ~= "MaxHP")) then
                     value = string.format("%0.2f", value)
-                elseif (value == GameEnum.PathType.Ground) then
-                    value = "G"
-                elseif (value == GameEnum.PathType.Air) then
-                    value = "A"
-                elseif (value == GameEnum.PathType.GroundAndAir) then
-                    value = "GA"
+                elseif (attribute == "PathType") then
+                    if (value == GameEnum.PathType.Ground) then
+                        value = "G"
+                    elseif (value == GameEnum.PathType.Air) then
+                        value = "A"
+                    elseif (value == GameEnum.PathType.GroundAndAir) then
+                        value = "GA"
+                    end
                 end
 
                 attributesPreviewChildren[i] = Roact.createElement("Frame", {
@@ -193,10 +333,10 @@ Inventory.render = function(self)
                     })
                 })
             end
+        elseif (category == GameEnum.ItemType.SpecialAction) then
+            -- Special Actions don't have stats
         elseif (category == GameEnum.ObjectType.Roadblock) then
-            -- todo
-        else
-            -- wat
+            -- todo?
         end
 
         attributesPreviewChildren.UIGridLayout = Roact.createElement("UIGridLayout", {
@@ -212,21 +352,36 @@ Inventory.render = function(self)
         })
     end
 
-    objectListChildren.UIGridLayout = Roact.createElement("UIGridLayout", {
-        CellPadding = UDim2.new(0, 8, 0, 8),
-        CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
+    if (category ~= GameEnum.ItemType.SpecialAction) then
+        objectListChildren.UIGridLayout = Roact.createElement("UIGridLayout", {
+            CellPadding = UDim2.new(0, 8, 0, 8),
+            CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
 
-        FillDirection = Enum.FillDirection.Horizontal,
-        FillDirectionMaxCells = 3,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        StartCorner = Enum.StartCorner.TopLeft,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = Enum.VerticalAlignment.Top,
+            FillDirection = Enum.FillDirection.Horizontal,
+            FillDirectionMaxCells = 3,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            StartCorner = Enum.StartCorner.TopLeft,
+            HorizontalAlignment = Enum.HorizontalAlignment.Left,
+            VerticalAlignment = Enum.VerticalAlignment.Top,
 
-        [Roact.Change.AbsoluteContentSize] = function(obj)
-            self.updateListLength(obj.AbsoluteContentSize.Y)
-        end
-    })
+            [Roact.Change.AbsoluteContentSize] = function(obj)
+                self.updateListLength(obj.AbsoluteContentSize.Y)
+            end
+        })
+    else
+        objectListChildren.UIListLayout = Roact.createElement("UIListLayout", {
+            Padding = UDim.new(0, Style.Constants.MinorElementPadding),
+
+            FillDirection = Enum.FillDirection.Horizontal,
+            SortOrder = Enum.SortOrder.Name,
+            HorizontalAlignment = Enum.HorizontalAlignment.Left,
+            VerticalAlignment = Enum.VerticalAlignment.Top,
+
+            [Roact.Change.AbsoluteContentSize] = function(obj)
+                self.updateListLength(obj.AbsoluteContentSize.Y)
+            end
+        })
+    end
 
     return Roact.createElement("Frame", {
         AnchorPoint = Vector2.new(isOpen and 1 or 0, 1),
@@ -308,7 +463,12 @@ Inventory.render = function(self)
                 LayoutOrder = 1,
                 
                 onActivated = function()
+                    if (category == GameEnum.UnitType.TowerUnit) then return end
 
+                    self:setState({
+                        category = GameEnum.UnitType.TowerUnit,
+                        name = Roact.None,
+                    })
                 end,
 
                 ImageColor3 = Color3.new(0, 0, 0),
@@ -320,7 +480,12 @@ Inventory.render = function(self)
                 LayoutOrder = 2,
                 
                 onActivated = function()
+                    if (category == GameEnum.UnitType.FieldUnit) then return end
 
+                    self:setState({
+                        category = GameEnum.UnitType.FieldUnit,
+                        name = Roact.None,
+                    })
                 end,
 
                 ImageColor3 = Color3.new(0, 0, 0),
@@ -332,7 +497,8 @@ Inventory.render = function(self)
                 LayoutOrder = 3,
                 
                 onActivated = function()
-
+                    -- todo?
+                    print("future version?")
                 end,
 
                 ImageColor3 = Color3.new(0, 0, 0),
@@ -344,14 +510,19 @@ Inventory.render = function(self)
                 LayoutOrder = 4,
                 
                 onActivated = function()
+                    if (category == GameEnum.ItemType.SpecialAction) then return end
 
+                    self:setState({
+                        category = GameEnum.ItemType.SpecialAction,
+                        name = Roact.None,
+                    })
                 end,
 
                 ImageColor3 = Color3.new(0, 0, 0),
             }),
         }),
 
-        SelectedObjectInfo = self.state.name and
+        SelectedObjectInfo = selectedName and
             Roact.createElement("Frame", {
                 AnchorPoint = Vector2.new(0.5, 1),
                 Size = UDim2.new(1, 0, 0, 72),
@@ -376,12 +547,21 @@ Inventory.render = function(self)
                         Image = "rbxassetid://6837004068",
 
                         onActivated = function()
-                            -- check for available funds first
-                            PlacementFlow.Start(objectType, selectedName)
 
-                            self:setState({
-                                name = Roact.None,
-                            })
+                            if (category == GameEnum.UnitType.TowerUnit) then
+                                -- todo: check for available funds first
+                                PlacementFlow.Start(objectType, selectedName)
+
+                                self:setState({
+                                    name = Roact.None,
+                                })
+                            elseif (category == GameEnum.UnitType.FieldUnit) then
+                                -- todo
+                                print("todo")
+                            elseif (category == GameEnum.ObjectType.Roadblock) then
+                                -- todo?
+                                print("future version?")
+                            end
                         end,
 
                         ImageColor3 = Color3.new(0, 0, 0),
@@ -451,7 +631,7 @@ Inventory.render = function(self)
             ClipsDescendants = true,
 
             CanvasSize = self.listLength:map(function(length)
-                return UDim2.new(1, 0, 0, length)
+                return UDim2.new(0, 0, 0, length)
             end)
         }, objectListChildren)
     })

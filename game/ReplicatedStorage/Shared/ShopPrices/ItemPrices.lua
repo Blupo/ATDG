@@ -9,6 +9,6 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 return {
     [GameEnum.ItemType.SpecialAction] = {
-        TEST_SpecialAction = math.huge,
+        Expel_TEST = 5,
     }
 }
