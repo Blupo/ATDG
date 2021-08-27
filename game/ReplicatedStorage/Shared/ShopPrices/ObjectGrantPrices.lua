@@ -18,6 +18,8 @@ return {
 
         TestFieldUnit = 2,
         TestAirFieldUnit = 3,
+
+        DEBUG_Obliterator = math.huge,
     },
 
     [GameEnum.ObjectType.Roadblock] = {

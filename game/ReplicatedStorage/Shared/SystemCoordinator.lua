@@ -97,6 +97,7 @@ SystemCoordinator.waitForSystem = function(systemName: string)
         if ((not notifiedInfiniteWait) and (elapsed >= 5)) then
             notifiedInfiniteWait = true
             warn("Infinite yield possible on system " .. systemName)
+            print(debug.traceback(nil, 2))
         end
     until (system)
     

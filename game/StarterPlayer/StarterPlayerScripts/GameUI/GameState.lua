@@ -360,32 +360,34 @@ GameState.init = function(self)
         RunService.Heartbeat:Wait()
     end
 
-    self.doPhaseTransitionAnimation = function()
+    self.doPhaseTransitionAnimation = function(hidePhaseLabelTransition: boolean)
         if (self.phaseTransitionAnimationPromise) then
             self.phaseTransitionAnimationPromise:cancel()
             self.phaseTransitionAnimationPromise = nil
         end
 
         -- phase 1
-        for k, animator in pairs(self.phaseTransitionAnimators) do
-            if (k ~= "PhaseLabel") then
-                animator.Motor:setGoal({
-                    rotation = Otter.spring(randomValueInRange(-360, 360), {
-                        frequency = randomValueInRange(0.1, 0.5)
-                    }),
+        if (not hidePhaseLabelTransition) then
+            for k, animator in pairs(self.phaseTransitionAnimators) do
+                if (k ~= "PhaseLabel") then
+                    animator.Motor:setGoal({
+                        rotation = Otter.spring(randomValueInRange(-360, 360), {
+                            frequency = randomValueInRange(0.1, 0.5)
+                        }),
 
-                    size = Otter.spring(TITLE_TEXT_SIZE * 1.5),
-                    xOffset = Otter.spring(0),
-                    yOffset = Otter.spring(0)
-                })
+                        size = Otter.spring(TITLE_TEXT_SIZE * 1.5),
+                        xOffset = Otter.spring(0),
+                        yOffset = Otter.spring(0)
+                    })
+                end
             end
-        end
 
-        self.phaseTransitionAnimators.PhaseLabel.Motor:setGoal({
-            position = Otter.spring(0),
-            transparency = Otter.spring(0),
-            textStrokeTransparency = Otter.instant(0.5),
-        })
+            self.phaseTransitionAnimators.PhaseLabel.Motor:setGoal({
+                position = Otter.spring(0),
+                transparency = Otter.spring(0),
+                textStrokeTransparency = Otter.instant(0.5),
+            })
+        end
 
         self.bkgAnimators.CurrentRoundPrimaryBkg.Motor:setGoal({
             rotation = Otter.spring(randomValueInRange(-90, -45)),
@@ -412,70 +414,72 @@ GameState.init = function(self)
         })
 
         -- phase 2
-        self.phaseTransitionAnimationPromise = Promise.new(function(resolve, _, onCancel)
-            local disconnect
-            disconnect = self.phaseTransitionAnimators.PhaseLabel.Motor:onComplete(function()
-                if (disconnect) then
-                    disconnect()
-                    disconnect = nil
-                end
-
-                resolve()
-            end)
-
-            onCancel(function()
-                if (disconnect) then
-                    disconnect()
-                end
-            end)
-        end):andThen(function()
-            return Promise.delay(1)
-        end):andThen(function()
-            return Promise.new(function(resolve, _, onCancel)
-                local disconnectOnComplete
-
-                onCancel(function()
-                    if (disconnectOnComplete) then
-                        disconnectOnComplete()
-                        disconnectOnComplete = nil
+        self.phaseTransitionAnimationPromise = (not hidePhaseLabelTransition) and
+            Promise.new(function(resolve, _, onCancel)
+                local disconnect
+                disconnect = self.phaseTransitionAnimators.PhaseLabel.Motor:onComplete(function()
+                    if (disconnect) then
+                        disconnect()
+                        disconnect = nil
                     end
+
+                    resolve()
                 end)
 
-                for k, animator in pairs(self.phaseTransitionAnimators) do
-                    if (k ~= "PhaseLabel") then
-                        animator.Motor:setGoal({
-                            rotation = Otter.spring(randomValueInRange(-360, 360)),
-                            size = Otter.spring(0),
-                            xOffset = Otter.spring(randomValueInRange(-100, 100)),
-                            yOffset = Otter.spring(randomValueInRange(-100, 100))
-                        })
+                onCancel(function()
+                    if (disconnect) then
+                        disconnect()
                     end
-                end
-        
-                do
-                    local labelAnimator = self.phaseTransitionAnimators.PhaseLabel
-        
-                    labelAnimator.Motor:setGoal({
-                        position = Otter.spring(1),
-                        transparency = Otter.spring(1),
-                        textStrokeTransparency = Otter.spring(1),
-                    })
-    
-                    disconnectOnComplete = labelAnimator.Motor:onComplete(function()
+                end)
+            end):andThen(function()
+                return Promise.delay(1)
+            end):andThen(function()
+                return Promise.new(function(resolve, _, onCancel)
+                    local disconnectOnComplete
+
+                    onCancel(function()
                         if (disconnectOnComplete) then
                             disconnectOnComplete()
                             disconnectOnComplete = nil
                         end
-    
-                        labelAnimator.Motor:setGoal({
-                            position = Otter.instant(-1),
-                        })
-
-                        resolve()
                     end)
-                end
+
+                    for k, animator in pairs(self.phaseTransitionAnimators) do
+                        if (k ~= "PhaseLabel") then
+                            animator.Motor:setGoal({
+                                rotation = Otter.spring(randomValueInRange(-360, 360)),
+                                size = Otter.spring(0),
+                                xOffset = Otter.spring(randomValueInRange(-100, 100)),
+                                yOffset = Otter.spring(randomValueInRange(-100, 100))
+                            })
+                        end
+                    end
+            
+                    do
+                        local labelAnimator = self.phaseTransitionAnimators.PhaseLabel
+            
+                        labelAnimator.Motor:setGoal({
+                            position = Otter.spring(1),
+                            transparency = Otter.spring(1),
+                            textStrokeTransparency = Otter.spring(1),
+                        })
+        
+                        disconnectOnComplete = labelAnimator.Motor:onComplete(function()
+                            if (disconnectOnComplete) then
+                                disconnectOnComplete()
+                                disconnectOnComplete = nil
+                            end
+        
+                            labelAnimator.Motor:setGoal({
+                                position = Otter.instant(-1),
+                            })
+
+                            resolve()
+                        end)
+                    end
+                end)
             end)
-        end)
+        or nil
     end
 
     self:setState({
@@ -569,7 +573,7 @@ GameState.didMount = function(self)
 
         self.makeTimerLoop(phaseStartTime, phaseLength)
         self.resetPhaseTransitionAnimators()
-        self.doPhaseTransitionAnimation()
+        self.doPhaseTransitionAnimation(phase == GameEnum.GamePhase.FinalIntermission)
     end)
 
     if (gameState.CurrentPhaseLength and gameState.CurrentPhaseStartTime) then
@@ -595,12 +599,12 @@ end
 
 GameState.willUnmount = function(self)
     for _, animator in pairs(self.phaseTransitionAnimators) do
-        animator.DisconnectOnStep()
+        animator.Disconnect()
         animator.Motor:destroy()
     end
 
     for _, animator in pairs(self.bkgAnimators) do
-        animator.DisconnectOnStep()
+        animator.Disconnect()
         animator.Motor:destroy()
     end
 

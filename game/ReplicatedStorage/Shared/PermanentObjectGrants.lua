@@ -19,6 +19,9 @@ return {
         TestFieldUnit = true,
         TestBiggerFieldUnit = true,
         TestAirFieldUnit = true,
+
+        -- todo: remove
+        DEBUG_Obliterator = true,
     },
 
     [GameEnum.ObjectType.Roadblock] = {

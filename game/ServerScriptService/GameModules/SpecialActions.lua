@@ -16,7 +16,7 @@ local t = require(SharedModules:FindFirstChild("t"))
 
 local SpecialActionUsedEvent = Instance.new("BindableEvent")
 
-local System = SystemCoordinator.newSystem("SpecialAction")
+local System = SystemCoordinator.newSystem("SpecialActions")
 local SpecialActionUsedRemoteEvent = System.addEvent("SpecialActionUsed")
 
 ---
@@ -37,13 +37,13 @@ local specialActionUsageCounts = {
 
 ---
 
-local SpecialAction = {}
+local SpecialActions = {}
 
-SpecialAction.SpecialActionUsed = SpecialActionUsedEvent.Event
+SpecialActions.SpecialActionUsed = SpecialActionUsedEvent.Event
 
 ---
 
-SpecialAction.UseSpecialAction = function(userId: number, actionName: string)
+SpecialActions.UseSpecialAction = function(userId: number, actionName: string)
 	local specialActionData = specialActionDataCache[actionName]
 	if (not specialActionData) then return MakeActionResult(GameEnum.SpecialActionUsageResult.InvalidActionName) end
 
@@ -121,7 +121,7 @@ end)
 System.addFunction("UseSpecialAction", t.wrap(function(callingPlayer: Player, userId: number, actionName: string)
 	if (callingPlayer.UserId ~= userId) then return end
 
-    return SpecialAction.UseSpecialAction(userId, actionName)
+    return SpecialActions.UseSpecialAction(userId, actionName)
 end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
 
-return SpecialAction
+return SpecialActions

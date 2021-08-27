@@ -29,7 +29,7 @@ local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
-local SpecialAction = SystemCoordinator.waitForSystem("SpecialAction")
+local SpecialActions = SystemCoordinator.waitForSystem("SpecialActions")
 
 ---
 
@@ -237,7 +237,7 @@ Inventory.render = function(self)
                         TextColor3 = Color3.new(0, 0, 0),
 
                         [Roact.Event.Activated] = function()
-                            local result = SpecialAction.UseSpecialAction(LocalPlayer.UserId, actionName)
+                            local result = SpecialActions.UseSpecialAction(LocalPlayer.UserId, actionName)
 
                             print(result.FailureReason)
                         end,
@@ -372,7 +372,7 @@ Inventory.render = function(self)
         objectListChildren.UIListLayout = Roact.createElement("UIListLayout", {
             Padding = UDim.new(0, Style.Constants.MinorElementPadding),
 
-            FillDirection = Enum.FillDirection.Horizontal,
+            FillDirection = Enum.FillDirection.Vertical,
             SortOrder = Enum.SortOrder.Name,
             HorizontalAlignment = Enum.HorizontalAlignment.Left,
             VerticalAlignment = Enum.VerticalAlignment.Top,

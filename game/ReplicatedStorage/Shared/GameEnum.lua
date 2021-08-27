@@ -47,7 +47,9 @@ return setmetatable({
 	TransactionRecordingFailureReason = makeEnum("GameEnum.TransactionRecordingFailureReason", { "CannotAcquireProfile", "TransactionAlreadyRecorded" }),
 	GenericActionResult = makeEnum("GameEnum.GenericActionResult", { "None" }),
 	SpecialActionUsageResult = makeEnum("GameEnum.SpecialActionUsageResult", { "InvalidActionName", "NoInventory", "PlayerLimited", "GameLimited", "PlayerCooldown", "GameCooldown" }),
-	SpecialActionLimitType = makeEnum("GameEnum.SpecialActionLimitType", { "PlayerLimit", "GameLimit", "PlayerCooldown", "GameCooldown" })
+	SpecialActionLimitType = makeEnum("GameEnum.SpecialActionLimitType", { "PlayerLimit", "GameLimit", "PlayerCooldown", "GameCooldown" }),
+	GameStat = makeEnum("GameEnum.GameStat", { "TimePlayed" }),
+	PlayerStat = makeEnum("GameEnum.PlayerStat", { "TotalDMG" }),
 }, {
 	__index = function(_, key)
 		error(tostring(key) .. " is not a valid enum")

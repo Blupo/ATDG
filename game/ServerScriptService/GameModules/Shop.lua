@@ -176,7 +176,7 @@ Shop.PurchaseItem = function(userId: number, itemType: string, itemName: string)
 end
 
 Shop.PurchaseObjectPlacement = function(userId: number, objectType: ObjectType, objectName: string, position: Vector3, rotation: number): boolean
-    if (not Game.HasStarted()) then return false end
+    if (not Game.IsRunning()) then return false end
 
     local placementPrice = Shop.GetObjectPlacementPrice(objectType, objectName)
     if (not placementPrice) then return false end
@@ -197,7 +197,7 @@ Shop.PurchaseObjectPlacement = function(userId: number, objectType: ObjectType, 
 end
 
 Shop.PurchaseUnitUpgrade = function(unitId: string): boolean
-    if (not Game.HasStarted()) then return false end
+    if (not Game.IsRunning()) then return false end
 
     local unit = Unit.fromId(unitId)
     if (not unit) then return false end
@@ -222,7 +222,7 @@ Shop.PurchaseUnitUpgrade = function(unitId: string): boolean
 end
 
 Shop.PurchaseUnitPersistentUpgrade = function(userId: number, unitName: string): boolean
-    if (not Game.HasStarted()) then return false end
+    if (not Game.IsRunning()) then return false end
 
     local upgradePrice = Shop.GetUnitPersistentUpgradePrice(userId, unitName)
     if (not upgradePrice) then return false end
@@ -240,7 +240,7 @@ Shop.PurchaseUnitPersistentUpgrade = function(userId: number, unitName: string):
 end
 
 Shop.SellUnit = function(unitId: string): boolean
-    if (not Game.HasStarted()) then return false end
+    if (not Game.IsRunning()) then return false end
 
     local unit = Unit.fromId(unitId)
     if (not unit) then return false end

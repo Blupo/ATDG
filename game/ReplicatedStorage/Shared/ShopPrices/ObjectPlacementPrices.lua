@@ -20,6 +20,8 @@ return {
 
         TestFieldUnit = 10,
         TestAirFieldUnit = 30,
+
+        DEBUG_Obliterator = 0,
     },
 
     [GameEnum.ObjectType.Roadblock] = {

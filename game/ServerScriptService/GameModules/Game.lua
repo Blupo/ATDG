@@ -101,6 +101,7 @@ type GameData = {
 	GamePhase: string,
 	CurrentRound: number,
 	RevivesRemaining: number,
+	Completed: boolean,
 }
 
 type DerivedGameState = {
@@ -112,6 +113,8 @@ type DerivedGameState = {
 	CentralTowersHealth: dictionary<number, number>,
 	Difficulty: string,
 	CurrentChallenge: string?,
+	PlayTime: nubmer,
+	Completed: boolean,
 }
 
 ---
@@ -146,6 +149,7 @@ local currentGameData: GameData
 local challengeData: Challenge
 local gamePhasePromise
 
+local gameStartTime
 local phaseStartTime
 local phaseLength
 
@@ -229,6 +233,24 @@ local calculateUnitRoundData = function()
 		mergeUnitDataTable(attributeModifiers, currentUnitAttributeModifiers)
 		mergeUnitDataTable(statusEffects, currentUnitStatusEffects)
 		mergeUnitDataTable(abilities, currentUnitAbilities)
+	end
+end
+
+local getTicketReward = function(): number?
+	if (not currentGameData) then return end
+	if (currentGameData.GamePhase ~= GameEnum.GamePhase.Ended) then return end
+
+	local ticketRewards = challengeData.TicketRewards
+	local currentRound = currentGameData.CurrentRound
+	local gameCompleted = currentGameData.Completed
+
+	if (gameCompleted) then
+		return ticketRewards.Completion
+	else
+		for i = #challengeData.Rounds, currentRound, -1 do
+			local roundReward = ticketRewards[i]
+			if (roundReward) then return roundReward end
+		end
 	end
 end
 
@@ -402,8 +424,10 @@ advanceGamePhase = function()
 		-- reviving is handled by Game.Revive
 		currentGameData.GamePhase = GameEnum.GamePhase.Ended
 
+		PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Tickets, getTicketReward())
+
 		PhaseChangedEvent:Fire(currentGameData.GamePhase)
-		EndedEvent:Fire(false)
+		EndedEvent:Fire(currentGameData.Completed)
 	elseif (currentPhase == GameEnum.GamePhase.Round) then
 		local currentRound = currentGameData.CurrentRound
 		local nextRoundData = challengeData.Rounds[currentRound + 1]
@@ -413,15 +437,20 @@ advanceGamePhase = function()
 			phaseStartTime = syncedClock:GetTime()
 			phaseLength = INTERMISSION_TIME
 			
+			-- todo: trigger RoundEnded abilities
+
 			gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
 			currentGameData.GamePhase = GameEnum.GamePhase.Intermission
 			
 			PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
 		else
 			currentGameData.GamePhase = GameEnum.GamePhase.Ended
+			currentGameData.Completed = true
+
+			PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Tickets, getTicketReward())
 			
 			PhaseChangedEvent:Fire(currentGameData.GamePhase)
-			EndedEvent:Fire(true)
+			EndedEvent:Fire(currentGameData.Completed)
 		end
 	end
 end
@@ -465,6 +494,7 @@ Game.RoundStarted = RoundStartedEvent.Event
 Game.RoundEnded = RoundEndedEvent.Event
 Game.CentralTowerDestroyed = CentralTowerDestroyedEvent.Event
 Game.PhaseChanged = PhaseChangedEvent.Event
+Game.GetTicketReward = getTicketReward
 
 Game.LoadData = function(mapName: string, fieldUnitSetName: string, gameMode: string, difficulty: string?)
 	if (currentGameData) then return end
@@ -493,6 +523,7 @@ Game.LoadData = function(mapName: string, fieldUnitSetName: string, gameMode: st
 		GamePhase = GameEnum.GamePhase.NotStarted,
 		CurrentRound = 0,
 		RevivesRemaining = revives,
+		Completed = false,
 	}
 end
 
@@ -519,13 +550,14 @@ Game.LoadDataFromChallenge = function(mapName: string, challengeName: string)
 		GamePhase = GameEnum.GamePhase.NotStarted,
 		CurrentRound = 0,
 		RevivesRemaining = MAX_REVIVES[GameEnum.GameMode.TowerDefense][GameEnum.Difficulty.Normal],
+		Completed = false,
 	}
 end
 
-Game.HasStarted = function(): boolean
+Game.IsRunning = function(): boolean
 	if (not currentGameData) then return false end
-	
-	return (currentGameData.GamePhase ~= GameEnum.GamePhase.NotStarted)
+
+	return (currentGameData.GamePhase ~= GameEnum.GamePhase.NotStarted) and (currentGameData.GamePhase ~= GameEnum.GamePhase.Ended)
 end
 
 Game.GetDerivedGameState = function(): DerivedGameState?
@@ -544,6 +576,8 @@ Game.GetDerivedGameState = function(): DerivedGameState?
 		CentralTowersHealth = currentGameData.CentralTowersHealth,
 		Difficulty = currentGameData.Difficulty,
 		CurrentChallenge = currentGameData.CurrentChallenge,
+		PlayTime = os.time() - gameStartTime,
+		Completed = currentGameData.Completed,
 	}
 end
 
@@ -551,6 +585,7 @@ Game.Start = function()
 	if (not currentGameData) then return end
 	if (currentGameData.GamePhase ~= GameEnum.GamePhase.NotStarted) then return end
 	
+	gameStartTime = os.time()
 	advanceGamePhase()
 end
 
@@ -610,7 +645,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 Unit.UnitAdded:Connect(function(unitId)
-	if (not Game.HasStarted()) then return end
+	if (not Game.IsRunning()) then return end
 
 	local unit = Unit.fromId(unitId)
 	if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
@@ -641,7 +676,7 @@ Unit.UnitRemoving:Connect(function(unitId)
 		unitDamageTakenConnections[unitId] = nil
 	end
 
-	if (not Game.HasStarted()) then return end
+	if (not Game.IsRunning()) then return end
 	if (currentGameData.GamePhase ~= GameEnum.GamePhase.Round) then return end
 	
 	local unit = Unit.fromId(unitId)
@@ -684,20 +719,12 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
 				currentRoundSpawnPromises[i]:cancel()
 			end
 
-			local units = Unit.GetUnits(function(testUnit)
-				return (testUnit.Owner == 0) and (testUnit.Type == GameEnum.UnitType.FieldUnit)
-			end)
-
-			for i = 1, #units do
-				units[i]:Destroy()
-			end
-
 			table.clear(currentRoundUnits)	
 			table.clear(currentRoundSpawnPromises)
 			
 			if (currentGameData.RevivesRemaining > 0) then
 				gamePhasePromise:cancel()
-				
+
 				phaseStartTime = syncedClock:GetTime()
 				phaseLength = FINAL_INTERMISSION_TIME
 				gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
@@ -710,6 +737,14 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
 				
 				currentGameData.GamePhase = GameEnum.GamePhase.Ended
 				PhaseChangedEvent:Fire(currentGameData.GamePhase)
+			end
+
+			local units = Unit.GetUnits(function(testUnit)
+				return (testUnit.Owner == 0) and (testUnit.Type == GameEnum.UnitType.FieldUnit)
+			end)
+
+			for i = 1, #units do
+				units[i]:Destroy()
 			end
 		end
 	end
@@ -745,8 +780,9 @@ PhaseChangedEvent.Event:Connect(function(...)
 	PhaseChangedRemoteEvent:FireAllClients(...)
 end)
 
-System.addFunction("HasStarted", Game.HasStarted)
+System.addFunction("IsRunning", Game.IsRunning)
 System.addFunction("GetDerivedGameState", Game.GetDerivedGameState)
+System.addFunction("GetTicketReward", Game.GetTicketReward)
 System.addFunction("TEST_Revive", Game.Revive) -- TEMP
 System.addFunction("TEST_SkipToNextRound", Game.SkipToNextRound) -- TEMP
 

@@ -8,10 +8,12 @@ local Roact = require(root:WaitForChild("Roact"))
 local CurrencyBar = require(root:WaitForChild("CurrencyBar"))
 local Hotbar = require(root:WaitForChild("Hotbar"))
 local Inventory = require(root:WaitForChild("Inventory"))
+local GameOverUI = require(root:WaitForChild("GameOverUI"))
 local GameState = require(root:WaitForChild("GameState"))
 local Padding = require(root:WaitForChild("Padding"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
 local Game = SystemCoordinator.waitForSystem("Game")
@@ -22,58 +24,88 @@ local GameUI = Roact.Component:extend("GameUI")
 
 GameUI.init = function(self)
     self:setState({
-        gameStarted = false,
-        
-        screenSize = Vector2.new()
+        gameRunning = false,
+        gameEnded = false,
     })
 end
 
 GameUI.didMount = function(self)
-    local gameStarted = Game.HasStarted()
+    local gameRunning = Game.IsRunning()
 
-    if (gameStarted) then
+    if (gameRunning) then
         self:setState({
-            gameStarted = gameStarted
+            gameRunning = gameRunning
         })
     else
-        self.startedConnection = Game.Started:Connect(function()
-            self.startedConnection:Disconnect()
-            self.startedConnection = nil
+        self.gameStarted = Game.Started:Connect(function()
+            self.gameStarted:Disconnect()
+            self.gameStarted = nil
 
             self:setState({
-                gameStarted = gameStarted
+                gameRunning = true
             })
         end)
     end
+
+    self.phaseChanged = Game.PhaseChanged:Connect(function(phase: string)
+        if (phase == GameEnum.GamePhase.FinalIntermission) then
+            self:setState({
+                gamePhase = phase,
+            })
+        end
+    end)
+
+    self.gameEnded = Game.Ended:Connect(function(gameCompleted: boolean)
+        self.phaseChanged:Disconnect()
+        self.phaseChanged = nil
+
+        self:setState({
+            gameRunning = false,
+            gamePhase = GameEnum.GamePhase.Ended,
+            gameCompleted = gameCompleted,
+        })
+    end)
+end
+
+GameUI.willUnmount = function(self)
+    self.gameEnded:Disconnect()
 end
 
 GameUI.render = function(self)
+    local gameRunning = self.state.gameRunning
+    local gamePhase = self.state.gamePhase
+    local ui
+
+    if (gameRunning) then
+        ui = Roact.createElement("Frame", {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Size = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+        }, {
+            Padding = Roact.createElement(Padding, {16}),
+            
+            CurrencyBar = Roact.createElement(CurrencyBar),
+            Hotbar = Roact.createElement(Hotbar),
+            Inventory = Roact.createElement(Inventory),
+            State = Roact.createElement(GameState),
+            
+            -- todo: FinalIntermission dialog
+        })
+    else
+        if (gamePhase == GameEnum.GamePhase.Ended) then
+            ui = Roact.createElement(GameOverUI, {
+                gameCompleted = self.state.gameCompleted
+            })
+        end
+    end
+
     return Roact.createElement("ScreenGui", {
         ResetOnSpawn = false,
         ZIndexBehavior = Enum.ZIndexBehavior.Global
     }, {
-        UI = self.state.gameStarted and
-            Roact.createElement("Frame", {
-                AnchorPoint = Vector2.new(0.5, 0.5),
-                Size = UDim2.new(1, 0, 1, 0),
-                Position = UDim2.new(0.5, 0, 0.5, 0),
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
-
-                [Roact.Change.AbsoluteSize] = function(obj)
-                    self:setState({
-                        screenSize = obj.AbsoluteSize
-                    })
-                end,
-            }, {
-                Padding = Roact.createElement(Padding, {16}),
-                
-                CurrencyBar = Roact.createElement(CurrencyBar),
-                Hotbar = Roact.createElement(Hotbar),
-                Inventory = Roact.createElement(Inventory),
-                State = Roact.createElement(GameState),
-            })
-        or nil
+        UI = ui
     })
 end
 
