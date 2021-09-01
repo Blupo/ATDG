@@ -52,7 +52,7 @@ GameOverUI.init = function(self)
             self.timeoutConnection:Disconnect()
             self.timeoutConnection = nil
 
-            TeleportService:Teleport(6432648941)
+            TeleportService:Teleport(6421134421)
         end
     end)
 end
@@ -296,7 +296,7 @@ GameOverUI.render = function(self)
             TextColor3 = Color3.new(0, 0, 0),
 
             [Roact.Event.Activated] = function()
-                TeleportService:Teleport(6432648941)
+                TeleportService:Teleport(6421134421)
             end,
         }, {
             UICorner = Roact.createElement("UICorner", {

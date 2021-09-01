@@ -7,16 +7,15 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
-local PlayerScripts = script.Parent
-
-local GameModules = PlayerScripts:WaitForChild("GameModules")
-local Unit = require(GameModules:WaitForChild("Unit"))
-
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+
+local GameModules = PlayerScripts:WaitForChild("GameModules")
+local Unit = require(GameModules:WaitForChild("Unit"))
 
 local GameUI = PlayerScripts:WaitForChild("GameUI")
 local Roact = require(GameUI:WaitForChild("Roact"))

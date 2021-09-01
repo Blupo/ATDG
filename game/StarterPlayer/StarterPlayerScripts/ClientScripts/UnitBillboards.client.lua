@@ -4,23 +4,22 @@ local RunService = game:GetService("RunService")
 
 ---
 
-local PlayerScripts = script.Parent
-
-local GameModules = PlayerScripts:WaitForChild("GameModules")
-local Unit = require(GameModules:WaitForChild("Unit"))
+local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+
+local GameModules = PlayerScripts:WaitForChild("GameModules")
+local Unit = require(GameModules:WaitForChild("Unit"))
 
 local GameUI = PlayerScripts:WaitForChild("GameUI")
 local Roact = require(GameUI:WaitForChild("Roact"))
 local FieldUnitStatusBillboard = require(GameUI:WaitForChild("FieldUnitStatusBillboard"))
 local TowerUnitStatusBillboard = require(GameUI:WaitForChild("TowerUnitStatusBillboard"))
-
-local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 
 ---
 

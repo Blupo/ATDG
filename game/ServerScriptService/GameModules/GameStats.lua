@@ -20,6 +20,10 @@ local System = SystemCoordinator.newSystem("GameStats")
 local playersStats = {}
 local unitDamageTakenConnections = {}
 
+local playerAdded = function(player: Player)
+    playersStats[player.UserId] = {}
+end
+
 ---
 
 local GameStats = {}
@@ -65,9 +69,15 @@ end
 
 ---
 
-Players.PlayerAdded:Connect(function(player)
-    playersStats[player.UserId] = {}
-end)
+do
+    local players = Players:GetPlayers()
+
+    for i = 1, #players do
+        playerAdded(players[i])
+    end
+end
+
+Players.PlayerAdded:Connect(playerAdded)
 
 Players.PlayerRemoving:Connect(function(player)
     local stats = playersStats[player.UserId]

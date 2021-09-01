@@ -1,12 +1,16 @@
-local cs = game.CollectionService
-local pl = game.Players
-local ps = game.PhysicsService
+-- TODO: Finalise Unit replication details
+
+local CollectionService = game:GetService("CollectionService")
+local PhysicsService = game:GetService("PhysicsService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local UNIT_GROUP_ID = "Units"
-local PLAYER_GROUP_ID = "Players"
-local UNIT_TAG_ID = "Unit"
+local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
+local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
+
+---
 
 local onUnitAdded = function(unit)
 	local objects = unit:GetDescendants()
@@ -15,14 +19,14 @@ local onUnitAdded = function(unit)
 		local obj = objects[i]
 		
 		if (obj:IsA("BasePart")) then
-			ps:SetPartCollisionGroup(obj, UNIT_GROUP_ID)
+			PhysicsService:SetPartCollisionGroup(obj, GameEnum.CollisionGroup.Units)
 		end
 	end
 end
 
 local onCharacterDescendantAdded = function(obj)
 	if (obj:IsA("BasePart")) then
-		ps:SetPartCollisionGroup(obj, PLAYER_GROUP_ID)
+		PhysicsService:SetPartCollisionGroup(obj, GameEnum.CollisionGroup.Players)
 	end
 end
 
@@ -46,19 +50,19 @@ end
 
 ---
 
-ps:CreateCollisionGroup(UNIT_GROUP_ID)
-ps:CreateCollisionGroup(PLAYER_GROUP_ID)
+PhysicsService:CreateCollisionGroup(GameEnum.CollisionGroup.Units)
+PhysicsService:CreateCollisionGroup(GameEnum.CollisionGroup.Players)
 
-ps:CollisionGroupSetCollidable(UNIT_GROUP_ID, UNIT_GROUP_ID, false)
-ps:CollisionGroupSetCollidable(PLAYER_GROUP_ID, PLAYER_GROUP_ID, false)
-ps:CollisionGroupSetCollidable(UNIT_GROUP_ID, PLAYER_GROUP_ID, false)
+PhysicsService:CollisionGroupSetCollidable(GameEnum.CollisionGroup.Units, GameEnum.CollisionGroup.Units, false)
+PhysicsService:CollisionGroupSetCollidable(GameEnum.CollisionGroup.Players, GameEnum.CollisionGroup.Players, false)
+PhysicsService:CollisionGroupSetCollidable(GameEnum.CollisionGroup.Units, GameEnum.CollisionGroup.Players, false)
 
-pl.PlayerAdded:Connect(onPlayerAdded)
-cs:GetInstanceAddedSignal(UNIT_TAG_ID):Connect(onUnitAdded)
+Players.PlayerAdded:Connect(onPlayerAdded)
+CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(onUnitAdded)
 
 do
-	local players = pl:GetPlayers()
-	local units = cs:GetTagged(UNIT_TAG_ID)
+	local players = Players:GetPlayers()
+	local units = CollectionService:GetTagged(GameEnum.ObjectType.Unit)
 	
 	for i = 1, #players do
 		onPlayerAdded(players[i])

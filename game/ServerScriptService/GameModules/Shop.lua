@@ -1,3 +1,5 @@
+-- todo: needs to work with ServerMaster
+
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -111,7 +113,7 @@ Shop.PurchaseTickets = function(userId: number, quantity: number)
     local player = Players:GetPlayerByUserId(userId)
     if (not player) then return end
 
-    -- todo: do some magic to get the current sale
+    -- todo: implement sales
     local now = DateTime.now().UnixTimestamp
 
     local currentPromotion = GameEnum.PromotionalPricing.None
@@ -277,7 +279,7 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
     end
 
     -- check if the product is purchasable
-    -- todo: do some magic to get the current sale
+    -- todo: implement sales
     local now = DateTime.now().UnixTimestamp
 
     local currentPromotion = GameEnum.PromotionalPricing.None
@@ -332,8 +334,10 @@ System.addFunction("PurchaseTickets", t.wrap(function(callingPlayer: Player, use
     Shop.PurchaseTickets(userId, quantity)
 end, t.tuple(t.instanceOf("Player"), t.number, t.number)), true)
 
-System.addFunction("PurchaseObjectGrant", t.wrap(function(callingPlayer: Player, userId: number)
-    -- todo
+System.addFunction("PurchaseObjectGrant", t.wrap(function(callingPlayer: Player, userId: number, objectType: string, objectName: string)
+    if (callingPlayer.UserId ~= userId) then return end
+
+    Shop.PurchaseObjectGrant(userId, objectType, objectName)
 end, t.tuple(t.instanceOf("Player"), t.number)), true)
 
 System.addFunction("PurchaseItem", t.wrap(function(callingPlayer: Player, userId: number, itemType: string, itemName: string)

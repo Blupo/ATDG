@@ -50,6 +50,8 @@ return setmetatable({
 	SpecialActionLimitType = makeEnum("GameEnum.SpecialActionLimitType", { "PlayerLimit", "GameLimit", "PlayerCooldown", "GameCooldown" }),
 	GameStat = makeEnum("GameEnum.GameStat", { "TimePlayed" }),
 	PlayerStat = makeEnum("GameEnum.PlayerStat", { "TotalDMG" }),
+	ServerType = makeEnum("GameEnum.ServerType", { "Lobby", "Game" }),
+	CollisionGroup = makeEnum("GameEnum.CollisionGroup", { "Players", "Units" })
 }, {
 	__index = function(_, key)
 		error(tostring(key) .. " is not a valid enum")

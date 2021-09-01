@@ -6,18 +6,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local PlayerScripts = script.Parent
+local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 
 local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
 local PlacementFlow = require(PlayerModules:WaitForChild("PlacementFlow"))
-
-local SharedModules = ReplicatedStorage:WaitForChild("Shared")
-local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
-
-local LocalPlayer = Players.LocalPlayer
 
 ---
 

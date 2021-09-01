@@ -256,7 +256,7 @@ for _, unitDataScript in pairs(UnitData:GetChildren()) do
 	end
 end
 
-for _, unitModel in pairs(CollectionService:GetTagged("Unit")) do
+for _, unitModel in pairs(CollectionService:GetTagged(GameEnum.ObjectType.Unit)) do
 	constructUnit(unitModel)
 end
 
@@ -269,9 +269,9 @@ UnitData.ChildAdded:Connect(function(unitDataScript)
 	unitDataCache[unitName] = require(unitDataScript)
 end)
 
-CollectionService:GetInstanceAddedSignal("Unit"):Connect(constructUnit)
+CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(constructUnit)
 
-CollectionService:GetInstanceRemovedSignal("Unit"):Connect(function(unitModel)
+CollectionService:GetInstanceRemovedSignal(GameEnum.ObjectType.Unit):Connect(function(unitModel)
 	local unit = Unit.fromModel(unitModel)
 	if (not unit) then return end
 	
