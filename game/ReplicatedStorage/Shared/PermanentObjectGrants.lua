@@ -13,15 +13,9 @@ return {
         TestHeavyTowerUnit = true,
         TestAoETowerUnit = true,
         TestAirTargetingTowerUnit = true,
-        TestPassiveIncomeTowerUnit = true,
-        TestFreezerTowerUnit = true,
 
         TestFieldUnit = true,
-        TestBiggerFieldUnit = true,
         TestAirFieldUnit = true,
-
-        -- todo: remove
-        DEBUG_Obliterator = true,
     },
 
     [GameEnum.ObjectType.Roadblock] = {

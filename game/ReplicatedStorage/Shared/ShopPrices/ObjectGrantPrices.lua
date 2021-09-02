@@ -15,8 +15,11 @@ return {
         TestHeavyTowerUnit = 30,
         TestAoETowerUnit = 20,
         TestAirTargetingTowerUnit = 35,
+        TestPassiveIncomeTowerUnit = 5,
+        TestFreezerTowerUnit = 10,
 
         TestFieldUnit = 2,
+        TestBiggerFieldUnit = 5,
         TestAirFieldUnit = 3,
 
         DEBUG_Obliterator = math.huge,

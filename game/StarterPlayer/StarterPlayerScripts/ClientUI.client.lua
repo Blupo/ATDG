@@ -8,8 +8,14 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 local ClientScripts = PlayerScripts:WaitForChild("ClientScripts")
+
+local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
+local GameUI = GameUIModules:WaitForChild("GameUI")
+local LobbyUI = GameUIModules:WaitForChild("LobbyUI")
+local Roact = require(GameUIModules:WaitForChild("Roact"))
 
 local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
 
@@ -20,7 +26,6 @@ local clientScripts = {
         HotbarKeybinds = true,
         TowerUnitUI = true,
         UnitBillboards = true,
-        MountGameUI = true,
 
         TEMP_NonCollider = true,
     },
@@ -32,10 +37,19 @@ local clientScripts = {
 
 local initClientScripts = function(serverType: string)
     local scripts = clientScripts[serverType]
+    local clientUI
 
     for scriptName in pairs(scripts) do
         ClientScripts:WaitForChild(scriptName).Disabled = false
     end
+
+    if (serverType == GameEnum.ServerType.Lobby) then
+        clientUI = require(LobbyUI)
+    elseif (serverType == GameEnum.ServerType.Game) then
+        clientUI = require(GameUI)
+    end
+
+    Roact.mount(Roact.createElement(clientUI), PlayerGui, "ClientUI")
 end
 
 ---

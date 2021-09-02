@@ -11,6 +11,7 @@ local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Game = require(GameModules:FindFirstChild("Game"))
 local Placement = require(GameModules:FindFirstChild("Placement"))
 local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
+local ServerMaster = require(GameModules:FindFirstChild("ServerMaster"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
@@ -66,14 +67,11 @@ Shop.GetItemPrice = function(itemType: string, itemName: string): number?
     return ShopPrices.ItemPrices[itemType][itemName]
 end
 
-Shop.GetUnitUpgradePrice = function(unitId: string): number?
-    local unit = Unit.fromId(unitId)
-    if (not unit) then return end
-
-    local unitPrices = ShopPrices.UnitUpgradePrices[unit.Name]
+Shop.GetUnitUpgradePrice = function(unitName: string, level: number): number?
+    local unitPrices = ShopPrices.UnitUpgradePrices[unitName]
     if (not unitPrices) then return end
 
-    local prices = unitPrices[unit.Level + 1]
+    local prices = unitPrices[level + 1]
     if (not prices) then return end
 
     return prices.Individual
@@ -92,14 +90,11 @@ Shop.GetUnitPersistentUpgradePrice = function(owner: number, unitName: string): 
     return prices.Persistent
 end
 
-Shop.GetUnitSellingPrice = function(unitId: string): number?
-    local unit = Unit.fromId(unitId)
-    if (not unit) then return end
+Shop.GetUnitSellingPrice = function(unitName: string, level: number): number?
+    local unitSpending = ShopPrices.ObjectPlacementPrices[GameEnum.ObjectType.Unit][unitName]
+    local unitUpgradePrices = ShopPrices.UnitUpgradePrices[unitName]
 
-    local unitSpending = ShopPrices.ObjectPlacementPrices[GameEnum.ObjectType.Unit][unit.Name]
-    local unitUpgradePrices = ShopPrices.UnitUpgradePrices[unit.Name]
-
-    for i = 2, unit.Level do
+    for i = 2, level do
         local levelUpgradePrices = unitUpgradePrices[i]
 
         unitSpending = unitSpending + (levelUpgradePrices and levelUpgradePrices.Individual or 0)
@@ -208,7 +203,7 @@ Shop.PurchaseUnitUpgrade = function(unitId: string): boolean
 
     local ownerId = unit.Owner
 
-    local upgradePrice = Shop.GetUnitUpgradePrice(unitId)
+    local upgradePrice = Shop.GetUnitUpgradePrice(unit.Name, unit.Level)
     if (not upgradePrice) then return false end
 
     local pointsBalance = PlayerData.GetPlayerCurrencyBalance(ownerId, GameEnum.CurrencyType.Points)
@@ -250,7 +245,7 @@ Shop.SellUnit = function(unitId: string): boolean
     if (unit.Owner == 0) then return false end
 
     unit:Destroy()
-    PlayerData.DepositCurrencyToPlayer(unit.Owner, GameEnum.CurrencyType.Points, Shop.GetUnitSellingPrice(unitId))
+    PlayerData.DepositCurrencyToPlayer(unit.Owner, GameEnum.CurrencyType.Points, Shop.GetUnitSellingPrice(unit.Name, unit.Level))
     return true
 end
 

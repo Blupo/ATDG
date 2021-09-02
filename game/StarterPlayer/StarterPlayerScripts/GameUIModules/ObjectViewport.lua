@@ -39,6 +39,8 @@ local LocalPlayer = Players.LocalPlayer
 
     hotkey: number?
     showLevel: boolean?
+
+    LayoutOrder: number?
 ]]
 
 local ObjectViewport = Roact.PureComponent:extend("ObjectViewport")

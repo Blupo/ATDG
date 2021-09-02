@@ -17,9 +17,9 @@ local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))
 
-local GameUI = PlayerScripts:WaitForChild("GameUI")
-local Roact = require(GameUI:WaitForChild("Roact"))
-local TowerUnitUpgrader = require(GameUI:WaitForChild("TowerUnitUpgrader"))
+local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
+local Roact = require(GameUIModules:WaitForChild("Roact"))
+local TowerUnitUpgrader = require(GameUIModules:WaitForChild("TowerUnitUpgrader"))
 
 local CurrentCamera = Workspace.CurrentCamera
 

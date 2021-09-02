@@ -6,7 +6,7 @@
 	path = game/ReplicatedStorage/Shared/t
 	url = https://github.com/osyrisrblx/t
 [submodule "roact"]
-	path = game/StarterPlayer/StarterPlayerScripts/GameUI/Roact
+	path = game/StarterPlayer/StarterPlayerScripts/GameUIModules/Roact
 	url = https://github.com/Roblox/roact
 [submodule "ProfileService"]
 	path = ProfileService

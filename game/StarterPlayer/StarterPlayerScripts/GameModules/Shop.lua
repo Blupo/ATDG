@@ -27,14 +27,11 @@ Shop.GetItemPrice = function(itemType: string, itemName: string): number?
     return ShopPrices.ItemPrices[itemType][itemName]
 end
 
-Shop.GetUnitUpgradePrice = function(unitId: string): number?
-    local unit = Unit.fromId(unitId)
-    if (not unit) then return end
-
-    local unitPrices = ShopPrices.UnitUpgradePrices[unit.Name]
+Shop.GetUnitUpgradePrice = function(unitName: string, level: number): number?
+    local unitPrices = ShopPrices.UnitUpgradePrices[unitName]
     if (not unitPrices) then return end
 
-    local prices = unitPrices[unit.Level + 1]
+    local prices = unitPrices[level + 1]
     if (not prices) then return end
 
     return prices.Individual
@@ -53,14 +50,11 @@ Shop.GetUnitPersistentUpgradePrice = function(owner: number, unitName: string): 
     return prices.Persistent
 end
 
-Shop.GetUnitSellingPrice = function(unitId: string): number?
-    local unit = Unit.fromId(unitId)
-    if (not unit) then return end
+Shop.GetUnitSellingPrice = function(unitName: string, level: number): number?
+    local unitSpending = ShopPrices.ObjectPlacementPrices[GameEnum.ObjectType.Unit][unitName]
+    local unitUpgradePrices = ShopPrices.UnitUpgradePrices[unitName]
 
-    local unitSpending = ShopPrices.ObjectPlacementPrices[GameEnum.ObjectType.Unit][unit.Name]
-    local unitUpgradePrices = ShopPrices.UnitUpgradePrices[unit.Name]
-
-    for i = 2, unit.Level do
+    for i = 2, level do
         local levelUpgradePrices = unitUpgradePrices[i]
 
         unitSpending = unitSpending + (levelUpgradePrices and levelUpgradePrices.Individual or 0)

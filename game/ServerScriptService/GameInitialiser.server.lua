@@ -14,7 +14,8 @@ local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
-local SERVER_TYPE = GameEnum.ServerType.Game
+-- todo
+local SERVER_TYPE = GameEnum.ServerType.Lobby
 
 ---
 

@@ -1,12 +1,14 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local GameUI = script.Parent
-local PlayerScripts = GameUI.Parent
+local LocalPlayer = Players.LocalPlayer
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
-local Roact = require(GameUI:WaitForChild("Roact"))
-local Style = require(GameUI:WaitForChild("Style"))
+local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
+local Roact = require(GameUIModules:WaitForChild("Roact"))
+local Style = require(GameUIModules:WaitForChild("Style"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Shop = require(GameModules:WaitForChild("Shop"))
@@ -54,11 +56,11 @@ end
 TowerUnitUpgradeBillboard.didMount = function(self)
     local unitId = self.props.unitId
     local unit = Unit.fromId(unitId)
-    local upgradePrice = Shop.GetUnitUpgradePrice(unitId)
-    local sellingPrice = Shop.GetUnitSellingPrice(unitId)
-
     local unitName = unit.Name
     local unitLevel = unit.Level
+
+    local upgradePrice = Shop.GetUnitUpgradePrice(unitName, unitLevel)
+    local sellingPrice = Shop.GetUnitSellingPrice(unitName, unitLevel)
 
     local thisLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, unitLevel)
     local nextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, unitLevel + 1)
@@ -74,8 +76,8 @@ TowerUnitUpgradeBillboard.didMount = function(self)
     self.unitUpgraded = unit.Upgraded:Connect(function(newLevel)
         local newLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel)
         local newNextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel + 1)
-        local newUpgradePrice = Shop.GetUnitUpgradePrice(unitId)
-        local newSellingPrice = Shop.GetUnitSellingPrice(unitId)
+        local newUpgradePrice = Shop.GetUnitUpgradePrice(unitName, unitLevel)
+        local newSellingPrice = Shop.GetUnitSellingPrice(unitName, unitLevel)
         local newAttributeChanges = {}
 
         for i = 1, #ATTRIBUTE_PREVIEW do

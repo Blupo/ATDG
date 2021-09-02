@@ -19,6 +19,7 @@ return {
         TestFreezerTowerUnit = 200,
 
         TestFieldUnit = 10,
+        TestBiggerFieldUnit = 50,
         TestAirFieldUnit = 30,
 
         DEBUG_Obliterator = 0,

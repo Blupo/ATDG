@@ -110,7 +110,10 @@ CurrencyBar.render = function(self)
             BorderSizePixel = 0,
             LayoutOrder = 0,
 
-            Text = self.state.currencies[GameEnum.CurrencyType.Tickets]
+            Text = self.state.currencies[GameEnum.CurrencyType.Tickets],
+            Image = "rbxassetid://327284812",
+
+            ImageColor3 = Color3.new(0, 0, 0)
         }),
 
         Points = Roact.createElement(CurrencyItem, {

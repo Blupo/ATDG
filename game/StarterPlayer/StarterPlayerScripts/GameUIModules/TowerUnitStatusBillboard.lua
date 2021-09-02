@@ -9,8 +9,8 @@ local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"
 local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
-local GameUI = PlayerScripts:WaitForChild("GameUI")
-local Roact = require(GameUI:WaitForChild("Roact"))
+local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
+local Roact = require(GameUIModules:WaitForChild("Roact"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))

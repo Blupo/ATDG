@@ -1,3 +1,5 @@
+-- todo: make this work with ServerMaster
+
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,6 +22,8 @@ local UnitRemovingEvent = Instance.new("BindableEvent")
 local Unit = SystemCoordinator.waitForSystem("Unit")
 local GetUnitPersistentUpgradeLevelRemoteFunction = Unit.GetUnitPersistentUpgradeLevel
 local SetAttributeRemoteFunction = Unit.SetAttribute
+
+local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
 
 ---
 
@@ -256,10 +260,6 @@ for _, unitDataScript in pairs(UnitData:GetChildren()) do
 	end
 end
 
-for _, unitModel in pairs(CollectionService:GetTagged(GameEnum.ObjectType.Unit)) do
-	constructUnit(unitModel)
-end
-
 UnitData.ChildAdded:Connect(function(unitDataScript)
 	if (not unitDataScript:IsA("ModuleScript")) then return end
 
@@ -269,19 +269,29 @@ UnitData.ChildAdded:Connect(function(unitDataScript)
 	unitDataCache[unitName] = require(unitDataScript)
 end)
 
-CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(constructUnit)
-
-CollectionService:GetInstanceRemovedSignal(GameEnum.ObjectType.Unit):Connect(function(unitModel)
-	local unit = Unit.fromModel(unitModel)
-	if (not unit) then return end
-	
-	destroyUnit(unit)
-end)
-
 Unit.UnitPersistentUpgraded:Connect(function(owner: number, unitName: string, newLevel: number)
 	if (owner ~= LocalPlayer.UserId) then return end
 
 	localPlayerUnitPersistentUpgradeLevels[unitName] = newLevel
 end)
+
+do
+	local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
+
+	if (serverType == GameEnum.ServerType.Game) then
+		for _, unitModel in pairs(CollectionService:GetTagged(GameEnum.ObjectType.Unit)) do
+			constructUnit(unitModel)
+		end
+
+		CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(constructUnit)
+
+		CollectionService:GetInstanceRemovedSignal(GameEnum.ObjectType.Unit):Connect(function(unitModel)
+			local unit = Unit.fromModel(unitModel)
+			if (not unit) then return end
+			
+			destroyUnit(unit)
+		end)
+	end
+end
 
 return Unit
