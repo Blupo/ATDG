@@ -15,6 +15,7 @@ local ServerMaster = require(GameModules:FindFirstChild("ServerMaster"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
+local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local ShopPrices = require(SharedModules:FindFirstChild("ShopPrices"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
@@ -101,6 +102,22 @@ Shop.GetUnitSellingPrice = function(unitName: string, level: number): number?
     end
 
     return (unitSpending / 2)
+end
+
+Shop.GetProducts = function()
+    local products = {}
+
+    -- todo: implement sales
+    local now = DateTime.now().UnixTimestamp
+    local currentPromotion = GameEnum.PromotionalPricing.None
+
+    local ticketProducts = devProducts[GameEnum.DevProductType.Ticket][currentPromotion] or {}
+    local valuePackProducts = devProducts[GameEnum.DevProductType.ValuePack][currentPromotion] or {}
+
+    products[GameEnum.DevProductType.Ticket] = CopyTable(ticketProducts)
+    products[GameEnum.DevProductType.ValuePack] = CopyTable(valuePackProducts)
+    products.PromotionalPricing = currentPromotion
+    return products
 end
 
 -- Displays the appropriate dev product to prompt, Marketplace.ProcessReceipt handles the actual purchases
@@ -322,6 +339,8 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
     -- todo: notify the user that their purchase was successful, and give them the purchase ID to record
     return Enum.ProductPurchaseDecision.PurchaseGranted
 end
+
+System.addFunction("GetProducts", Shop.GetProducts, true)
 
 System.addFunction("PurchaseTickets", t.wrap(function(callingPlayer: Player, userId: number, quantity: number)
     if (callingPlayer.UserId ~= userId) then return end

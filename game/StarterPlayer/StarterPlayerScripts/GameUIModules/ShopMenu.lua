@@ -1,5 +1,7 @@
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
 
 ---
@@ -33,6 +35,8 @@ local SpecialShopPage = Roact.PureComponent:extend("SpecialShopPage")
 ---
 
 local unitPrices = ShopPrices.ObjectGrantPrices[GameEnum.ObjectType.Unit]
+local actionPrices = ShopPrices.ItemPrices[GameEnum.ItemType.SpecialAction]
+local actionPricesSorted = {}
 
 local unitPricesSorted = {
     [GameEnum.UnitType.TowerUnit] = {},
@@ -62,6 +66,13 @@ for unitName, price in pairs(unitPrices) do
     })
 end
 
+for actionName, price in pairs(actionPrices) do
+    table.insert(actionPricesSorted, {
+        actionName = actionName,
+        price = price
+    })
+end
+
 table.sort(unitPricesSorted[GameEnum.UnitType.TowerUnit], function(a, b)
     return a.price < b.price
 end)
@@ -69,6 +80,11 @@ end)
 table.sort(unitPricesSorted[GameEnum.UnitType.FieldUnit], function(a, b)
     return a.price < b.price
 end)
+
+table.sort(actionPricesSorted, function(a, b)
+    return a.price < b.price
+end)
+
 
 ---
 
@@ -635,8 +651,427 @@ end
 
 ---
 
-SpecialShopPage.render = function(self)
+SpecialShopPage.init = function(self)
+    self.loadingImage = Roact.createRef()
+    self.pageListLength, self.updatePageListLength = Roact.createBinding(0)
+    self.ticketListLength, self.updateTicketListLength = Roact.createBinding(0)
+    self.actionListLength, self.updateActionListLength = Roact.createBinding(0)
 
+    self:setState({
+        ticketProducts = {},
+        productLoadingStatus = "wait",
+    })
+end
+
+SpecialShopPage.didMount = function(self)
+    self.rotator = RunService.Heartbeat:Connect(function(step)
+        local loadingImage = self.loadingImage:getValue()
+        if (not loadingImage) then return end
+
+        if (self.state.productLoadingStatus == "wait") then
+            loadingImage.Rotation = (loadingImage.Rotation + (step * 60)) % 360  
+        else
+            loadingImage.Rotation = 0
+        end
+    end)
+
+    self.inventoryChangedConnection = PlayerData.InventoryChanged:Connect(function(_, itemType: string, itemName: string, newAmount: number, _)
+        if (itemType ~= GameEnum.ItemType.SpecialAction) then return end
+        if (self.state.selectedAction ~= itemName) then return end
+
+        self:setState({
+            selectedActionCount = newAmount
+        })
+    end)
+
+    local ticketProducts = Shop.GetProducts()[GameEnum.DevProductType.Ticket]
+    local ticketProductsSorted = {}
+
+    for ticketAmount, productId in pairs(ticketProducts) do
+        local productInfo = MarketplaceService:GetProductInfo(productId, Enum.InfoType.Product)
+
+        table.insert(ticketProductsSorted, {
+            ticketAmount = ticketAmount,
+            price = productInfo.PriceInRobux,
+            productId = productId
+        })
+    end
+
+    table.sort(ticketProductsSorted, function(a, b)
+        return tonumber(a.ticketAmount) < tonumber(b.ticketAmount)
+    end)
+
+    self:setState({
+        ticketProducts = ticketProductsSorted,
+        productLoadingStatus = Roact.None,
+    })
+
+    self.rotator:Disconnect()
+end
+
+SpecialShopPage.render = function(self)
+    local selectedAction = self.state.selectedAction
+    local ticketProducts = self.state.ticketProducts
+    local selectedActionPrice = selectedAction and Shop.GetItemPrice(GameEnum.ItemType.SpecialAction, selectedAction) or nil
+
+    if (selectedActionPrice) then
+        selectedActionPrice = (selectedActionPrice ~= math.huge) and selectedActionPrice or "∞"
+    end
+
+    local selectedActionPriceTextSize = selectedAction and TextService:GetTextSize(selectedActionPrice or "?", 16, Style.Constants.MainFont, Vector2.new(math.huge, math.huge)) or nil
+
+    local ticketListElements = {}
+    local actionListElements = {}
+
+    if (#ticketProducts < 1) then
+        ticketListElements.LoadingIndicator = Roact.createElement("Frame", {
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+        }, {
+            Image = Roact.createElement("ImageLabel", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(1, 0, 1, 0),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+
+                Image = "rbxassetid://6973265105",
+                ImageColor3 = Color3.new(0, 0, 0),
+
+                [Roact.Ref] = self.loadingImage,
+            })
+        })
+    else
+        for i = 1, #ticketProducts do
+            local productInfo = ticketProducts[i]
+
+            ticketListElements[productInfo.ticketAmount] = Roact.createElement("TextButton", {
+                BackgroundTransparency = 0,
+                BorderSizePixel = 0,
+                LayoutOrder = i,
+    
+                Text = "",
+                TextTransparency = 1,
+    
+                BackgroundColor3 = Color3.fromRGB(230, 230, 230),
+                
+                [Roact.Event.Activated] = function()
+                    MarketplaceService:PromptProductPurchase(LocalPlayer, productInfo.productId, false)
+                end,
+            }, {
+                UICorner = Roact.createElement("UICorner", {
+                    CornerRadius = UDim.new(0, Style.Constants.StandardCornerRadius)
+                }),
+    
+                Padding = Roact.createElement(Padding, { Style.Constants.MinorElementPadding }),
+    
+                TicketAmountLabel = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(0.5, 0),
+                    Size = UDim2.new(1, 0, 1, -16),
+                    Position = UDim2.new(0.5, 0, 0, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Text = productInfo.ticketAmount,
+                    Font = Style.Constants.MainFont,
+                    TextSize = 32,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+
+                    TextColor3 = Color3.new(0, 0, 0)
+                }),
+
+                PriceLabel = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(0.5, 1),
+                    Size = UDim2.new(1, 0, 0, 16),
+                    Position = UDim2.new(0.5, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Text = productInfo.price .. " R$",
+                    Font = Style.Constants.MainFont,
+                    TextSize = 16,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+
+                    TextColor3 = Color3.new(0, 0, 0)
+                })
+            })
+        end
+    end
+
+    for i = 1, #actionPricesSorted do
+        local priceInfo = actionPricesSorted[i]
+
+        actionListElements[priceInfo.actionName] = Roact.createElement("TextButton", {
+            BackgroundTransparency = 0,
+            BorderSizePixel = 0,
+            LayoutOrder = i,
+
+            Text = "",
+            TextTransparency = 1,
+
+            BackgroundColor3 = Color3.fromRGB(230, 230, 230),
+            
+            [Roact.Event.Activated] = function()
+                self:setState({
+                    selectedAction = priceInfo.actionName,
+                    selectedActionCount = PlayerData.GetPlayerInventoryItemCount(LocalPlayer.UserId, GameEnum.ItemType.SpecialAction, priceInfo.actionName)
+                })
+            end,
+        }, {
+            UICorner = Roact.createElement("UICorner", {
+                CornerRadius = UDim.new(0, Style.Constants.StandardCornerRadius)
+            }),
+
+            Padding = Roact.createElement(Padding, { Style.Constants.MinorElementPadding }),
+
+            Image = Roact.createElement("ImageLabel", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(1, 0, 1, 0),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+
+                Image = "rbxassetid://3043812414", -- todo: replace this
+                ImageColor3 = Color3.new(0, 0, 0),
+            })
+        })
+    end
+
+    ticketListElements.UIGridLayout = Roact.createElement("UIGridLayout", {
+        CellPadding = UDim2.new(0, Style.Constants.MinorElementPadding, 0, Style.Constants.MinorElementPadding),
+        CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
+
+        FillDirection = Enum.FillDirection.Horizontal,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        StartCorner = Enum.StartCorner.TopLeft,
+        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+        VerticalAlignment = Enum.VerticalAlignment.Top,
+
+        [Roact.Change.AbsoluteContentSize] = function(obj)
+            self.updateTicketListLength(obj.AbsoluteContentSize.Y)
+        end
+    })
+
+    actionListElements.UIGridLayout = Roact.createElement("UIGridLayout", {
+        CellPadding = UDim2.new(0, Style.Constants.MinorElementPadding, 0, Style.Constants.MinorElementPadding),
+        CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
+
+        FillDirection = Enum.FillDirection.Horizontal,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        StartCorner = Enum.StartCorner.TopLeft,
+        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+        VerticalAlignment = Enum.VerticalAlignment.Top,
+
+        [Roact.Change.AbsoluteContentSize] = function(obj)
+            self.updateActionListLength(obj.AbsoluteContentSize.Y)
+        end
+    })
+
+    return Roact.createFragment({
+        SpecialList = Roact.createElement("ScrollingFrame", {
+            AnchorPoint = Vector2.new(0, 0.5),
+            Size = UDim2.new(selectedAction and UDim.new(0.7, -16) or UDim.new(1, 0), UDim.new(1, 0)),
+            Position = UDim2.new(0, 0, 0.5, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+
+            CanvasSize = self.pageListLength:map(function(listLength)
+                return UDim2.new(0, 0, 0, listLength)
+            end),
+
+            ScrollBarImageColor3 = Color3.new(0, 0, 0),
+        }, {
+            TicketHeader = Roact.createElement("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 32),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                LayoutOrder = 0,
+
+                Text = "Tickets",
+                Font = Style.Constants.MainFont,
+                TextSize = 32,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Top,
+
+                TextColor3 = Color3.new(0, 0, 0)
+            }),
+
+            TicketList = Roact.createElement("Frame", {
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                LayoutOrder = 1,
+        
+                Size = self.ticketListLength:map(function(listLength)
+                    return UDim2.new(1, 0, 0, listLength)
+                end),
+            }, ticketListElements),
+
+            ActionHeader = Roact.createElement("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 32),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                LayoutOrder = 2,
+
+                Text = "Special Action Tokens",
+                Font = Style.Constants.MainFont,
+                TextSize = 32,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Top,
+
+                TextColor3 = Color3.new(0, 0, 0)
+            }),
+
+            ActionList = Roact.createElement("Frame", {
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                LayoutOrder = 3,
+        
+                Size = self.actionListLength:map(function(listLength)
+                    return UDim2.new(1, 0, 0, listLength)
+                end),
+            }, actionListElements),
+
+            UIListLayout = Roact.createElement("UIListLayout", {
+                Padding = UDim.new(0, Style.Constants.MajorElementPadding),
+        
+                FillDirection = Enum.FillDirection.Vertical,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                VerticalAlignment = Enum.VerticalAlignment.Top,
+        
+                [Roact.Change.AbsoluteContentSize] = function(obj)
+                    self.updatePageListLength(obj.AbsoluteContentSize.Y)
+                end
+            }),
+        }),
+
+        SelectedActionInfo = selectedAction and
+            Roact.createElement("Frame", {
+                AnchorPoint = Vector2.new(1, 0.5),
+                Size = UDim2.new(0.3, 0, 1, 0),
+                Position = UDim2.new(1, 0, 0.5, 0),
+                BackgroundTransparency = 0,
+                BorderSizePixel = 0,
+
+                BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+            }, {
+                UICorner = Roact.createElement("UICorner", {
+                    CornerRadius = UDim.new(0, Style.Constants.StandardCornerRadius)
+                }),
+    
+                Padding = Roact.createElement(Padding, { Style.Constants.MinorElementPadding }),
+
+                ActionNameLabel = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(0.5, 0),
+                    Size = UDim2.new(1, 0, 0, 24),
+                    Position = UDim2.new(0.5, 0, 0, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Text = selectedAction,
+                    Font = Style.Constants.MainFont,
+                    TextSize = 24,
+                    TextScaled = true,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Top,
+
+                    TextColor3 = Color3.new(0, 0, 0)
+                }),
+
+                -- TODO
+                FlavorTextLabel = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(0.5, 0),
+                    Size = UDim2.new(1, 0, 1, -90),
+                    Position = UDim2.new(0.5, 0, 0, 32),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Text = "Blupo please add details.",
+                    Font = Enum.Font.Gotham,
+                    TextSize = 16,
+                    TextWrapped = true,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Top,
+
+                    TextColor3 = Color3.new(0, 0, 0)
+                }),
+
+                OwnedLabel = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(0.5, 1),
+                    Size = UDim2.new(1, -32, 0, 16),
+                    Position = UDim2.new(0.5, 0, 1, -32),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Text = "Owned: " .. self.state.selectedActionCount,
+                    Font = Style.Constants.MainFont,
+                    TextSize = 16,
+                    TextWrapped = true,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+
+                    TextColor3 = Color3.new(0, 0, 0)
+                }),
+
+                PurchaseButton = Roact.createElement("TextButton", {
+                    AnchorPoint = Vector2.new(0.5, 1),
+                    Size = UDim2.new(1, -32, 0, 24),
+                    Position = UDim2.new(0.5, 0, 1, 0),
+                    BackgroundTransparency = 0,
+                    BorderSizePixel = 0,
+
+                    Text = "",
+                    TextTransparency = 1,
+
+                    BackgroundColor3 = Color3.fromRGB(230, 230, 230),
+
+                    [Roact.Event.Activated] = function()
+                        Shop.PurchaseItem(LocalPlayer.UserId, GameEnum.ItemType.SpecialAction, selectedAction)
+                    end,
+                }, {
+                    UICorner = Roact.createElement("UICorner", {
+                        CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius)
+                    }),
+        
+                    UIListLayout = Roact.createElement("UIListLayout", {
+                        Padding = UDim.new(0, 2),
+
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                        VerticalAlignment = Enum.VerticalAlignment.Center,
+                    }),
+
+                    PriceLabel = Roact.createElement("TextLabel", {
+                        Size = UDim2.new(0, selectedActionPriceTextSize.X, 1, 0),
+                        BackgroundTransparency = 1,
+                        BorderSizePixel = 0,
+                        LayoutOrder = 0,
+
+                        Text = selectedActionPrice,
+                        Font = Style.Constants.MainFont,
+                        TextSize = 16,
+                        TextXAlignment = Enum.TextXAlignment.Center,
+                        TextYAlignment = Enum.TextYAlignment.Center,
+
+                        TextColor3 = Color3.new(0, 0, 0)
+                    }),
+
+                    TicketIcon = Roact.createElement("ImageLabel", {
+                        Size = UDim2.new(0, 24, 0, 24),
+                        BackgroundTransparency = 1,
+                        BorderSizePixel = 0,
+                        LayoutOrder = 1,
+
+                        Image = "rbxassetid://327284812",
+                        ImageColor3 = Color3.new(0, 0, 0)
+                    })
+                }),
+            })
+        or nil
+    })
 end
 
 ---

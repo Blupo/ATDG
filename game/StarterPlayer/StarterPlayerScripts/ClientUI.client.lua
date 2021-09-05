@@ -31,7 +31,7 @@ local clientScripts = {
     },
 
     [GameEnum.ServerType.Lobby] = {
-        
+        TEMP_TeleportToGameGui = true,
     },
 }
 

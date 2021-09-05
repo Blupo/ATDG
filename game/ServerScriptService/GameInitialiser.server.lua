@@ -14,16 +14,27 @@ local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 ---
 
--- todo
-local SERVER_TYPE = GameEnum.ServerType.Lobby
+local serverType
+local placeId = game.PlaceId
+
+if (placeId == 6421134421) then
+    serverType = GameEnum.ServerType.Lobby
+elseif (placeId == 6432648941) then
+    serverType = GameEnum.ServerType.Game
+elseif (placeId == 0) then
+    serverType = GameEnum.ServerType.Lobby
+    warn("Studio Testing, server type is " .. serverType)
+else
+    error("Invalid PlaceId")
+end
 
 ---
 
-ServerMaster.InitServer(SERVER_TYPE)
+ServerMaster.InitServer(serverType)
 
---- FOR GAME TESTING ONLY
+-- temporary until we get DataStores set up
 
-if (SERVER_TYPE == GameEnum.ServerType.Game) then
+if (serverType == GameEnum.ServerType.Game) then
     local Game = require(GameModules:FindFirstChild("Game"))
 
     Game.LoadData("TestMap", "", GameEnum.GameMode.TowerDefense, GameEnum.Difficulty.Normal)

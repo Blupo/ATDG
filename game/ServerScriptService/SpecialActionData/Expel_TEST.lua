@@ -1,5 +1,3 @@
--- kills all enemy Units in very unceremonious fashion
-
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
