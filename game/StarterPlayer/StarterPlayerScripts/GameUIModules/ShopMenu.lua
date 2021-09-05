@@ -1152,6 +1152,10 @@ ShopMenu.render = function(self)
 
         BackgroundColor3 = Color3.new(1, 1, 1)
     }, {
+        UISizeConstraint = Roact.createElement("UISizeConstraint", {
+            MaxSize = Vector2.new(735, 455)
+        }),
+
         UICorner = Roact.createElement("UICorner", {
             CornerRadius = UDim.new(0, Style.Constants.StandardCornerRadius)
         }),
@@ -1174,10 +1178,6 @@ ShopMenu.render = function(self)
             BorderSizePixel = 0,
         }, {
             Roact.createElement(shopCategories[selectedCategory].element),
-
-            UISizeConstraint = Roact.createElement("UISizeConstraint", {
-                MaxSize = Vector2.new(735, 455)
-            })
         }),
     })
 end
