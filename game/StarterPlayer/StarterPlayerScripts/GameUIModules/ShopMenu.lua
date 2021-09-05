@@ -998,6 +998,20 @@ SpecialShopPage.render = function(self)
                     TextColor3 = Color3.new(0, 0, 0)
                 }),
 
+                BackgroundImage = Roact.createElement("ImageLabel", {
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+    
+                    Image = "rbxassetid://3043812414", -- todo: replace this
+                    ImageTransparency = 1,
+                    ScaleType = Enum.ScaleType.Fit,
+
+                    ImageColor3 = Color3.new(0, 0, 0),
+                }),
+
                 OwnedLabel = Roact.createElement("TextLabel", {
                     AnchorPoint = Vector2.new(0.5, 1),
                     Size = UDim2.new(1, -32, 0, 16),
@@ -1159,7 +1173,11 @@ ShopMenu.render = function(self)
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
         }, {
-            Roact.createElement(shopCategories[selectedCategory].element)
+            Roact.createElement(shopCategories[selectedCategory].element),
+
+            UISizeConstraint = Roact.createElement("UISizeConstraint", {
+                MaxSize = Vector2.new(735, 455)
+            })
         }),
     })
 end
