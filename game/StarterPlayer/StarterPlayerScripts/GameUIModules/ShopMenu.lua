@@ -360,7 +360,10 @@ UnitShopPage.render = function(self)
                 return UDim2.new(0, 0, 0, listLength)
             end),
 
-            ScrollBarImageColor3 = Color3.new(0, 0, 0),
+            VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
+            ScrollBarThickness = 6,
+
+            ScrollBarImageColor3 = Color3.new(0, 0, 0)
         }, {
             TowerUnitHeader = Roact.createElement("TextLabel", {
                 Size = UDim2.new(1, 0, 0, 32),
@@ -881,7 +884,10 @@ SpecialShopPage.render = function(self)
                 return UDim2.new(0, 0, 0, listLength)
             end),
 
-            ScrollBarImageColor3 = Color3.new(0, 0, 0),
+            VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
+            ScrollBarThickness = 6,
+
+            ScrollBarImageColor3 = Color3.new(0, 0, 0)
         }, {
             TicketHeader = Roact.createElement("TextLabel", {
                 Size = UDim2.new(1, 0, 0, 32),
@@ -988,7 +994,7 @@ SpecialShopPage.render = function(self)
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
 
-                    Text = "Blupo please add details.",
+                    Text = "Blupo, please add details. >:(",
                     Font = Enum.Font.Gotham,
                     TextSize = 16,
                     TextWrapped = true,
@@ -1004,9 +1010,9 @@ SpecialShopPage.render = function(self)
                     Position = UDim2.new(0.5, 0, 0.5, 0),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-    
+
                     Image = "rbxassetid://3043812414", -- todo: replace this
-                    ImageTransparency = 1,
+                    ImageTransparency = 0.75,
                     ScaleType = Enum.ScaleType.Fit,
 
                     ImageColor3 = Color3.new(0, 0, 0),

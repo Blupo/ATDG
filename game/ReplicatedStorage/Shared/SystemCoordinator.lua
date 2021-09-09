@@ -58,13 +58,20 @@ if (RunService:IsServer()) then
             return newRemoteFunction
         end
     
-        self.addEvent = function(eventName, onServerEvent)
+        self.addEvent = function(eventName, passthroughEvent, onServerEvent)
             if (systemFolder:FindFirstChild(eventName)) then return end
     
             local newRemoteEvent = Instance.new("RemoteEvent")
             newRemoteEvent.Name = eventName
             newRemoteEvent.OnServerEvent:Connect(onServerEvent or function() end)
             
+            -- will this cause memory leaks?
+            if (passthroughEvent) then
+                passthroughEvent:Connect(function(...)
+                    newRemoteEvent:FireAllClients(...)
+                end)
+            end
+
             newRemoteEvent.Parent = systemFolder
             return newRemoteEvent
         end

@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 
 ---
 
@@ -27,11 +28,12 @@ local clientScripts = {
         TowerUnitUI = true,
         UnitBillboards = true,
 
+        CoreGuiDisabler = true,
         TEMP_NonCollider = true,
     },
 
     [GameEnum.ServerType.Lobby] = {
-        TEMP_TeleportToGameGui = true,
+        
     },
 }
 
@@ -61,3 +63,11 @@ if (not serverType) then
 else
     initClientScripts(serverType)
 end
+
+ServerMaster.GameInitFailureNotification:Connect(function()
+    StarterGui:SetCore("SendNotification", {
+        Title = "Game Error",
+        Text = "There was a problem initialising your game. You are being teleported back to the lobby.",
+        Icon = "rbxassetid://6868396182",
+    })
+end)

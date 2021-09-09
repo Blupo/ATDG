@@ -1,20 +1,25 @@
--- todo: Game needs to take priority, since some modules depend on it
-
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 ---
+
+local GameDataStore = DataStoreService:GetDataStore("GameData", "InDev") -- todo
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
+local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 
 local ServerInitialisedEvent = Instance.new("BindableEvent")
 
 local System = SystemCoordinator.newSystem("ServerMaster")
-local ServerInitialisedRemoteEvent = System.addEvent("ServerInitialised")
+local GameInitFailureNotificationRemoteEvent = System.addEvent("GameInitFailureNotification")
+
 
 ---
 
@@ -35,6 +40,7 @@ local serverModules = {
     },
 
     [GameEnum.ServerType.Lobby] = {
+        Matchmaking = true,
         PlayerData = true,
         Shop = true,
     },
@@ -42,14 +48,36 @@ local serverModules = {
 
 ---
 
-local ServerMaster = {}
-ServerMaster.ServerInitialised  = ServerInitialisedEvent.Event
+local ServerMaster = {
+    ServerInitialised = ServerInitialisedEvent.Event,
+}
 
 ServerMaster.InitServer = function(initServerType: string)
     if (serverType) then return end
 
     if (initServerType == GameEnum.ServerType.Game) then
-        require(GameModules:FindFirstChild("Game"))
+        local Game = require(GameModules:FindFirstChild("Game"))
+
+        Promise.new(function(resolve, reject)
+            local privateServerId = game.PrivateServerId
+
+            if (privateServerId == "") then
+                reject("PrivateServerId is missing")
+                return
+            end
+
+            resolve(GameDataStore:RemoveAsync(privateServerId))
+        end):andThen(function(gameplayData)
+            Game.LoadData(gameplayData.MapName, gameplayData.GameMode, gameplayData.Difficulty)
+            Game.Start(0)
+        end, function(error)
+            warn(tostring(error))
+            GameInitFailureNotificationRemoteEvent:FireAllClients()
+
+            Promise.delay(3):andThen(function()
+                TeleportService:TeleportAsync(6421134421, Players:GetPlayers())
+            end)
+        end)
     end
 
     local modules = serverModules[initServerType]
@@ -68,10 +96,7 @@ end
 
 ---
 
-ServerInitialisedEvent.Event:Connect(function(...)
-    ServerInitialisedRemoteEvent:FireAllClients(...)
-end)
-
+System.addEvent("ServerInitialised", ServerMaster.ServerInitialised)
 System.addFunction("GetServerType", ServerMaster.GetServerType)
 
 return ServerMaster

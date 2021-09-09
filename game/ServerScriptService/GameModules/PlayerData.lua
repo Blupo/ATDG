@@ -92,8 +92,12 @@ local PlayerDataTemplate: PlayerData = {
     },
 }
 
-local ProfileStore = ProfileService.GetProfileStore("PlayerData", PlayerDataTemplate)
-ProfileStore = ProfileStore.Mock --RunService:IsStudio() and ProfileStore.Mock or ProfileStore
+local ProfileStore = ProfileService.GetProfileStore({
+    Name = "PlayerData",
+    Scope = "InDev"
+}, PlayerDataTemplate)
+
+ProfileStore = RunService:IsStudio() and ProfileStore.Mock or ProfileStore
 
 local playerProfiles = {}
 local ephemeralCurrenciesBalances = {}
@@ -105,7 +109,7 @@ local playerAdded = function(player: Player)
 
     if (profile) then
         -- todo: provide a mechanism for merging old data versions
-        playerProfiles[userId] = profile
+        profile:AddUserId(userId)
 
         profile:ListenToRelease(function()
             playerProfiles[userId] = nil
@@ -114,7 +118,7 @@ local playerAdded = function(player: Player)
             player:Kick("User profile was released")
         end)
 
-        if player:IsDescendantOf(Players) then
+        if (player:IsDescendantOf(Players)) then
             for currencyType in pairs(EphemeralCurrencies) do
                 ephemeralCurrenciesBalance[currencyType] = 0
             end
@@ -141,11 +145,12 @@ end
 
 ---
 
-local PlayerData = {}
-PlayerData.CurrencyBalanceChanged = CurrencyBalanceChangedEvent.Event
-PlayerData.ObjecctGranted = ObjectGrantedEvent.Event
-PlayerData.InventoryChanged = InventoryChangedEvent.Event
-PlayerData.HotbarChanged = HotbarChangedEvent.Event
+local PlayerData = {
+    CurrencyBalanceChanged = CurrencyBalanceChangedEvent.Event,
+    ObjecctGranted = ObjectGrantedEvent.Event,
+    InventoryChanged = InventoryChangedEvent.Event,
+    HotbarChanged = HotbarChangedEvent.Event,
+}
 
 PlayerData.WaitForPlayerProfile = function(userId: number)
     return Promise.new(function(resolve)

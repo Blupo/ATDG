@@ -17,8 +17,6 @@ local AbilityGivenEvent = Instance.new("BindableEvent")
 local AbilityRemovedEvent = Instance.new("BindableEvent")
 
 local System = SystemCoordinator.newSystem("Abilities")
-local AbilityGivenRemoteEvent = System.addEvent("AbilityGiven")
-local AbilityRemovedRemoteEvent = System.addEvent("AbilityRemoved")
 
 ---
 
@@ -28,7 +26,10 @@ local unitUpgradedConnections = {}
 
 ---
 
-local Abilities = {}
+local Abilities = {
+	AbilityGiven = AbilityGivenEvent.Event,
+	AbilityRemoved = AbilityRemovedEvent.Event,
+}
 
 Abilities.UnitHasAbility = function(unit, abilityName: string): boolean
     return unitAbilities[unit.Id][abilityName] and true or false
@@ -92,14 +93,6 @@ for _, abilityDataScript in pairs(AbilityData:GetChildren()) do
 	abilitiesCache[abilityDataScript.Name] = require(abilityDataScript)
 end
 
-AbilityGivenEvent.Event:Connect(function(...)
-	AbilityGivenRemoteEvent:FireAllClients(...)
-end)
-
-AbilityRemovedEvent.Event:Connect(function(...)
-	AbilityRemovedRemoteEvent:FireAllClients(...)
-end)
-
 Unit.UnitAdded:Connect(function(unitId)
 	local unit = Unit.fromId(unitId)
 	if (not unit) then return end
@@ -121,6 +114,9 @@ Unit.UnitRemoving:Connect(function(unitId)
     unitAbilities[unitId] = nil
 	unitUpgradedConnections[unitId] = nil
 end)
+
+System.addEvent("AbilityGiven", Abilities.AbilityGiven)
+System.addEvent("AbilityRemoved", Abilities.AbilityRemoved)
 
 System.addFunction("ActivateAbility", t.wrap(function(player: Player, unitId: string, abilityName: string, extraData: {[string]: any})
 	local unit = Unit.fromId(unitId)

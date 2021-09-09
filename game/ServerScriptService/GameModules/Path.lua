@@ -60,10 +60,10 @@ end
 
 ---
 
-local Path = {}
-
-Path.PursuitBegan = PursuitBeganEvent.Event
-Path.PursuitEnded = PursuitEndedEvent.Event
+local Path = {
+	PursuitBegan = PursuitBeganEvent.Event,
+	PursuitEnded = PursuitEndedEvent.Event,
+}
 
 Path.GetPursuitInfo = function(unit): PursuitInfo?
 	return activePursuits[unit.Id]

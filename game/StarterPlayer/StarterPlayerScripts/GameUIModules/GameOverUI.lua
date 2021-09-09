@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 local TeleportService = game:GetService("TeleportService")
 
 ---
@@ -13,7 +14,6 @@ local Style = require(root:WaitForChild("Style"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
-local Promise = require(SharedModules:WaitForChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
 local LocalPlayer = Players.LocalPlayer
@@ -51,6 +51,12 @@ GameOverUI.init = function(self)
         if (elapsed >= RETURN_TIMEOUT) then
             self.timeoutConnection:Disconnect()
             self.timeoutConnection = nil
+
+            StarterGui:SetCore("SendNotification", {
+                Title = "Teleporting",
+                Text = "You are being teleported back to the lobby.",
+                Icon = "rbxassetid://6869244717",
+            })
 
             TeleportService:Teleport(6421134421)
         end
@@ -296,6 +302,17 @@ GameOverUI.render = function(self)
             TextColor3 = Color3.new(0, 0, 0),
 
             [Roact.Event.Activated] = function()
+                if (self.timeoutConnection) then
+                    self.timeoutConnection:Disconnect()
+                    self.timeoutConnection = nil
+                end
+
+                StarterGui:SetCore("SendNotification", {
+                    Title = "Teleporting",
+                    Text = "You are being teleported back to the lobby.",
+                    Icon = "rbxassetid://6869244717",
+                })
+
                 TeleportService:Teleport(6421134421)
             end,
         }, {

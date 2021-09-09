@@ -42,13 +42,6 @@ local CentralTowerDestroyedEvent = Instance.new("BindableEvent")
 local PhaseChangedEvent = Instance.new("BindableEvent")
 
 local System = SystemCoordinator.newSystem("Game")
-local StartedRemoteEvent = System.addEvent("Started")
-local EndedRemoteEvent = System.addEvent("Ended")
-local RoundStartedRemoteEvent = System.addEvent("RoundStarted")
-local RoundEndedRemoteEvent = System.addEvent("RoundEnded")
-local CentralTowerHealthChangedRemoteEvent = System.addEvent("CentralTowerHealthChanged")
-local CentralTowerDestroyedRemoteEvent = System.addEvent("CentralTowerDestroyed")
-local PhaseChangedRemoteEvent = System.addEvent("PhaseChanged") 
 
 ---
 
@@ -486,23 +479,23 @@ end
 
 ---
 
-local Game = {}
+local Game = {
+	Started = StartedEvent.Event,
+	Ended = EndedEvent.Event,
+	RoundStarted = RoundStartedEvent.Event,
+	RoundEnded = RoundEndedEvent.Event,
+	CentralTowerDestroyed = CentralTowerDestroyedEvent.Event,
+	PhaseChanged = PhaseChangedEvent.Event,
+	GetTicketReward = getTicketReward,
+}
 
-Game.Started = StartedEvent.Event
-Game.Ended = EndedEvent.Event
-Game.RoundStarted = RoundStartedEvent.Event
-Game.RoundEnded = RoundEndedEvent.Event
-Game.CentralTowerDestroyed = CentralTowerDestroyedEvent.Event
-Game.PhaseChanged = PhaseChangedEvent.Event
-Game.GetTicketReward = getTicketReward
-
-Game.LoadData = function(mapName: string, fieldUnitSetName: string, gameMode: string, difficulty: string?)
+Game.LoadData = function(mapName: string, gameMode: string, difficulty: string?)
 	if (currentGameData) then return end
 	
 	local mapData = MapData:FindFirstChild(mapName)
 	if (not mapData) then return end
 	
-	local challengeDataScript = ChallengeData:FindFirstChild("NormalChallenges"):FindFirstChild("Test")
+	local challengeDataScript = ChallengeData:FindFirstChild(mapName) or ChallengeData:FindFirstChild("DEV_Test") -- change Test to Default
 	if (not challengeDataScript) then return end
 	
 	local revives = MAX_REVIVES[gameMode]
@@ -537,7 +530,7 @@ Game.LoadDataFromChallenge = function(mapName: string, challengeName: string)
 	if (not challengeDataScript) then return end
 	
 	local newChallengeData = require(challengeDataScript)
-	if (not newChallengeData.CompatibleMaps[mapName]) then return end
+--	if (not newChallengeData.CompatibleMaps[mapName]) then return end
 	
 	loadMap(mapData)
 	challengeData = newChallengeData
@@ -752,33 +745,13 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
 	unit:Destroy()
 end)
 
-StartedEvent.Event:Connect(function()
-	StartedRemoteEvent:FireAllClients()
-end)
-
-EndedEvent.Event:Connect(function(completed)
-	EndedRemoteEvent:FireAllClients(completed)
-end)
-
-RoundStartedEvent.Event:Connect(function(...)
-	RoundStartedRemoteEvent:FireAllClients(...)
-end)
-
-RoundEndedEvent.Event:Connect(function(...)
-	RoundEndedRemoteEvent:FireAllClients(...)
-end)
-
-CentralTowerHealthChangedEvent.Event:Connect(function(...)
-	CentralTowerHealthChangedRemoteEvent:FireAllClients(...)
-end)
-
-CentralTowerDestroyedEvent.Event:Connect(function(...)
-	CentralTowerDestroyedRemoteEvent:FireAllClients(...)
-end)
-
-PhaseChangedEvent.Event:Connect(function(...)
-	PhaseChangedRemoteEvent:FireAllClients(...)
-end)
+System.addEvent("Started", Game.Started)
+System.addEvent("Ended", Game.Ended)
+System.addEvent("RoundStarted", Game.RoundStarted)
+System.addEvent("RoundEnded", Game.RoundEnded)
+System.addEvent("CentralTowerHealthChanged", Game.CentralTowerHealthChanged)
+System.addEvent("CentralTowerDestroyed", Game.CentralTowerDestroyed)
+System.addEvent("PhaseChanged", Game.PhaseChanged) 
 
 System.addFunction("IsRunning", Game.IsRunning)
 System.addFunction("GetDerivedGameState", Game.GetDerivedGameState)

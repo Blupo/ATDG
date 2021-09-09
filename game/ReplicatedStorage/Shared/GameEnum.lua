@@ -43,7 +43,7 @@ return setmetatable({
 	DamageSourceType = makeEnum("GameEnum.DamageSourceType", { "Unit", "Almighty" }),
 	PromotionalPricing = makeEnum("GameEnum.PromotionalPricing", { "None", "Summer" }),
 	DevProductType = makeEnum("GameEnum.DevProductType", { "Ticket", "ValuePack" }),
-	TransactionType = makeEnum("GameEnum.DevProductType", { "DevProductPurchase", "TicketSpending" }),
+	TransactionType = makeEnum("GameEnum.TransactionType", { "DevProductPurchase", "TicketSpending" }),
 	TransactionRecordingFailureReason = makeEnum("GameEnum.TransactionRecordingFailureReason", { "CannotAcquireProfile", "TransactionAlreadyRecorded" }),
 	GenericActionResult = makeEnum("GameEnum.GenericActionResult", { "None" }),
 	SpecialActionUsageResult = makeEnum("GameEnum.SpecialActionUsageResult", { "InvalidActionName", "NoInventory", "PlayerLimited", "GameLimited", "PlayerCooldown", "GameCooldown" }),
@@ -51,7 +51,12 @@ return setmetatable({
 	GameStat = makeEnum("GameEnum.GameStat", { "TimePlayed" }),
 	PlayerStat = makeEnum("GameEnum.PlayerStat", { "TotalDMG" }),
 	ServerType = makeEnum("GameEnum.ServerType", { "Lobby", "Game" }),
-	CollisionGroup = makeEnum("GameEnum.CollisionGroup", { "Players", "Units" })
+	CollisionGroup = makeEnum("GameEnum.CollisionGroup", { "Players", "Units" }),
+	GameAccessApprovalType = makeEnum("GameEnum.GameAccessApprovalType", { "AutomaticApproval", "ManualApproval", "AutoRuleset" }),
+	GameAccessRuleType = makeEnum("GameEnum.GameAccessType", { "ApproveFriends", "Reject" }),
+	GameJoinFailureResult = makeEnum("GameEnum.GameJoinResult", { "AlreadyInAGame", "AutoRulesetRejected" }),
+	GameLeaveFailureResult = makeEnum("GameEnum.GameLeaveResult", { "NotInGame" }),
+	GameAccessRuleProcessingResult = makeEnum("GameEnum.GameAccessRuleProcessingResult", { "Approve", "Reject", "Continue", "AddToQueue", "CouldNotProcess" })
 }, {
 	__index = function(_, key)
 		error(tostring(key) .. " is not a valid enum")

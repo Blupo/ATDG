@@ -18,8 +18,6 @@ local EffectAppliedEvent = Instance.new("BindableEvent")
 local EffectRemovedEvent = Instance.new("BindableEvent")
 
 local System = SystemCoordinator.newSystem("StatusEffects")
-local EffectAppliedRemoteEvent = System.addEvent("EffectApplied")
-local EffectRemovedRemoteEvent = System.addEvent("EffectRemoved")
 
 ---
 
@@ -34,10 +32,10 @@ end
 
 ---
 
-local StatusEffects = {}
-
-StatusEffects.EffectApplied = EffectAppliedEvent.Event
-StatusEffects.EffectRemoved = EffectRemovedEvent.Event
+local StatusEffects = {
+	EffectApplied = EffectAppliedEvent.Event,
+	EffectRemoved = EffectRemovedEvent.Event,
+}
 
 StatusEffects.UnitHasEffect = function(unitId: string, effectName: string): boolean
 	local unitEffects = unitEffectPromises[unitId]
@@ -171,13 +169,8 @@ Unit.UnitRemoving:Connect(function(unitId: string)
 	unitEffectPromises[unitId] = nil
 end)
 
-EffectAppliedEvent.Event:Connect(function(unitId: string, effectName: string)
-	EffectAppliedRemoteEvent:FireAllClients(unitId, effectName)
-end)
-
-EffectRemovedEvent.Event:Connect(function(unitId: string, effectName: string)
-	EffectRemovedRemoteEvent:FireAllClients(unitId, effectName)
-end)
+System.addEvent("EffectApplied", StatusEffects.EffectApplied)
+System.addEvent("EffectRemoved", StatusEffects.EffectRemoved)
 
 System.addFunction("UnitHasEffect", t.wrap(function(_: Player, unitId: string, effectName: string): boolean
 	return StatusEffects.UnitHasEffect(unitId, effectName)

@@ -282,6 +282,11 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
     local productId = receiptInfo.ProductId
     local playerId = receiptInfo.PlayerId
 
+    if (not Players:GetPlayerByUserId(playerId)) then
+        warn("Unable to process purchase " .. purchaseId .. ": Player is not in server")
+        return Enum.ProductPurchaseDecision.NotProcessedYet
+    end
+
     local productType = devProductTypes[productId]
     local promotionType = devProductPromotions[productId]
 

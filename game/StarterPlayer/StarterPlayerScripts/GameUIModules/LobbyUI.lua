@@ -24,11 +24,13 @@ local menuItems = {
         element = ShopMenu,
     },
 
+    --[[
     {
         name = "Inventory",
         image = "rbxassetid://313069079",
         element = InventoryMenu,
     }
+    --]]
 }
 
 ---
@@ -105,7 +107,7 @@ LobbyUI.render = function(self)
 
     return Roact.createElement("ScreenGui", {
         ResetOnSpawn = false,
-        ZIndexBehavior = Enum.ZIndexBehavior.Global
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
     }, {
         Padding = Roact.createElement(Padding, { Style.Constants.MajorElementPadding }),
         CurrencyBar = Roact.createElement(CurrencyBar),

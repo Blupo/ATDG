@@ -206,9 +206,9 @@ end
 
 ---
 
-local TowerUnit = {}
-
-TowerUnit.Hit = HitEvent.Event
+local TowerUnit = {
+	Hit = HitEvent.Event,
+}
 
 ---
 
