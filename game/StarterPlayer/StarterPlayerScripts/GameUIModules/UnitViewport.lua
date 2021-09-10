@@ -80,15 +80,10 @@ UnitViewport.init = function(self)
 
         unitLevel = 1,
         unitUnlocked = false,
-        hotbarKey = "",
     })
 end
 
 UnitViewport.didMount = function(self)
-    local initUnitName = self.props.unitName
-    local initUnitType = Unit.GetUnitType(initUnitName)
-    local playerHotbar = PlayerData.GetPlayerHotbar(LocalPlayer.UserId, initUnitType)
-
     self.unitLevelChanged = Unit.UnitPersistentUpgraded:Connect(function(_, unitName: string, newLevel: number)
         if (unitName ~= self.props.unitName) then return end
 
@@ -116,13 +111,20 @@ UnitViewport.didMount = function(self)
         })
     end)
 
-    self:setState({
-        unitLevel = Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, self.props.unitName),
-        unitUnlocked = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, self.props.unitName),
-        hotbarKey = playerHotbar and table.find(playerHotbar, initUnitName) or "",
-    })
-
     self.initObjectModel()
+
+    -- need to defer to make sure that the cache gets updated
+    task.defer(function()
+        local initUnitName = self.props.unitName
+        local initUnitType = Unit.GetUnitType(initUnitName)
+        local playerHotbar = PlayerData.GetPlayerHotbar(LocalPlayer.UserId, initUnitType)
+
+        self:setState({
+            unitLevel = Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, self.props.unitName),
+            unitUnlocked = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, self.props.unitName),
+            hotbarKey = playerHotbar and table.find(playerHotbar, initUnitName) or nil,
+        })
+    end)
 end
 
 UnitViewport.didUpdate = function(self, prevProps)
@@ -135,7 +137,7 @@ UnitViewport.didUpdate = function(self, prevProps)
     self:setState({
         unitLevel = Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, self.props.unitName),
         unitUnlocked = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, self.props.unitName),
-        hotbarKey = playerHotbar and table.find(playerHotbar, unitName) or "",
+        hotbarKey = playerHotbar and table.find(playerHotbar, unitName) or Roact.None,
     })
 
     self.initObjectModel()

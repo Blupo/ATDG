@@ -354,7 +354,12 @@ PlayerData.SetPlayerHotbar = function(userId: number, objectType: string, newHot
     if ((objectType == GameEnum.UnitType.TowerUnit) or (objectType == GameEnum.UnitType.FieldUnit)) then
         for i = 1, #newHotbar do
             local unitName = newHotbar[i]
-            if (not Unit.DoesUnitExist(unitName)) then return false end
+
+            local unitExists = Unit.DoesUnitExist(unitName)
+            local permaGrantStatus = PermanentObjectGrants[GameEnum.ObjectType.Unit][unitName]
+            local grantStatus = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit][unitName]
+
+            if (not (unitExists and (permaGrantStatus or grantStatus))) then return false end
         end
     end
 
@@ -527,11 +532,11 @@ System.addFunction("GetPlayerHotbar", t.wrap(function(player: Player, userId: nu
     PlayerData.GetPlayerHotbar(userId, objectType, subType)
 end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.optional(t.string))), true)
 
-System.addFunction("SetPlayerHotbar", t.wrap(function(player: Player, userId: number, objectType: string, subType: string?, newHotbar: array<string>)
+System.addFunction("SetPlayerHotbar", t.wrap(function(player: Player, userId: number, objectType: string, newHotbar: array<string>)
     if (player.UserId ~= userId) then return false end
 
-    return PlayerData.SetPlayerHotbar(userId, objectType, subType, newHotbar)
-end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.optional(t.string), t.array(t.string))), true)
+    return PlayerData.SetPlayerHotbar(userId, objectType, newHotbar)
+end, t.tuple(t.instanceOf("Player"), t.number, t.string, t.array(t.string))), true)
 
 System.addFunction("GetPlayerAllCurrenciesBalances", t.wrap(function(player: Player, userId: number)
     if (player.UserId ~= userId) then return end

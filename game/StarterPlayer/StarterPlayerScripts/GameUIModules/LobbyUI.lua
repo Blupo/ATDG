@@ -5,7 +5,7 @@ local Roact = require(root:WaitForChild("Roact"))
 local Style = require(root:WaitForChild("Style"))
 
 local CurrencyBar = require(root:WaitForChild("CurrencyBar"))
-local InventoryMenu = require(root:WaitForChild("InventoryMenu"))
+local Hotbar = require(root:WaitForChild("Hotbar"))
 local PlayMenu = require(root:WaitForChild("PlayMenu"))
 local ShopMenu = require(root:WaitForChild("ShopMenu"))
 
@@ -23,14 +23,6 @@ local menuItems = {
         image = "rbxassetid://7198417722",
         element = ShopMenu,
     },
-
-    --[[
-    {
-        name = "Inventory",
-        image = "rbxassetid://313069079",
-        element = InventoryMenu,
-    }
-    --]]
 }
 
 ---
@@ -111,6 +103,7 @@ LobbyUI.render = function(self)
     }, {
         Padding = Roact.createElement(Padding, { Style.Constants.MajorElementPadding }),
         CurrencyBar = Roact.createElement(CurrencyBar),
+        Hotbar = Roact.createElement(Hotbar),
 
         Menu = Roact.createElement("Frame", {
             AnchorPoint = Vector2.new(0, 0.5),

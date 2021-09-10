@@ -24,6 +24,7 @@ local Style = require(GameUIModules:WaitForChild("Style"))
 local UnitViewport = require(GameUIModules:WaitForChild("UnitViewport"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
+local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))
 
@@ -33,6 +34,8 @@ local UnitShopPage = Roact.PureComponent:extend("UnitShopPage")
 local SpecialShopPage = Roact.PureComponent:extend("SpecialShopPage")
 
 ---
+
+local HOTBAR_MAX_ITEMS = 5
 
 local unitPrices = ShopPrices.ObjectGrantPrices[GameEnum.ObjectType.Unit]
 local actionPrices = ShopPrices.ItemPrices[GameEnum.ItemType.SpecialAction]
@@ -103,16 +106,30 @@ UnitShopPage.didMount = function(self)
             playerOwnsSelectedUnit = true,
         })
     end)
+
+    self.playerHotbarChanged = PlayerData.HotbarChanged:Connect(function(_, objectType: string, newHotbar: {[number]: string})
+        local selectedUnit = self.state.selectedUnit
+        if (not selectedUnit) then return end
+
+        local selectedUnitType = Unit.GetUnitType(selectedUnit)
+        if (selectedUnitType ~= objectType) then return end
+
+        self:setState({
+            selectedUnitHotbarIndex = table.find(newHotbar, selectedUnit) or Roact.None,
+        })
+    end)
 end
 
 UnitShopPage.willUnmount = function(self)
     self.objectGrantedConnection:Disconnect()
+    self.playerHotbarChanged:Disconnect()
 end
 
 UnitShopPage.render = function(self)
     local selectedUnit = self.state.selectedUnit
     local selectedUnitLevel = self.state.selectedUnitLevel
     local playerOwnsSelectedUnit = self.state.playerOwnsSelectedUnit
+    local selectedUnitHotbarIndex = self.state.selectedUnitHotbarIndex
 
     local selectedUnitPreviewAttributes = selectedUnit and PreviewAttributes[Unit.GetUnitType(selectedUnit)] or nil
     local selectedUnitBaseAttributes = selectedUnit and Unit.GetUnitBaseAttributes(selectedUnit, selectedUnitLevel) or nil
@@ -145,19 +162,24 @@ UnitShopPage.render = function(self)
 
     for i = 1, #towerUnitPrices do
         local priceInfo = towerUnitPrices[i]
+        local unitName = priceInfo.unitName
 
-        towerUnitListElements[priceInfo.unitName] = Roact.createElement(UnitViewport, {
+        towerUnitListElements[unitName] = Roact.createElement(UnitViewport, {
             LayoutOrder = i,
 
-            unitName = priceInfo.unitName,
+            unitName = unitName,
             titleDisplayType = "UnitName",
             rightInfoDisplayType = "Unlocked",
             
             onActivated = function()
+                local unitType = Unit.GetUnitType(unitName)
+                local playerHotbar = PlayerData.GetPlayerHotbar(LocalPlayer.UserId, unitType)
+
                 self:setState({
-                    selectedUnit = priceInfo.unitName,
+                    selectedUnit = unitName,
                     selectedUnitLevel = 1,
-                    playerOwnsSelectedUnit = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, priceInfo.unitName)
+                    playerOwnsSelectedUnit = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, unitName),
+                    selectedUnitHotbarIndex = playerHotbar and table.find(playerHotbar, unitName) or Roact.None,
                 })
             end,
         })
@@ -165,19 +187,24 @@ UnitShopPage.render = function(self)
 
     for i = 1, #fieldUnitPrices do
         local priceInfo = fieldUnitPrices[i]
+        local unitName = priceInfo.unitName
 
-        fieldUnitListElements[priceInfo.unitName] = Roact.createElement(UnitViewport, {
+        fieldUnitListElements[unitName] = Roact.createElement(UnitViewport, {
             LayoutOrder = i,
 
-            unitName = priceInfo.unitName,
+            unitName = unitName,
             titleDisplayType = "UnitName",
             rightInfoDisplayType = "Unlocked",
             
             onActivated = function()
+                local unitType = Unit.GetUnitType(unitName)
+                local playerHotbar = PlayerData.GetPlayerHotbar(LocalPlayer.UserId, unitType)
+
                 self:setState({
-                    selectedUnit = priceInfo.unitName,
+                    selectedUnit = unitName,
                     selectedUnitLevel = 1,
-                    playerOwnsSelectedUnit = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, priceInfo.unitName),
+                    playerOwnsSelectedUnit = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, unitName),
+                    selectedUnitHotbarIndex = playerHotbar and table.find(playerHotbar, unitName) or Roact.None,
                 })
             end,
         })
@@ -428,7 +455,7 @@ UnitShopPage.render = function(self)
             }),
         }),
 
-        SelectedUnitInfo = selectedUnit and
+        SelectedUnitInfo = (selectedUnit) and
             Roact.createElement("Frame", {
                 AnchorPoint = Vector2.new(1, 0.5),
                 Size = UDim2.new(0.25, 0, 1, 0),
@@ -537,15 +564,51 @@ UnitShopPage.render = function(self)
                     or nil
                 }),
 
-                --[[
-                -- TODO
+                HotbarButton = Roact.createElement("TextButton", {
+                    AnchorPoint = Vector2.new(0, 1),
+                    Size = UDim2.new(0, 24, 0, 24),
+                    Position = UDim2.new(0, 0, 1, 0),
+                    BackgroundTransparency = 0,
+                    BorderSizePixel = 0,
 
-                CompendiumButton = Roact.createElement("TextButton", {
+                    Text = "",
+                    TextTransparency = 1,
 
+                    BackgroundColor3 = Color3.fromRGB(230, 230, 230),
+
+                    [Roact.Event.Activated] = function()
+                        local selectedUnitType = Unit.GetUnitType(selectedUnit)
+                        local playerHotbar = PlayerData.GetPlayerHotbar(LocalPlayer.UserId, selectedUnitType)
+                        if (not playerHotbar) then return end
+
+                        local newHotbar = CopyTable(playerHotbar)
+
+                        if (selectedUnitHotbarIndex) then
+                            table.remove(newHotbar, selectedUnitHotbarIndex)
+                        else
+                            if (#newHotbar > HOTBAR_MAX_ITEMS) then return end
+
+                            table.insert(newHotbar, selectedUnit)
+                        end
+
+                        PlayerData.SetPlayerHotbar(LocalPlayer.UserId, selectedUnitType, newHotbar)
+                    end,
                 }, {
+                    UICorner = Roact.createElement("UICorner", {
+                        CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius)
+                    }),
 
+                    Icon = Roact.createElement("ImageLabel", {
+                        AnchorPoint = Vector2.new(0.5, 0.5),
+                        Size = UDim2.new(1, -4, 1, -4),
+                        Position = UDim2.new(0.5, 0, 0.5, 0),
+                        BackgroundTransparency = 1,
+                        BorderSizePixel = 0,
+            
+                        Image = selectedUnitHotbarIndex and "rbxassetid://7447693659" or "rbxassetid://7447694738",
+                        ImageColor3 = Color3.new(0, 0, 0)
+                    })
                 }),
-                --]]
 
                 LevelSelector = Roact.createElement("Frame", {
                     AnchorPoint = Vector2.new(0.5, 1),

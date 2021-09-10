@@ -15,18 +15,27 @@ local UnitViewport = require(root:WaitForChild("UnitViewport"))
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
-local PlacementFlow = require(PlayerModules:WaitForChild("PlacementFlow"))
 local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"))
+local PlacementFlow
+
+local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
 
 ---
 
 local HOTBAR_MAX_ITEMS = 5
+
+local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
+
+if (serverType == GameEnum.ServerType.Game) then
+    PlacementFlow = require(PlayerModules:WaitForChild("PlacementFlow"))
+end
 
 ---
 
@@ -47,21 +56,23 @@ Hotbar.init = function(self)
 end
 
 Hotbar.didMount = function(self)
-    self.placementFlowStarted = PlacementFlow.Started:Connect(function()
-        self:setState({
-            placementFlowOpen = true,
-        })
-    end)
+    if (serverType == GameEnum.ServerType.Game) then
+        self.placementFlowStarted = PlacementFlow.Started:Connect(function()
+            self:setState({
+                placementFlowOpen = true,
+            })
+        end)
 
-    self.placementFlowStopped = PlacementFlow.Stopped:Connect(function()
-        self:setState({
-            placementFlowOpen = false,
-        })
-    end)
+        self.placementFlowStopped = PlacementFlow.Stopped:Connect(function()
+            self:setState({
+                placementFlowOpen = false,
+            })
+        end)
+    end
 
-    self.hotbarChanged = PlayerData.HotbarChanged:Connect(function(_, objectType, newHotbar)
+    self.hotbarChanged = PlayerData.HotbarChanged:Connect(function(_, hotbarType: string, newHotbar: {[number]: string})
         local hotbarsCopy = CopyTable(self.state.hotbars)
-        hotbarsCopy[objectType] = newHotbar
+        hotbarsCopy[hotbarType] = newHotbar
 
         self:setState({
             hotbars = hotbarsCopy
@@ -74,8 +85,15 @@ Hotbar.didMount = function(self)
 end
 
 Hotbar.willUnmount = function(self)
-    self.placementFlowStarted:Disconnect()
-    self.placementFlowStopped:Disconnect()
+    if (self.placementFlowStarted) then
+        self.placementFlowStarted:Disconnect()
+    end
+
+    if (self.placementFlowStopped) then
+        self.placementFlowStopped:Disconnect()
+    end
+
+    self.hotbarChanged:Disconnect()
 end
 
 Hotbar.render = function(self)
@@ -83,17 +101,15 @@ Hotbar.render = function(self)
 
     local hotbars = self.state.hotbars
     local hotbarObjectType = self.state.hotbarObjectType
-        
+    local hotbar = hotbars[hotbarObjectType]
+
     local hotbarListChildren = {}
     local attributesPreviewChildren = {}
 
-    local hotbar = hotbars[hotbarObjectType]
-    local hotbarItemCount = #hotbar
-
-    for i = 1, hotbarItemCount do
+    for i = 1, #hotbar do
         local objectName = hotbar[i]
 
-        hotbarListChildren[i] = Roact.createElement(UnitViewport, {
+        hotbarListChildren[objectName] = Roact.createElement(UnitViewport, {
             LayoutOrder = i,
             BackgroundColor3 = Color3.new(1, 1, 1),
 
@@ -102,12 +118,18 @@ Hotbar.render = function(self)
             titleDisplayType = "PlacementPrice",
 
             onActivated = function()
-                -- todo: check for available funds first
-                
-                PlacementFlow.Start(GameEnum.ObjectType.Unit, objectName)
+                if (serverType == GameEnum.ServerType.Game) then
+                    -- todo: check for available funds first
+
+                    PlacementFlow.Start(GameEnum.ObjectType.Unit, objectName)
+                elseif (serverType == GameEnum.ServerType.Lobby) then
+                    local newHotbar = CopyTable(hotbar)
+                    table.remove(newHotbar, i)
+
+                    PlayerData.SetPlayerHotbar(LocalPlayer.UserId, hotbarObjectType, newHotbar)
+                end
             end,
 
-            -- todo: hovering
             onMouseEnter = function()
                 self:setState({
                     hoverObjectName = objectName
