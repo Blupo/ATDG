@@ -78,14 +78,11 @@ Shop.GetUnitUpgradePrice = function(unitName: string, level: number): number?
     return prices.Individual
 end
 
-Shop.GetUnitPersistentUpgradePrice = function(owner: number, unitName: string): number?
-    local currentLevel = Unit.GetUnitPersistentUpgradeLevel(owner, unitName)
-    if (not currentLevel) then return end
-
+Shop.GetUnitPersistentUpgradePrice = function(unitName: string, level: number): number?
     local unitPrices = ShopPrices.UnitUpgradePrices[unitName]
     if (not unitPrices) then return end
 
-    local prices = unitPrices[currentLevel + 1]
+    local prices = unitPrices[level + 1]
     if (not prices) then return end
 
     return prices.Persistent
@@ -202,8 +199,6 @@ Shop.PurchaseObjectPlacement = function(userId: number, objectType: ObjectType, 
         return false
     else
         PlayerData.WithdrawCurrencyFromPlayer(userId, GameEnum.CurrencyType.Points, placementPrice)
-
-        -- todo: handle roadblocks and field units
         Placement.PlaceObject(userId, objectType, objectName, position, rotation)
 
         return true
@@ -238,7 +233,7 @@ end
 Shop.PurchaseUnitPersistentUpgrade = function(userId: number, unitName: string): boolean
     if (not Game.IsRunning()) then return false end
 
-    local upgradePrice = Shop.GetUnitPersistentUpgradePrice(userId, unitName)
+    local upgradePrice = Shop.GetUnitPersistentUpgradePrice(unitName, Unit.GetUnitPersistentUpgradeLevel(userId, unitName))
     if (not upgradePrice) then return false end
 
     local pointsBalance = PlayerData.GetPlayerCurrencyBalance(userId, GameEnum.CurrencyType.Points)

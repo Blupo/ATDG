@@ -1,11 +1,6 @@
---[[
-	Notes
-
-		All Units spawned by the game have an owner ID of 0
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
@@ -468,9 +463,11 @@ local loadMap = function(mapData)
 end
 
 local playerAdded = function(player)
-	if (not challengeData) then return end -- todo: properly handle this
-	
 	local userId = player.UserId
+
+	while (not challengeData) do
+		RunService.Heartbeat:Wait()
+	end
 
 	PlayerData.WaitForPlayerProfile(userId):andThen(function()
 		PlayerData.DepositCurrencyToPlayer(userId, GameEnum.CurrencyType.Points, challengeData.PointsAllowance[0])

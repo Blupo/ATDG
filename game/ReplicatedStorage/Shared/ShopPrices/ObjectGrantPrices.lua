@@ -24,8 +24,4 @@ return {
 
         DEBUG_Obliterator = math.huge,
     },
-
-    [GameEnum.ObjectType.Roadblock] = {
-
-    }
 }

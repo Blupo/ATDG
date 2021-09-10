@@ -9,6 +9,8 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
+local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
+
 local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
@@ -19,9 +21,6 @@ local Unit = require(GameModules:WaitForChild("Unit"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
-
-local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
--- local RoadblockModels = ReplicatedStorage:WaitForChild("RoadblockModels")
 
 local CurrentCamera = Workspace.CurrentCamera
 
@@ -88,7 +87,6 @@ PlacementFlow.Start = function(objType: string, objName: string)
 
         objModel = UnitModels:FindFirstChild(objName):Clone()
     else
-        -- todo: roadblocks
         return
     end
 

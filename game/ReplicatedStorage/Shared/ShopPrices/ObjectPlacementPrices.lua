@@ -24,8 +24,4 @@ return {
 
         DEBUG_Obliterator = 0,
     },
-
-    [GameEnum.ObjectType.Roadblock] = {
-        
-    },
 }

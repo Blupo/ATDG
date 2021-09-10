@@ -35,12 +35,6 @@
             }
         },
 
-        "StarterGui": {
-            "$className": "StarterGui",
-            "$path": "game/StarterGui",
-            "$ignoreUnknownInstances": true
-        },
-
         "StarterPlayer": {
             "$className": "StarterPlayer",
             

@@ -4,12 +4,11 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
+local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
+
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local MakeActionResult = require(SharedModules:FindFirstChild("MakeActionResult"))
-
-local RoadblockModels = ReplicatedStorage:WaitForChild("RoadblockModels")
-local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 
 local GameModules = script.Parent
 local Unit = require(GameModules:WaitForChild("Unit"))
@@ -119,8 +118,6 @@ Placement.CanPlace = function(objType: string, objName: string, position: Vector
 	-- check that the model exists
 	if (objType == GameEnum.ObjectType.Unit) then
 		thisObjModel = UnitModels:FindFirstChild(objName)
-	elseif (objType == GameEnum.ObjectType.Roadblock) then
-		thisObjModel = RoadblockModels:FindFirstChild(objName)
 	else
 		return MakeActionResult(GameEnum.PlacementFailureReason.ObjectDoesNotExist)
 	end
@@ -178,34 +175,32 @@ Placement.CanPlace = function(objType: string, objName: string, position: Vector
 		return MakeActionResult(GameEnum.PlacementFailureReason.NoVerticalClearance)
 	end
 	
-	local objectsInProximity = (objType == GameEnum.ObjectType.Unit) and
-		Unit.GetUnits(function(unit)
-			if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return false end
-			
-			local objModel = unit.Model
-			local objPlacementArea = objModel:FindFirstChild("PlacementArea")
-			local objBoundingBoxCFrame, objBoundingBoxSize = objModel:GetBoundingBox()
-			
-			local thisBoundingBoxHeightPoints = getHeightPoints(CFrame.new(position + Vector3.new(0, thisObjBoundingBoxSize. Y / 2, 0)), thisObjBoundingBoxSize)
-			local objBoundingBoxHeightPoints = getHeightPoints(objBoundingBoxCFrame, objBoundingBoxSize)
-			local boundingBoxesCollideVertically
-			
-			if (
-				(thisBoundingBoxHeightPoints[1] == objBoundingBoxHeightPoints[1]) or
-				(thisBoundingBoxHeightPoints[2] == objBoundingBoxHeightPoints[2])
-			) then
-				boundingBoxesCollideVertically = true
-			else
-				local top = (thisBoundingBoxHeightPoints[1] > objBoundingBoxHeightPoints[1]) and thisBoundingBoxHeightPoints or objBoundingBoxHeightPoints
-				local bottom = (top == objBoundingBoxHeightPoints) and thisBoundingBoxHeightPoints or objBoundingBoxHeightPoints
-			
-				boundingBoxesCollideVertically = (top[2] < bottom[1])
-			end
+	local objectsInProximity = Unit.GetUnits(function(unit)
+		if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return false end
 		
-			local placementAreasCollide = doesCollide(CFrame.new(position), thisObjPlacementArea.Size, objPlacementArea.CFrame, objPlacementArea.Size)
-			return (boundingBoxesCollideVertically and placementAreasCollide)
-		end)
-	or {} -- todo
+		local objModel = unit.Model
+		local objPlacementArea = objModel:FindFirstChild("PlacementArea")
+		local objBoundingBoxCFrame, objBoundingBoxSize = objModel:GetBoundingBox()
+		
+		local thisBoundingBoxHeightPoints = getHeightPoints(CFrame.new(position + Vector3.new(0, thisObjBoundingBoxSize. Y / 2, 0)), thisObjBoundingBoxSize)
+		local objBoundingBoxHeightPoints = getHeightPoints(objBoundingBoxCFrame, objBoundingBoxSize)
+		local boundingBoxesCollideVertically
+		
+		if (
+			(thisBoundingBoxHeightPoints[1] == objBoundingBoxHeightPoints[1]) or
+			(thisBoundingBoxHeightPoints[2] == objBoundingBoxHeightPoints[2])
+		) then
+			boundingBoxesCollideVertically = true
+		else
+			local top = (thisBoundingBoxHeightPoints[1] > objBoundingBoxHeightPoints[1]) and thisBoundingBoxHeightPoints or objBoundingBoxHeightPoints
+			local bottom = (top == objBoundingBoxHeightPoints) and thisBoundingBoxHeightPoints or objBoundingBoxHeightPoints
+		
+			boundingBoxesCollideVertically = (top[2] < bottom[1])
+		end
+	
+		local placementAreasCollide = doesCollide(CFrame.new(position), thisObjPlacementArea.Size, objPlacementArea.CFrame, objPlacementArea.Size)
+		return (boundingBoxesCollideVertically and placementAreasCollide)
+	end)
 	
 	if (#objectsInProximity > 0) then return MakeActionResult(GameEnum.PlacementFailureReason.ObjectCollision) end
 	

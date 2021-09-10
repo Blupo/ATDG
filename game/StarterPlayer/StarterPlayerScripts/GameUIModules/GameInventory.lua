@@ -1,20 +1,17 @@
--- todo: ui should update when upgrading
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local root = script.Parent
-
 local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
-local IconButton = require(root:WaitForChild("IconButton"))
-local ObjectViewport = require(root:WaitForChild("ObjectViewport"))
-local Padding = require(root:WaitForChild("Padding"))
-local Roact = require(root:WaitForChild("Roact"))
-local Style = require(root:WaitForChild("Style"))
+local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
+local IconButton = require(GameUIModules:WaitForChild("IconButton"))
+local Padding = require(GameUIModules:WaitForChild("Padding"))
+local Roact = require(GameUIModules:WaitForChild("Roact"))
+local Style = require(GameUIModules:WaitForChild("Style"))
+local UnitViewport = require(GameUIModules:WaitForChild("UnitViewport"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
@@ -33,9 +30,9 @@ local SpecialActions = SystemCoordinator.waitForSystem("SpecialActions")
 
 ---
 
-local Inventory = Roact.Component:extend("Inventory")
+local GameInventory = Roact.Component:extend("GameInventory")
 
-Inventory.init = function(self)
+GameInventory.init = function(self)
     self.listLength, self.updateListLength = Roact.createBinding(0)
 
     self.updateObjectList = function()
@@ -52,8 +49,6 @@ Inventory.init = function(self)
             end
         elseif (category == GameEnum.ItemType.SpecialAction) then
             objectList = PlayerData.GetPlayerInventory(LocalPlayer.UserId)[category]
-        elseif (category == GameEnum.ObjectType.Roadblock) then
-            -- todo?
         end
 
         table.sort(objectList, function(a, b)
@@ -74,7 +69,7 @@ Inventory.init = function(self)
     })
 end
 
-Inventory.didMount = function(self)
+GameInventory.didMount = function(self)
     self.placementFlowStarted = PlacementFlow.Started:Connect(function()
         self:setState({
             placementFlowOpen = true,
@@ -87,22 +82,32 @@ Inventory.didMount = function(self)
         })
     end)
 
+    self.unitPersistentUpgraded = Unit.UnitPersistentUpgraded:Connect(function(_, unitName: string, newLevel: number)
+        local selectedUnit = self.state.selectedUnit
+        if (selectedUnit ~= unitName) then return end
+
+        self:setState({
+            selectedUnitLevel = newLevel,
+        })
+    end)
+
     self.updateObjectList()
 end
 
-Inventory.willUnmount = function(self)
+GameInventory.willUnmount = function(self)
     self.placementFlowStarted:Disconnect()
     self.placementFlowStopped:Disconnect()
+    self.unitPersistentUpgraded:Disconnect()
 end
 
-Inventory.didUpdate = function(self, _, prevState)
+GameInventory.didUpdate = function(self, _, prevState)
     local category = self.state.category
     if (category == prevState.category) then return end
 
     self.updateObjectList()
 end
 
-Inventory.render = function(self)
+GameInventory.render = function(self)
     if (self.state.placementFlowOpen) then return nil end
 
     local isOpen = self.state.open
@@ -116,31 +121,29 @@ Inventory.render = function(self)
     end
 
     local objects = self.state.objects
-    local selectedName = self.state.name
+    local selectedUnit = self.state.selectedUnit
+    local selectedUnitLevel = self.state.selectedUnitLevel
+
     local objectListChildren = {}
-    local attributesPreviewChildren = {}
+    local selectedUnitAttributesPreviewChildren = {}
 
     if ((category == GameEnum.UnitType.TowerUnit) or (category == GameEnum.UnitType.FieldUnit)) then
         for i = 1, #objects do
-            local objectName = objects[i]
+            local unitName = objects[i]
 
-            objectListChildren[objectName] = Roact.createElement(ObjectViewport, {
+            objectListChildren[unitName] = Roact.createElement(UnitViewport, {
                 LayoutOrder = i,
 
-                objectType = GameEnum.ObjectType.Unit,
-                objectName = objectName,
-
-                showLevel = true,
-                titleDisplayType = GameEnum.ObjectViewportTitleType.ObjectName,
+                unitName = unitName,
+                titleDisplayType = "UnitName",
+                rightInfoDisplayType = "Level",
 
                 onActivated = function()
                     self:setState({
-                        name = objectName,
+                        selectedUnit = unitName,
+                        selectedUnitLevel = Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, unitName),
                     })
                 end,
-
-                onMouseEnter = function() end,
-                onMouseLeave = function() end,
             })
         end
     elseif (category == GameEnum.ItemType.SpecialAction) then
@@ -273,73 +276,69 @@ Inventory.render = function(self)
                 }),
             })
         end
-    elseif (category == GameEnum.ObjectType.Roadblock) then
-        -- todo?
     end
 
-    if (selectedName) then
-        if ((category == GameEnum.UnitType.TowerUnit) or (category == GameEnum.UnitType.FieldUnit)) then
-            local attributes = Unit.GetUnitBaseAttributes(selectedName, Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, selectedName))
-            local previewAttributes = PreviewAttributes[category]
+    if (selectedUnit) then
+        local attributes = Unit.GetUnitBaseAttributes(selectedUnit, selectedUnitLevel)
+        local previewAttributes = PreviewAttributes[category]
 
-            for i = 1, #previewAttributes do
-                local attribute = previewAttributes[i]
-                local value = attributes[attribute]
+        for i = 1, #previewAttributes do
+            local attribute = previewAttributes[i]
+            local attributeValue = attributes[attribute]
 
-                if (tonumber(value) and (attribute ~= "MaxHP")) then
-                    value = string.format("%0.2f", value)
-                elseif (attribute == "PathType") then
-                    if (value == GameEnum.PathType.Ground) then
-                        value = "G"
-                    elseif (value == GameEnum.PathType.Air) then
-                        value = "A"
-                    elseif (value == GameEnum.PathType.GroundAndAir) then
-                        value = "GA"
-                    end
+            if (tonumber(attributeValue) and (attribute ~= "MaxHP")) then
+                if (attributeValue ~= math.huge) then
+                    attributeValue = string.format("%0.2f", attributeValue)
+                else
+                    attributeValue = "∞"
                 end
+            elseif (attribute == "PathType") then
+                if (attributeValue == GameEnum.PathType.Ground) then
+                    attributeValue = "G"
+                elseif (attributeValue == GameEnum.PathType.Air) then
+                    attributeValue = "A"
+                elseif (attributeValue == GameEnum.PathType.GroundAndAir) then
+                    attributeValue = "GA"
+                end
+            end
 
-                attributesPreviewChildren[i] = Roact.createElement("Frame", {
+            selectedUnitAttributesPreviewChildren[i] = Roact.createElement("Frame", {
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                LayoutOrder = i,
+            }, {
+                Icon = Roact.createElement("ImageLabel", {
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Size = UDim2.new(0, 22, 0, 22),
+                    Position = UDim2.new(0, 2, 0.5, 0),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    LayoutOrder = i,
-                }, {
-                    Icon = Roact.createElement("ImageLabel", {
-                        AnchorPoint = Vector2.new(0, 0.5),
-                        Size = UDim2.new(0, 22, 0, 22),
-                        Position = UDim2.new(0, 2, 0.5, 0),
-                        BackgroundTransparency = 1,
-                        BorderSizePixel = 0,
-                        Image = Style.Images[attribute .. "AttributeIcon"],
-    
-                        ImageColor3 = Style.Colors[attribute .. "AttributeIconColor"]
-                    }),
-            
-                    Label = Roact.createElement("TextLabel", {
-                        AnchorPoint = Vector2.new(1, 0.5),
-                        Size = UDim2.new(1, -(22 + Style.Constants.MinorElementPadding), 0, 16),
-                        Position = UDim2.new(1, 0, 0.5, 0),
-                        BackgroundTransparency = 1,
-                        BorderSizePixel = 0,
-            
-                        Text = value,
-                        Font = Style.Constants.MainFont,
-                        TextSize = 16,
-                        TextStrokeTransparency = 1,
-                        TextXAlignment = Enum.TextXAlignment.Left,
-                        TextYAlignment = Enum.TextYAlignment.Center,
-                        TextScaled = true,
-    
-                        TextColor3 = Color3.new(0, 0, 0)
-                    })
+                    Image = Style.Images[attribute .. "AttributeIcon"],
+
+                    ImageColor3 = Style.Colors[attribute .. "AttributeIconColor"]
+                }),
+        
+                Label = Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    Size = UDim2.new(1, -(22 + Style.Constants.MinorElementPadding), 0, 16),
+                    Position = UDim2.new(1, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+        
+                    Text = attributeValue,
+                    Font = Style.Constants.MainFont,
+                    TextSize = 16,
+                    TextStrokeTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+                    TextScaled = true,
+
+                    TextColor3 = Color3.new(0, 0, 0)
                 })
-            end
-        elseif (category == GameEnum.ItemType.SpecialAction) then
-            -- Special Actions don't have stats
-        elseif (category == GameEnum.ObjectType.Roadblock) then
-            -- todo?
+            })
         end
 
-        attributesPreviewChildren.UIGridLayout = Roact.createElement("UIGridLayout", {
+        selectedUnitAttributesPreviewChildren.UIGridLayout = Roact.createElement("UIGridLayout", {
             CellPadding = UDim2.new(0, 4, 0, 4),
             CellSize = UDim2.new(0.5, -2, 0.5, -2),
 
@@ -355,7 +354,7 @@ Inventory.render = function(self)
     if (category ~= GameEnum.ItemType.SpecialAction) then
         objectListChildren.UIGridLayout = Roact.createElement("UIGridLayout", {
             CellPadding = UDim2.new(0, 8, 0, 8),
-            CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
+            CellSize = UDim2.new(0, Style.Constants.UnitViewportFrameSize, 0, Style.Constants.UnitViewportFrameSize),
 
             FillDirection = Enum.FillDirection.Horizontal,
             FillDirectionMaxCells = 3,
@@ -467,7 +466,9 @@ Inventory.render = function(self)
 
                     self:setState({
                         category = GameEnum.UnitType.TowerUnit,
-                        name = Roact.None,
+                        
+                        selectedUnit = Roact.None,
+                        selectedUnitLevel = Roact.None,
                     })
                 end,
 
@@ -484,21 +485,10 @@ Inventory.render = function(self)
 
                     self:setState({
                         category = GameEnum.UnitType.FieldUnit,
-                        name = Roact.None,
+                        
+                        selectedUnit = Roact.None,
+                        selectedUnitLevel = Roact.None,
                     })
-                end,
-
-                ImageColor3 = Color3.new(0, 0, 0),
-            }),
-
-            RoadblockCategory = Roact.createElement(IconButton, {
-                Text = "Roadblock",
-                Image = "",
-                LayoutOrder = 3,
-                
-                onActivated = function()
-                    -- todo?
-                    print("future version?")
                 end,
 
                 ImageColor3 = Color3.new(0, 0, 0),
@@ -507,14 +497,16 @@ Inventory.render = function(self)
             SpecialCategory = Roact.createElement(IconButton, {
                 Text = "Special",
                 Image = "",
-                LayoutOrder = 4,
+                LayoutOrder = 3,
                 
                 onActivated = function()
                     if (category == GameEnum.ItemType.SpecialAction) then return end
 
                     self:setState({
                         category = GameEnum.ItemType.SpecialAction,
-                        name = Roact.None,
+                        
+                        selectedUnit = Roact.None,
+                        selectedUnitLevel = Roact.None,
                     })
                 end,
 
@@ -522,7 +514,7 @@ Inventory.render = function(self)
             }),
         }),
 
-        SelectedObjectInfo = selectedName and
+        SelectedUnitInfo = (selectedUnit) and
             Roact.createElement("Frame", {
                 AnchorPoint = Vector2.new(0.5, 1),
                 Size = UDim2.new(1, 0, 0, 72),
@@ -543,24 +535,21 @@ Inventory.render = function(self)
                         Position = UDim2.new(0.5, 0, 0, 0),
                         LayoutOrder = 1,
 
-                        Text = Shop.GetObjectPlacementPrice(objectType, selectedName) or "?",
+                        Text = Shop.GetObjectPlacementPrice(objectType, selectedUnit) or "?",
                         Image = "rbxassetid://6837004068",
 
                         onActivated = function()
 
                             if (category == GameEnum.UnitType.TowerUnit) then
                                 -- todo: check for available funds first
-                                PlacementFlow.Start(objectType, selectedName)
+                                PlacementFlow.Start(objectType, selectedUnit)
 
                                 self:setState({
-                                    name = Roact.None,
+                                    selectedUnit = Roact.None,
                                 })
                             elseif (category == GameEnum.UnitType.FieldUnit) then
                                 -- todo
                                 print("todo")
-                            elseif (category == GameEnum.ObjectType.Roadblock) then
-                                -- todo?
-                                print("future version?")
                             end
                         end,
 
@@ -574,11 +563,11 @@ Inventory.render = function(self)
                             Position = UDim2.new(0.5, 0, 1, 0),
                             LayoutOrder = 2,
 
-                            Text = Shop.GetUnitPersistentUpgradePrice(LocalPlayer.UserId, selectedName) or "MAX",
+                            Text = Shop.GetUnitPersistentUpgradePrice(selectedUnit, selectedUnitLevel) or "MAX",
                             Image = "rbxassetid://6837004663",
 
                             onActivated = function()
-                                Shop.PurchaseUnitPersistentUpgrade(LocalPlayer.UserId, selectedName)
+                                Shop.PurchaseUnitPersistentUpgrade(LocalPlayer.UserId, selectedUnit)
                             end,
 
                             ImageColor3 = Color3.new(0, 0, 0),
@@ -600,7 +589,7 @@ Inventory.render = function(self)
                         BackgroundTransparency = 1,
                         BorderSizePixel = 0,
 
-                        Text = selectedName .. " (" .. Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, selectedName) .. ")",
+                        Text = selectedUnit .. " (" .. selectedUnitLevel .. ")",
                         Font = Style.Constants.MainFont,
                         TextSize = 16,
                         TextStrokeTransparency = 1,
@@ -617,7 +606,7 @@ Inventory.render = function(self)
                         Position = UDim2.new(0.5, 0, 1, 0),
                         BackgroundTransparency = 1,
                         BorderSizePixel = 0,
-                    }, attributesPreviewChildren)
+                    }, selectedUnitAttributesPreviewChildren)
                 })
             })
         or nil,
@@ -637,4 +626,4 @@ Inventory.render = function(self)
     })
 end
 
-return Inventory
+return GameInventory

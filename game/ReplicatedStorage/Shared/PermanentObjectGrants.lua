@@ -17,8 +17,4 @@ return {
         TestFieldUnit = true,
         TestAirFieldUnit = true,
     },
-
-    [GameEnum.ObjectType.Roadblock] = {
-
-    }
 }

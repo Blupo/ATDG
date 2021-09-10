@@ -18,6 +18,9 @@ local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
 
+local GameModules = ServerScriptService:FindFirstChild("GameModules")
+local Unit = require(GameModules:FindFirstChild("Unit"))
+
 local CurrencyBalanceChangedEvent = Instance.new("BindableEvent")
 local ObjectGrantedEvent = Instance.new("BindableEvent")
 local InventoryChangedEvent = Instance.new("BindableEvent")
@@ -36,7 +39,6 @@ type array<T> = {[number]: T}
 
 type PlayerObjectGrants = {
     Unit: dictionary<string, boolean>,
-    Roadblock: dictionary<string, boolean>
 }
 
 type PlayerInventory = {
@@ -46,7 +48,6 @@ type PlayerInventory = {
 type PlayerHotbars = {
     TowerUnit: array<string>,
     FieldUnit: array<string>,
-    Roadblock: array<string>
 }
 
 type PlayerData = {
@@ -64,12 +65,11 @@ type TransactionRecordingResult = {
 
 ---
 
-local HOTBAR_SIZE = 5
+local HOTBAR_MAX_ITEMS = 5
 
 local DEFAULT_HOTBARS = {
     [GameEnum.UnitType.TowerUnit] = {"TestTowerUnit", "TestFreezerTowerUnit", "TestAoETowerUnit", "TestAirTargetingTowerUnit", "TestPassiveIncomeTowerUnit"},
     [GameEnum.UnitType.FieldUnit] = {"TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit"},
-    [GameEnum.ObjectType.Roadblock] = {"", "", "", "", ""}
 }
 
 local PlayerDataTemplate: PlayerData = {
@@ -77,17 +77,16 @@ local PlayerDataTemplate: PlayerData = {
     Hotbars = DEFAULT_HOTBARS,
     
     Currencies = {
-        [GameEnum.CurrencyType.Tickets] = 10, -- DEBUG
+        [GameEnum.CurrencyType.Tickets] = 10,
     },
 
     ObjectGrants = {
         [GameEnum.ObjectType.Unit] = {},
-        [GameEnum.ObjectType.Roadblock] = {},
     },
     
     Inventory = {
         [GameEnum.ItemType.SpecialAction] = {
-            Expel_TEST = 99,
+            Expel_TEST = 1,
         },
     },
 }
@@ -119,6 +118,37 @@ local playerAdded = function(player: Player)
         end)
 
         if (player:IsDescendantOf(Players)) then
+            --- INDEV
+            profile.Data.ObjectGrants.Roadblocks = nil
+            profile.Data.Hotbars.Roadblocks = nil
+            ---
+
+            -- verify hotbars
+            local towerUnitHotbar = profile.Data.Hotbars[GameEnum.UnitType.TowerUnit]
+            local fieldUnitHotbar = profile.Data.Hotbars[GameEnum.UnitType.FieldUnit]
+
+            for i = #towerUnitHotbar, 1, -1 do
+                local unitName = towerUnitHotbar[i]
+
+                local permaGrantStatus = PermanentObjectGrants[GameEnum.ObjectType.Unit][unitName]
+                local grantStatus = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit][unitName]
+
+                if (not (permaGrantStatus or grantStatus)) then
+                    table.remove(towerUnitHotbar, i)
+                end
+            end
+
+            for i = #fieldUnitHotbar, 1, -1 do
+                local unitName = fieldUnitHotbar[i]
+
+                local permaGrantStatus = PermanentObjectGrants[GameEnum.ObjectType.Unit][unitName]
+                local grantStatus = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit][unitName]
+
+                if (not (permaGrantStatus or grantStatus)) then
+                    table.remove(fieldUnitHotbar, i)
+                end
+            end
+
             for currencyType in pairs(EphemeralCurrencies) do
                 ephemeralCurrenciesBalance[currencyType] = 0
             end
@@ -321,11 +351,15 @@ PlayerData.SetPlayerHotbar = function(userId: number, objectType: string, newHot
     local profile = playerProfiles[userId]
     if (not profile) then return false end
 
-    local hotbars = profile.Data.Hotbars
+    if ((objectType == GameEnum.UnitType.TowerUnit) or (objectType == GameEnum.UnitType.FieldUnit)) then
+        for i = 1, #newHotbar do
+            local unitName = newHotbar[i]
+            if (not Unit.DoesUnitExist(unitName)) then return false end
+        end
+    end
 
-    -- todo: validate hotbar items
-    newHotbar = CopyTable(newHotbar)
-    hotbars[objectType] = newHotbar
+    local hotbars = profile.Data.Hotbars
+    hotbars[objectType] = CopyTable(newHotbar)
 
     HotbarChangedEvent:Fire(userId, objectType, newHotbar)
     return true

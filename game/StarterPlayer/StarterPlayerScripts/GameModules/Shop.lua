@@ -37,14 +37,11 @@ Shop.GetUnitUpgradePrice = function(unitName: string, level: number): number?
     return prices.Individual
 end
 
-Shop.GetUnitPersistentUpgradePrice = function(owner: number, unitName: string): number?
-    local currentLevel = Unit.GetUnitPersistentUpgradeLevel(owner, unitName)
-    if (not currentLevel) then return end
-
+Shop.GetUnitPersistentUpgradePrice = function(unitName: string, level: number): number?
     local unitPrices = ShopPrices.UnitUpgradePrices[unitName]
     if (not unitPrices) then return end
 
-    local prices = unitPrices[currentLevel + 1]
+    local prices = unitPrices[level + 1]
     if (not prices) then return end
 
     return prices.Persistent

@@ -1,6 +1,7 @@
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -62,14 +63,26 @@ ServerMaster.InitServer = function(initServerType: string)
             local privateServerId = game.PrivateServerId
 
             if (privateServerId == "") then
-                reject("PrivateServerId is missing")
-                return
+                if (RunService:IsStudio()) then
+                    warn("Studio Testing, using debug game info")
+
+                    resolve({
+                        MapName = "TestMap",
+                        GameMode = GameEnum.GameMode.TowerDefense,
+                        Difficulty = GameEnum.Difficulty.Normal,
+                    })
+                    
+                    return
+                else
+                    reject("PrivateServerId is missing")
+                    return
+                end
             end
 
             resolve(GameDataStore:RemoveAsync(privateServerId))
         end):andThen(function(gameplayData)
             Game.LoadData(gameplayData.MapName, gameplayData.GameMode, gameplayData.Difficulty)
-            Game.Start(0)
+            Game.Start()
         end, function(error)
             warn(tostring(error))
             GameInitFailureNotificationRemoteEvent:FireAllClients()

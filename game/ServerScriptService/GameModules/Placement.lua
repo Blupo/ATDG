@@ -4,12 +4,11 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
+local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
+
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local MakeActionResult = require(SharedModules:FindFirstChild("MakeActionResult"))
-
-local RoadblockModels = ReplicatedStorage:FindFirstChild("RoadblockModels")
-local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
 
 local GameModules = script.Parent
 local Unit = require(GameModules:FindFirstChild("Unit"))
@@ -113,8 +112,6 @@ Placement.CanPlace = function(owner: number, objType: string, objName: string, p
 	-- check that the model exists
 	if (objType == GameEnum.ObjectType.Unit) then
 		thisObjModel = UnitModels:FindFirstChild(objName)
-	elseif (objType == GameEnum.ObjectType.Roadblock) then
-		thisObjModel = RoadblockModels:FindFirstChild(objName)
 	else
 		return MakeActionResult(GameEnum.PlacementFailureReason.ObjectDoesNotExist)
 	end
@@ -220,8 +217,6 @@ Placement.PlaceObject = function(owner: number, objType: string, objName: string
 		local newUnit = Unit.new(objName, owner)
 		
 		objModel = newUnit.Model
-	elseif (objType == GameEnum.ObjectType.Roadblock) then
-		objModel = RoadblockModels:FindFirstChild(objName)
 	end
 	
 	local primaryPart = objModel.PrimaryPart

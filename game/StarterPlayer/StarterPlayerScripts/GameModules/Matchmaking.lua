@@ -77,8 +77,6 @@ Matchmaking.GameClosed:Connect(function(gameId)
 end)
 
 Matchmaking.GameStarting:Connect(function(gameId)
-    -- todo: does something else need to happen here?
-
     if (localPlayerCurrentParty == gameId) then
         local gameData = cachedGameList[gameId]
         

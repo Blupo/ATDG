@@ -8,11 +8,16 @@ local Style = require(root:WaitForChild("Style"))
 --[[
     props
 
-    onActivated
-    onMouseEnter
-    onMouseLeave
+        onActivated
+        onMouseEnter
+        onMouseLeave
 
-    disabled
+        disabled
+
+        AnchorPoint?
+        Size?
+        Position?
+        LayoutOrder?
 ]]
 
 local IconButton = Roact.PureComponent:extend("IconButton")
@@ -22,7 +27,7 @@ IconButton.render = function(self)
         AnchorPoint = self.props.AnchorPoint,
         Size = self.props.Size,
         Position = self.props.Position,
-        LayoutOrder = self.props.LayourOrder,
+        LayoutOrder = self.props.LayoutOrder,
         BackgroundTransparency = 0,
         BorderSizePixel = 0,
 

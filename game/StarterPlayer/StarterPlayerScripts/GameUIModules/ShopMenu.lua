@@ -18,10 +18,10 @@ local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
 local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"))
 
 local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
-local ObjectViewport = require(GameUIModules:WaitForChild("ObjectViewport"))
 local Padding = require(GameUIModules:WaitForChild("Padding"))
 local Roact = require(GameUIModules:WaitForChild("Roact"))
 local Style = require(GameUIModules:WaitForChild("Style"))
+local UnitViewport = require(GameUIModules:WaitForChild("UnitViewport"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
@@ -146,12 +146,12 @@ UnitShopPage.render = function(self)
     for i = 1, #towerUnitPrices do
         local priceInfo = towerUnitPrices[i]
 
-        towerUnitListElements[priceInfo.unitName] = Roact.createElement(ObjectViewport, {
+        towerUnitListElements[priceInfo.unitName] = Roact.createElement(UnitViewport, {
             LayoutOrder = i,
 
-            objectName = priceInfo.unitName,
-            objectType = GameEnum.ObjectType.Unit,
-            titleDisplayType = GameEnum.ObjectViewportTitleType.ObjectName,
+            unitName = priceInfo.unitName,
+            titleDisplayType = "UnitName",
+            rightInfoDisplayType = "Unlocked",
             
             onActivated = function()
                 self:setState({
@@ -166,12 +166,12 @@ UnitShopPage.render = function(self)
     for i = 1, #fieldUnitPrices do
         local priceInfo = fieldUnitPrices[i]
 
-        fieldUnitListElements[priceInfo.unitName] = Roact.createElement(ObjectViewport, {
+        fieldUnitListElements[priceInfo.unitName] = Roact.createElement(UnitViewport, {
             LayoutOrder = i,
 
-            objectName = priceInfo.unitName,
-            objectType = GameEnum.ObjectType.Unit,
-            titleDisplayType = GameEnum.ObjectViewportTitleType.ObjectName,
+            unitName = priceInfo.unitName,
+            titleDisplayType = "UnitName",
+            rightInfoDisplayType = "Unlocked",
             
             onActivated = function()
                 self:setState({
@@ -239,7 +239,6 @@ UnitShopPage.render = function(self)
             })
         end
 
-        -- shows deployment price if level == 1
         statListElements.UpgradePrice = Roact.createElement("Frame", {
             Size = UDim2.new(1, 0, 0, 24),
             BackgroundTransparency = 1,
@@ -320,7 +319,7 @@ UnitShopPage.render = function(self)
 
     towerUnitListElements.UIGridLayout = Roact.createElement("UIGridLayout", {
         CellPadding = UDim2.new(0, Style.Constants.MinorElementPadding, 0, Style.Constants.MinorElementPadding),
-        CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
+        CellSize = UDim2.new(0, Style.Constants.UnitViewportFrameSize, 0, Style.Constants.UnitViewportFrameSize),
 
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -335,7 +334,7 @@ UnitShopPage.render = function(self)
 
     fieldUnitListElements.UIGridLayout = Roact.createElement("UIGridLayout", {
         CellPadding = UDim2.new(0, Style.Constants.MinorElementPadding, 0, Style.Constants.MinorElementPadding),
-        CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
+        CellSize = UDim2.new(0, Style.Constants.UnitViewportFrameSize, 0, Style.Constants.UnitViewportFrameSize),
 
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -470,7 +469,7 @@ UnitShopPage.render = function(self)
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
 
-                    Text = "<i>" .. "Blupo please add details." .. "</i>",
+                    Text = "<i>" .. "Blupo please add details. >:(" .. "</i>",
                     RichText = true,
                     Font = Enum.Font.Gotham,
                     TextSize = 16,
@@ -844,7 +843,7 @@ SpecialShopPage.render = function(self)
 
     ticketListElements.UIGridLayout = Roact.createElement("UIGridLayout", {
         CellPadding = UDim2.new(0, Style.Constants.MinorElementPadding, 0, Style.Constants.MinorElementPadding),
-        CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
+        CellSize = UDim2.new(0, Style.Constants.UnitViewportFrameSize, 0, Style.Constants.UnitViewportFrameSize),
 
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -859,7 +858,7 @@ SpecialShopPage.render = function(self)
 
     actionListElements.UIGridLayout = Roact.createElement("UIGridLayout", {
         CellPadding = UDim2.new(0, Style.Constants.MinorElementPadding, 0, Style.Constants.MinorElementPadding),
-        CellSize = UDim2.new(0, Style.Constants.ObjectViewportFrameSize, 0, Style.Constants.ObjectViewportFrameSize),
+        CellSize = UDim2.new(0, Style.Constants.UnitViewportFrameSize, 0, Style.Constants.UnitViewportFrameSize),
 
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,

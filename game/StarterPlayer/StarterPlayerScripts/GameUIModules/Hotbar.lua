@@ -8,9 +8,9 @@ local root = script.Parent
 local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
-local ObjectViewport = require(root:WaitForChild("ObjectViewport"))
 local Roact = require(root:WaitForChild("Roact"))
 local Style = require(root:WaitForChild("Style"))
+local UnitViewport = require(root:WaitForChild("UnitViewport"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
@@ -26,6 +26,10 @@ local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"
 
 ---
 
+local HOTBAR_MAX_ITEMS = 5
+
+---
+
 local Hotbar = Roact.PureComponent:extend("Hotbar")
 
 Hotbar.init = function(self)
@@ -33,7 +37,6 @@ Hotbar.init = function(self)
         hotbars = {
             [GameEnum.UnitType.TowerUnit] = {},
             [GameEnum.UnitType.FieldUnit] = {},
-            [GameEnum.ObjectType.Roadblock] = {},
         },
 
         hotbarObjectType = GameEnum.UnitType.TowerUnit,
@@ -80,7 +83,6 @@ Hotbar.render = function(self)
 
     local hotbars = self.state.hotbars
     local hotbarObjectType = self.state.hotbarObjectType
-    local objectType = (hotbarObjectType == GameEnum.ObjectType.Roadblock) and GameEnum.ObjectType.Roadblock or GameEnum.ObjectType.Unit
         
     local hotbarListChildren = {}
     local attributesPreviewChildren = {}
@@ -91,26 +93,21 @@ Hotbar.render = function(self)
     for i = 1, hotbarItemCount do
         local objectName = hotbar[i]
 
-        hotbarListChildren[i] = Roact.createElement(ObjectViewport, {
+        hotbarListChildren[i] = Roact.createElement(UnitViewport, {
             LayoutOrder = i,
             BackgroundColor3 = Color3.new(1, 1, 1),
 
-            -- todo
-            objectType = objectType,
-            objectName = objectName,
-
-            infoLeftDisplay = "Hotkey",
-            hotkey = i,
-
-            showLevel = false,
-            titleDisplayType = GameEnum.ObjectViewportTitleType.PlacementPrice,
+            unitName = objectName,
+            showHotkey = true,
+            titleDisplayType = "PlacementPrice",
 
             onActivated = function()
-                -- check for available funds first
+                -- todo: check for available funds first
                 
-                PlacementFlow.Start(objectType, objectName)
+                PlacementFlow.Start(GameEnum.ObjectType.Unit, objectName)
             end,
 
+            -- todo: hovering
             onMouseEnter = function()
                 self:setState({
                     hoverObjectName = objectName
@@ -126,22 +123,27 @@ Hotbar.render = function(self)
     end
 
     if (self.state.hoverObjectName) then
-        -- todo: roadblocks
         local attributes = Unit.GetUnitBaseAttributes(self.state.hoverObjectName, 1)
         local previewAttributes = PreviewAttributes[hotbarObjectType]
 
         for i = 1, #previewAttributes do
             local attribute = previewAttributes[i]
-            local value = attributes[attribute]
+            local attributeValue = attributes[attribute]
 
-            if ((attribute ~= "HP") and tonumber(value)) then
-                value = string.format("%0.2f", value)
-            elseif (value == GameEnum.PathType.Ground) then
-                value = "G"
-            elseif (value == GameEnum.PathType.Air) then
-                value = "A"
-            elseif (value == GameEnum.PathType.GroundAndAir) then
-                value = "GA"
+            if (tonumber(attributeValue) and (attribute ~= "MaxHP")) then
+                if (attributeValue ~= math.huge) then
+                    attributeValue = string.format("%0.2f", attributeValue)
+                else
+                    attributeValue = "∞"
+                end
+            elseif (attribute == "PathType") then
+                if (attributeValue == GameEnum.PathType.Ground) then
+                    attributeValue = "G"
+                elseif (attributeValue == GameEnum.PathType.Air) then
+                    attributeValue = "A"
+                elseif (attributeValue == GameEnum.PathType.GroundAndAir) then
+                    attributeValue = "GA"
+                end
             end
 
             attributesPreviewChildren[i] = Roact.createElement("Frame", {
@@ -168,7 +170,7 @@ Hotbar.render = function(self)
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
         
-                    Text = value,
+                    Text = attributeValue,
                     Font = Style.Constants.MainFont,
                     TextSize = 16,
                     TextStrokeTransparency = 1,
@@ -204,7 +206,12 @@ Hotbar.render = function(self)
 
     return Roact.createElement("Frame", {
         AnchorPoint = Vector2.new(0.5, 1),
-        Size = UDim2.new(0, (Style.Constants.ObjectViewportFrameSize * hotbarItemCount) + (Style.Constants.MinorElementPadding * (hotbarItemCount - 1)), 0, Style.Constants.ObjectViewportFrameSize + Style.Constants.MajorElementPadding + 32),
+
+        Size = UDim2.new(
+            0, (Style.Constants.UnitViewportFrameSize * HOTBAR_MAX_ITEMS) + (Style.Constants.MinorElementPadding * (HOTBAR_MAX_ITEMS - 1)),
+            0, Style.Constants.UnitViewportFrameSize + Style.Constants.MajorElementPadding + 32
+        ),
+
         Position = UDim2.new(0.5, 0, 1, -(32 + Style.Constants.MajorElementPadding)),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -223,7 +230,7 @@ Hotbar.render = function(self)
 
         HotbarList = Roact.createElement("Frame", {
             AnchorPoint = Vector2.new(0.5, 1),
-            Size = UDim2.new(1, 0, 0, Style.Constants.ObjectViewportFrameSize),
+            Size = UDim2.new(1, 0, 0, Style.Constants.UnitViewportFrameSize),
             Position = UDim2.new(0.5, 0, 1, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,

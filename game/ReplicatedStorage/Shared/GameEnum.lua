@@ -23,7 +23,7 @@ end
 return setmetatable({
 	PursuitDirection = makeEnum("GameEnum.PursuitDirection", { "Forward", "Reverse" }),
 	UnitType = makeEnum("GameEnum.UnitType", { "FieldUnit", "TowerUnit" }),
-	ObjectType = makeEnum("GameEnum.ObjectType", { "Unit", "Roadblock" }),
+	ObjectType = makeEnum("GameEnum.ObjectType", { "Unit", }),
 	PathType = makeEnum("GameEnum.PathType", { "Ground", "Air", "GroundAndAir", "*" }),
 	UnitTargeting = makeEnum("GameEnum.UnitTargeting", { "Closest", "Farthest", "First", "Last", "Strongest", "Fastest", "Random", "AreaOfEffect", "None" }),
 	Difficulty = makeEnum("GameEnum.Difficulty", { "Easy", "Normal", "Hard", "Special" }),
@@ -39,7 +39,6 @@ return setmetatable({
 	CurrencyType = makeEnum("GameEnum.CurrencyType", { "Tickets", "Points" }),
 	ItemType = makeEnum("GameEnum.ItemType", { "SpecialAction" }),
 	PurchaseFailureReason = makeEnum("GameEnum.PurchaseFailureReason", { "CannotAcquireProfile", "AlreadyPurchased" }),
-	ObjectViewportTitleType = makeEnum("GameEnum.ObjectViewportTitleType", { "PlacementPrice", "ObjectName" }),
 	DamageSourceType = makeEnum("GameEnum.DamageSourceType", { "Unit", "Almighty" }),
 	PromotionalPricing = makeEnum("GameEnum.PromotionalPricing", { "None", "Summer" }),
 	DevProductType = makeEnum("GameEnum.DevProductType", { "Ticket", "ValuePack" }),
