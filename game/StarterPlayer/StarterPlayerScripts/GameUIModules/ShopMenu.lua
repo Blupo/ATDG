@@ -28,6 +28,9 @@ local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))
 
+local SharedGameData = require(SharedModules:WaitForChild("SharedGameData"))
+local GameConstants = SharedGameData.GameConstants
+
 ---
 
 local UnitShopPage = Roact.PureComponent:extend("UnitShopPage")
@@ -35,8 +38,7 @@ local SpecialShopPage = Roact.PureComponent:extend("SpecialShopPage")
 
 ---
 
-local HOTBAR_MAX_ITEMS = 5
-
+local maxHotbarItems = GameConstants.MaxHotbarItems
 local unitPrices = ShopPrices.ObjectGrantPrices[GameEnum.ObjectType.Unit]
 local actionPrices = ShopPrices.ItemPrices[GameEnum.ItemType.SpecialAction]
 local actionPricesSorted = {}
@@ -586,7 +588,7 @@ UnitShopPage.render = function(self)
                         if (selectedUnitHotbarIndex) then
                             table.remove(newHotbar, selectedUnitHotbarIndex)
                         else
-                            if (#newHotbar > HOTBAR_MAX_ITEMS) then return end
+                            if (#newHotbar > maxHotbarItems) then return end
 
                             table.insert(newHotbar, selectedUnit)
                         end

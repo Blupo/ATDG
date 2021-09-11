@@ -10,13 +10,16 @@ local ProfileService = require(ServerScriptService:FindFirstChild("ProfileServic
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
-local EphemeralCurrencies = require(SharedModules:FindFirstChild("EphemeralCurrencies"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local MakeActionResult = require(SharedModules:FindFirstChild("MakeActionResult"))
-local PermanentObjectGrants = require(SharedModules:FindFirstChild("PermanentObjectGrants"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
+
+local SharedGameData = require(SharedModules:WaitForChild("SharedGameData"))
+local AutomaticObjectGrants = SharedGameData.AutomaticObjectGrants
+local EphemeralCurrencies = SharedGameData.EphemeralCurrencies
+local GameConstants = SharedGameData.GameConstants
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Unit = require(GameModules:FindFirstChild("Unit"))
@@ -65,16 +68,13 @@ type TransactionRecordingResult = {
 
 ---
 
-local HOTBAR_MAX_ITEMS = 5
-
-local DEFAULT_HOTBARS = {
-    [GameEnum.UnitType.TowerUnit] = {"TestTowerUnit", "TestFreezerTowerUnit", "TestAoETowerUnit", "TestAirTargetingTowerUnit", "TestPassiveIncomeTowerUnit"},
-    [GameEnum.UnitType.FieldUnit] = {"TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit", "TestFieldUnit"},
-}
-
 local PlayerDataTemplate: PlayerData = {
     Transactions = {},
-    Hotbars = DEFAULT_HOTBARS,
+
+    Hotbars = {
+        [GameEnum.UnitType.TowerUnit] = {},
+        [GameEnum.UnitType.FieldUnit] = {},
+    },
     
     Currencies = {
         [GameEnum.CurrencyType.Tickets] = 10,
@@ -130,7 +130,7 @@ local playerAdded = function(player: Player)
             for i = #towerUnitHotbar, 1, -1 do
                 local unitName = towerUnitHotbar[i]
 
-                local permaGrantStatus = PermanentObjectGrants[GameEnum.ObjectType.Unit][unitName]
+                local permaGrantStatus = AutomaticObjectGrants[GameEnum.ObjectType.Unit][unitName]
                 local grantStatus = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit][unitName]
 
                 if (not (permaGrantStatus or grantStatus)) then
@@ -141,7 +141,7 @@ local playerAdded = function(player: Player)
             for i = #fieldUnitHotbar, 1, -1 do
                 local unitName = fieldUnitHotbar[i]
 
-                local permaGrantStatus = PermanentObjectGrants[GameEnum.ObjectType.Unit][unitName]
+                local permaGrantStatus = AutomaticObjectGrants[GameEnum.ObjectType.Unit][unitName]
                 local grantStatus = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit][unitName]
 
                 if (not (permaGrantStatus or grantStatus)) then
@@ -290,7 +290,7 @@ PlayerData.GetPlayerObjectGrants = function(userId: number): PlayerObjectGrants?
 
     local grants = CopyTable(profile.Data.ObjectGrants)
 
-    for objectType, permaGrants in pairs(PermanentObjectGrants) do
+    for objectType, permaGrants in pairs(AutomaticObjectGrants) do
         for objectName in pairs(permaGrants) do
             grants[objectType][objectName] = true
         end
@@ -303,7 +303,7 @@ PlayerData.PlayerHasObjectGrant = function(userId: number, objectType: string, o
     local profile = playerProfiles[userId]
     if (not profile) then return false end
 
-    local permaGrantStatus = PermanentObjectGrants[objectType][objectName]
+    local permaGrantStatus = AutomaticObjectGrants[objectType][objectName]
     if (permaGrantStatus) then return permaGrantStatus end
 
     return profile.Data.ObjectGrants[objectType][objectName] and true or false
@@ -315,7 +315,7 @@ PlayerData.GrantObjectToPlayer = function(userId: number, objectType: string, ob
     if (not profile) then return false end
 
     -- perma-granted items do not save to player data
-    local permaGrantStatus = PermanentObjectGrants[objectType][objectName]
+    local permaGrantStatus = AutomaticObjectGrants[objectType][objectName]
     if (permaGrantStatus) then return true end
 
     local grants = profile.Data.ObjectGrants[objectType]
@@ -348,6 +348,8 @@ PlayerData.GetPlayerHotbar = function(userId: number, objectType: string): array
 end
 
 PlayerData.SetPlayerHotbar = function(userId: number, objectType: string, newHotbar: array<string>): boolean
+    if (#newHotbar > GameConstants.MaxHotbarItems) then return false end
+    
     local profile = playerProfiles[userId]
     if (not profile) then return false end
 
@@ -356,7 +358,7 @@ PlayerData.SetPlayerHotbar = function(userId: number, objectType: string, newHot
             local unitName = newHotbar[i]
 
             local unitExists = Unit.DoesUnitExist(unitName)
-            local permaGrantStatus = PermanentObjectGrants[GameEnum.ObjectType.Unit][unitName]
+            local permaGrantStatus = AutomaticObjectGrants[GameEnum.ObjectType.Unit][unitName]
             local grantStatus = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit][unitName]
 
             if (not (unitExists and (permaGrantStatus or grantStatus))) then return false end

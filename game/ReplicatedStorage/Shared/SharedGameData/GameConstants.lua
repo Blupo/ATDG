@@ -1,0 +1,3 @@
+return {
+    MaxHotbarItems = 5,
+}

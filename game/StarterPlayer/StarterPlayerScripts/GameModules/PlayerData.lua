@@ -5,10 +5,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
-local EphemeralCurrencies = require(SharedModules:FindFirstChild("EphemeralCurrencies"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
-local PermanentObjectGrants = require(SharedModules:FindFirstChild("PermanentObjectGrants"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
+
+local SharedGameData = require(SharedModules:WaitForChild("SharedGameData"))
+local AutomaticObjectGrants = SharedGameData.AutomaticObjectGrants
+local EphemeralCurrencies = SharedGameData.EphemeralCurrencies
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerData = SystemCoordinator.waitForSystem("PlayerData")
@@ -46,7 +48,7 @@ end, PlayerData.GetPlayerInventoryItemCount)
 CacheProxy.GetPlayerObjectGrants = localPlayerProxy(function()
     local grants = CopyTable(localPlayerData.ObjectGrants)
 
-    for objectType, permaGrants in pairs(PermanentObjectGrants) do
+    for objectType, permaGrants in pairs(AutomaticObjectGrants) do
         for objectName in pairs(permaGrants) do
             grants[objectType][objectName] = true
         end
@@ -56,7 +58,7 @@ CacheProxy.GetPlayerObjectGrants = localPlayerProxy(function()
 end, PlayerData.GetPlayerObjectGrants)
 
 CacheProxy.PlayerHasObjectGrant = localPlayerProxy(function(_, objectType: string, objectName: string)
-    local permaGrantStatus = PermanentObjectGrants[objectType][objectName]
+    local permaGrantStatus = AutomaticObjectGrants[objectType][objectName]
     if (permaGrantStatus) then return permaGrantStatus end
 
     return localPlayerData.ObjectGrants[objectType][objectName] and true or false
@@ -108,7 +110,7 @@ do
     end
 end
 
-PlayerData.CurrencyBalanceChanged:Connect(function(userId: number, currencyType: string, newBalance: number, delta: number)
+PlayerData.CurrencyBalanceChanged:Connect(function(userId: number, currencyType: string, newBalance: number, _)
     if (userId ~= LocalPlayer.UserId) then return end
 
     if (EphemeralCurrencies[currencyType]) then
@@ -124,7 +126,7 @@ PlayerData.ObjectGranted:Connect(function(userId: number, objectType: string, ob
     localPlayerData.ObjectGrants[objectType][objectName] = true
 end)
 
-PlayerData.InventoryChanged:Connect(function(userId: number, itemType: string, itemName: string, newAmount: number, delta: number)
+PlayerData.InventoryChanged:Connect(function(userId: number, itemType: string, itemName: string, newAmount: number, _)
     if (userId ~= LocalPlayer.UserId) then return end
 
     localPlayerData.Inventory[itemType][itemName] = newAmount

@@ -16,6 +16,13 @@ local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
+local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
+
+local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
+
+---
+
+local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
 
 ---
 
@@ -116,14 +123,16 @@ CurrencyBar.render = function(self)
             ImageColor3 = Color3.new(0, 0, 0)
         }),
 
-        Points = Roact.createElement(CurrencyItem, {
-            Position = UDim2.new(0.5, 0, 0, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            LayoutOrder = 1,
+        Points = (serverType == GameEnum.ServerType.Game) and
+            Roact.createElement(CurrencyItem, {
+                Position = UDim2.new(0.5, 0, 0, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                LayoutOrder = 1,
 
-            Text = self.state.currencies[GameEnum.CurrencyType.Points]
-        })
+                Text = self.state.currencies[GameEnum.CurrencyType.Points]
+            })
+        or nil
     })
 end
 

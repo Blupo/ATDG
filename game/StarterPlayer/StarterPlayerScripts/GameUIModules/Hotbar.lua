@@ -15,7 +15,12 @@ local UnitViewport = require(root:WaitForChild("UnitViewport"))
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
+
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
+local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
+
+local SharedGameData = require(SharedModules:WaitForChild("SharedGameData"))
+local GameConstants = SharedGameData.GameConstants
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
@@ -25,12 +30,9 @@ local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
 local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"))
 local PlacementFlow
 
-local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
-
 ---
 
-local HOTBAR_MAX_ITEMS = 5
-
+local maxHotbarItems = GameConstants.MaxHotbarItems
 local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
 
 if (serverType == GameEnum.ServerType.Game) then
@@ -75,7 +77,8 @@ Hotbar.didMount = function(self)
         hotbarsCopy[hotbarType] = newHotbar
 
         self:setState({
-            hotbars = hotbarsCopy
+            hotbars = hotbarsCopy,
+            hoverObjectName = Roact.None,
         })
     end)
 
@@ -230,7 +233,7 @@ Hotbar.render = function(self)
         AnchorPoint = Vector2.new(0.5, 1),
 
         Size = UDim2.new(
-            0, (Style.Constants.UnitViewportFrameSize * HOTBAR_MAX_ITEMS) + (Style.Constants.MinorElementPadding * (HOTBAR_MAX_ITEMS - 1)),
+            0, (Style.Constants.UnitViewportFrameSize * maxHotbarItems) + (Style.Constants.MinorElementPadding * (maxHotbarItems - 1)),
             0, Style.Constants.UnitViewportFrameSize + Style.Constants.MajorElementPadding + 32
         ),
 
