@@ -383,6 +383,7 @@ UnitShopPage.render = function(self)
             Position = UDim2.new(0, 0, 0.5, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
+            ClipsDescendants = true,
 
             CanvasSize = self.unitListLength:map(function(listLength)
                 return UDim2.new(0, 0, 0, listLength)
@@ -776,6 +777,10 @@ SpecialShopPage.didMount = function(self)
     self.rotator:Disconnect()
 end
 
+SpecialShopPage.willUnmount = function(self)
+    self.inventoryChangedConnection:Disconnect()
+end
+
 SpecialShopPage.render = function(self)
     local selectedAction = self.state.selectedAction
     local ticketProducts = self.state.ticketProducts
@@ -943,6 +948,7 @@ SpecialShopPage.render = function(self)
             Position = UDim2.new(0, 0, 0.5, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
+            ClipsDescendants = true,
 
             CanvasSize = self.pageListLength:map(function(listLength)
                 return UDim2.new(0, 0, 0, listLength)

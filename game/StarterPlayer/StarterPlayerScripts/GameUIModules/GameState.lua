@@ -246,7 +246,7 @@ end
 
 ---
 
-local GameState = Roact.Component:extend("GameState")
+local GameState = Roact.PureComponent:extend("GameState")
 
 GameState.init = function(self)
     self.phaseTransitionAnimators = {}

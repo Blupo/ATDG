@@ -20,7 +20,7 @@ local Game = SystemCoordinator.waitForSystem("Game")
 
 ---
 
-local GameUI = Roact.Component:extend("GameUI")
+local GameUI = Roact.PureComponent:extend("GameUI")
 
 GameUI.init = function(self)
     self:setState({

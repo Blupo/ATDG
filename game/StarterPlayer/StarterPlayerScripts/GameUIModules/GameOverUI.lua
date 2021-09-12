@@ -30,7 +30,7 @@ local RETURN_TIMEOUT = 60
         gameCompleted: boolean
 ]]
 
-local GameOverUI = Roact.Component:extend("GameOverUI")
+local GameOverUI = Roact.PureComponent:extend("GameOverUI")
 
 GameOverUI.init = function(self)
     self.start = os.clock()

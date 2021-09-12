@@ -12,8 +12,7 @@
             },
 
             "Shared": {
-                "$path": "game/ReplicatedStorage/Shared",
-                "$ignoreUnknownInstances": true
+                "$path": "game/ReplicatedStorage/Shared"
             },
 
             "UnitData": {

@@ -639,6 +639,7 @@ PlayMenuMainPage.render = function(self)
                 Position = UDim2.new(0.5, 0, 1, 0),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
+                ClipsDescendants = true,
 
                 CanvasSize = self.gameListLength:map(function(length)
                     return UDim2.new(0, 0, 0, length)
@@ -861,6 +862,7 @@ PlayMenuMainPage.render = function(self)
                     Position = UDim2.new(0.5, 0, 0, 72),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
+                    ClipsDescendants = true,
 
                     CanvasSize = self.playerListLength:map(function(length)
                         return UDim2.new(0, 0, 0, length)
@@ -1219,6 +1221,7 @@ SimpleGameCreationPage.render = function(self)
                 Position = UDim2.new(0.5, 0, 1, 0),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
+                ClipsDescendants = true,
 
                 CanvasSize = self.mapListLength:map(function(length)
                     return UDim2.new(0, 0, 0, length)
