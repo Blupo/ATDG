@@ -23,6 +23,7 @@ TimeSyncService:Init()
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Abilities = require(GameModules:FindFirstChild("Abilities"))
+local LoadEnvironment = require(GameModules:FindFirstChild("LoadEnvironment"))
 local Path = require(GameModules:FindFirstChild("Path"))
 local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
 local StatusEffects = require(GameModules:FindFirstChild("StatusEffects"))
@@ -444,8 +445,7 @@ advanceGamePhase = function()
 end
 
 local loadMap = function(mapData)
-	local paths = mapData:FindFirstChild("Paths"):Clone()
-	local world = mapData:FindFirstChild("World"):Clone()
+	local paths = mapData:FindFirstChild("Paths")
 	
 	for _, pathType in pairs(paths:GetChildren()) do
 		for _, path in pairs(pathType:GetChildren()) do
@@ -459,7 +459,7 @@ local loadMap = function(mapData)
 		pathType.Parent = Paths
 	end
 
-	world.Parent = Workspace
+	LoadEnvironment(mapData)
 end
 
 local playerAdded = function(player)

@@ -13,8 +13,12 @@ return {
 			Length = 60,
 			
 			SpawnSequence = {
+				-- Key: Time in seconds
 				[0] = {
+					-- Key: Field Unit name
 					TestFieldUnit = {
+						-- Key: Path number
+						-- Value: Quantity
 						[1] = 1,
 					}
 				},
@@ -49,14 +53,17 @@ return {
 	PointsAllowance = {
 		-- Key = Round
 		-- Value = Points to award
+		[0] = 500,
 		[2] = 100,
-		
 		
 		--[[
 			If a round does not have an award specified,
 			it will be the same as the last specified award
 			
 			(e.g., round 1 will give 0, and 2+ will give 100)
+
+			The allowance for "round 0" is required, and refers to the amount of Points
+			players are given at the start of the game.
 		]]
 	},
 	

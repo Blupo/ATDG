@@ -67,7 +67,7 @@ ServerMaster.InitServer = function(initServerType: string)
                     warn("Studio Testing, using debug game info")
 
                     resolve({
-                        MapName = "TestMap",
+                        MapName = "Treasure",
                         GameMode = GameEnum.GameMode.TowerDefense,
                         Difficulty = GameEnum.Difficulty.Normal,
                     })

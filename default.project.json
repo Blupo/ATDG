@@ -6,6 +6,7 @@
 
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
+            "$ignoreUnknownInstances": true,
 
             "Nevermore": {
                 "$path": "Nevermore/loader/ReplicatedStorage/Nevermore"
