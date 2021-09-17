@@ -98,7 +98,7 @@ FieldUnitBillboard.didMount = function(self)
     end
 
     self:setState({
-        name = thisUnit.Name,
+        name = thisUnit.DisplayName,
         level = thisUnit.Level,
 
         hp = thisUnit:GetAttribute("HP"),

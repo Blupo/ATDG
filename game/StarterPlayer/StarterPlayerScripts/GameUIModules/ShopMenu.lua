@@ -481,7 +481,7 @@ UnitShopPage.render = function(self)
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
 
-                    Text = selectedUnit,
+                    Text = Unit.GetUnitDisplayName(selectedUnit),
                     Font = Style.Constants.MainFont,
                     TextSize = 24,
                     TextScaled = true,
@@ -545,7 +545,7 @@ UnitShopPage.render = function(self)
                         BorderSizePixel = 0,
                         LayoutOrder = 0,
 
-                        Text = playerOwnsSelectedUnit and "Purchased" or (selectedUnitGrantPrice or "?"),
+                        Text = playerOwnsSelectedUnit and "Owned" or (selectedUnitGrantPrice or "?"),
                         Font = Style.Constants.MainFont,
                         TextSize = 16,
                         TextXAlignment = Enum.TextXAlignment.Center,

@@ -6,6 +6,10 @@ local StarterGui = game:GetService("StarterGui")
 
 local LocalPlayer = Players.LocalPlayer
 
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+local ClientScripts = PlayerScripts:WaitForChild("ClientScripts")
+local EventProxy = require(ClientScripts:WaitForChild("EventProxy"))
+
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
@@ -33,28 +37,7 @@ end
 
 ---
 
-local CacheProxy = {}
-
-CacheProxy.GetGameData = function(gameId: string)
-    local gameData = cachedGameList[gameId]
-
-    return gameData and CopyTable(gameData) or nil
-end
-
-CacheProxy.GetGames = function()
-    return CopyTable(cachedGameList)
-end
-
-CacheProxy.GetMaps = function()
-    return CopyTable(cachedMapList)
-end
-
----
-
-cachedGameList = Matchmaking.GetGames()
-cachedMapList = Matchmaking.GetMaps()
-
-Matchmaking.GameOpened:Connect(function(gameId, gameData)
+Matchmaking.GameOpened = EventProxy(Matchmaking.GameOpened, function(gameId, gameData)
     cachedGameList[gameId] = gameData
 
     if ((gameData.Leader == LocalPlayer) or table.find(gameData.Players, LocalPlayer)) then
@@ -62,7 +45,7 @@ Matchmaking.GameOpened:Connect(function(gameId, gameData)
     end
 end)
 
-Matchmaking.GameClosed:Connect(function(gameId)
+Matchmaking.GameClosed = EventProxy(Matchmaking.GameClosed, function(gameId)
     if (localPlayerCurrentParty == gameId) then
         local gameData = cachedGameList[gameId]
         
@@ -76,7 +59,7 @@ Matchmaking.GameClosed:Connect(function(gameId)
     cachedGameList[gameId] = nil
 end)
 
-Matchmaking.GameStarting:Connect(function(gameId)
+Matchmaking.GameStarting = EventProxy(Matchmaking.GameStarting, function(gameId)
     if (localPlayerCurrentParty == gameId) then
         local gameData = cachedGameList[gameId]
         
@@ -92,7 +75,7 @@ Matchmaking.GameStarting:Connect(function(gameId)
     cachedGameList[gameId] = nil
 end)
 
-Matchmaking.PlayerJoinedGame:Connect(function(gameId, player)
+Matchmaking.PlayerJoinedGame = EventProxy(Matchmaking.PlayerJoinedGame, function(gameId, player)
     local gameData = cachedGameList[gameId]
     if (not gameData) then return end
 
@@ -103,7 +86,7 @@ Matchmaking.PlayerJoinedGame:Connect(function(gameId, player)
     end
 end)
 
-Matchmaking.PlayerLeftGame:Connect(function(gameId, player, kicked)
+Matchmaking.PlayerLeftGame = EventProxy(Matchmaking.PlayerLeftGame, function(gameId, player, kicked)
     local gameData = cachedGameList[gameId]
     if (not gameData) then return end
 
@@ -122,7 +105,7 @@ Matchmaking.PlayerLeftGame:Connect(function(gameId, player, kicked)
     end
 end)
 
-Matchmaking.PlayerJoinedGameQueue:Connect(function(gameId, player)
+Matchmaking.PlayerJoinedGameQueue = EventProxy(Matchmaking.PlayerJoinedGameQueue, function(gameId, player)
     local gameData = cachedGameList[gameId]
     if (not gameData) then return end
 
@@ -133,7 +116,7 @@ Matchmaking.PlayerJoinedGameQueue:Connect(function(gameId, player)
     end
 end)
 
-Matchmaking.PlayerLeftGameQueue:Connect(function(gameId, player, joined)
+Matchmaking.PlayerLeftGameQueue = EventProxy(Matchmaking.PlayerLeftGameQueue, function(gameId, player, joined)
     local gameData = cachedGameList[gameId]
     if (not gameData) then return end
 
@@ -156,6 +139,29 @@ Matchmaking.PlayerLeftGameQueue:Connect(function(gameId, player, joined)
     end
 end)
 
+---
+
+local CacheProxy = {}
+
+CacheProxy.GetGameData = function(gameId: string)
+    local gameData = cachedGameList[gameId]
+
+    return gameData and CopyTable(gameData) or nil
+end
+
+CacheProxy.GetGames = function()
+    return CopyTable(cachedGameList)
+end
+
+CacheProxy.GetMaps = function()
+    return CopyTable(cachedMapList)
+end
+
+---
+
+cachedGameList = Matchmaking.GetGames()
+cachedMapList = Matchmaking.GetMaps()
+
 Matchmaking.TeleportNotification:Connect(function()
     sendNotification("Teleporting", "You are now being teleported to your game, please wait.", "Teleport")
 end)
@@ -164,4 +170,4 @@ Matchmaking.GameInitFailureNotification:Connect(function()
     sendNotification("Game Error", "There was a problem initialising your game. The party leader can try starting the game again.", "Game")
 end)
 
-return setmetatable(CacheProxy, { __index = Matchmaking })
+return Matchmaking

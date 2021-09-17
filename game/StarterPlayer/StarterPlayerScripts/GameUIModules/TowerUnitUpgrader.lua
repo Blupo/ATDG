@@ -69,21 +69,29 @@ TowerUnitUpgradeBillboard.didMount = function(self)
 
     for i = 1, #ATTRIBUTE_PREVIEW do
         local attribute = ATTRIBUTE_PREVIEW[i]
+        local thisLevelAttributeValue = thisLevelBaseAttributes[attribute]
+        local nextLevelAttributeValue = nextLevelBaseAttributes[attribute]
 
-        attributeChanges[attribute] = {thisLevelBaseAttributes[attribute], nextLevelBaseAttributes[attribute]}
+        if (thisLevelAttributeValue ~= nextLevelAttributeValue) then
+            attributeChanges[attribute] = {thisLevelAttributeValue, nextLevelAttributeValue}
+        end
     end
 
     self.unitUpgraded = unit.Upgraded:Connect(function(newLevel)
         local newLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel)
         local newNextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel + 1)
-        local newUpgradePrice = Shop.GetUnitUpgradePrice(unitName, unitLevel)
-        local newSellingPrice = Shop.GetUnitSellingPrice(unitName, unitLevel)
+        local newUpgradePrice = Shop.GetUnitUpgradePrice(unitName, newLevel)
+        local newSellingPrice = Shop.GetUnitSellingPrice(unitName, newLevel)
         local newAttributeChanges = {}
 
         for i = 1, #ATTRIBUTE_PREVIEW do
             local attribute = ATTRIBUTE_PREVIEW[i]
+            local newLevelAttributeValue = newLevelBaseAttributes[attribute]
+            local newNextLevelAttributeValue = newNextLevelBaseAttributes[attribute]
 
-            newAttributeChanges[attribute] = {newLevelBaseAttributes[attribute], newNextLevelBaseAttributes[attribute]}
+            if (newNextLevelAttributeValue ~= newLevelAttributeValue) then
+                newAttributeChanges[attribute] = {newLevelAttributeValue, newNextLevelAttributeValue}
+            end
         end
 
         self:setState({
@@ -104,7 +112,7 @@ TowerUnitUpgradeBillboard.didMount = function(self)
     end)
 
     self:setState({
-        name = unitName,
+        name = unit.DisplayName,
         level = unitLevel,
         target = unit:GetAttribute("UnitTargeting"),
 

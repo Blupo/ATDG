@@ -481,6 +481,7 @@ local Game = {
 	Ended = EndedEvent.Event,
 	RoundStarted = RoundStartedEvent.Event,
 	RoundEnded = RoundEndedEvent.Event,
+	CentralTowerHealthChanged = CentralTowerHealthChangedEvent.Event,
 	CentralTowerDestroyed = CentralTowerDestroyedEvent.Event,
 	PhaseChanged = PhaseChangedEvent.Event,
 	GetTicketReward = getTicketReward,

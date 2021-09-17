@@ -1,5 +1,3 @@
--- todo: make this work with ServerMaster
-
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,12 +7,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UnitData = ReplicatedStorage:WaitForChild("UnitData")
 local UnitModels = ReplicatedStorage:WaitForChild("UnitModels")
 
+local LocalPlayer = Players.LocalPlayer
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+local ClientScripts = PlayerScripts:WaitForChild("ClientScripts")
+local EventProxy = require(ClientScripts:WaitForChild("EventProxy"))
+
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local Promise = require(SharedModules:WaitForChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
-
-local LocalPlayer = Players.LocalPlayer
 
 local UnitAddedEvent = Instance.new("BindableEvent")
 local UnitRemovingEvent = Instance.new("BindableEvent")
@@ -95,6 +96,13 @@ Unit.GetUnitType = function(unitName: string): string?
 	return unitDataCache[unitName].Type
 end
 
+Unit.GetUnitDisplayName = function(unitName: string): string?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local unitData = unitDataCache[unitName]
+	return unitData.DisplayName or unitName
+end
+
 Unit.GetTowerUnitSurfaceType = function(unitName: string): string?
 	if (not Unit.DoesUnitExist(unitName)) then return end
 	if (Unit.GetUnitType(unitName) ~= GameEnum.UnitType.TowerUnit) then return end
@@ -164,6 +172,12 @@ Unit.GetUnitAbilities = function(unitName: string, level: number): {string}?
 	return abilities
 end
 
+Unit.UnitPersistentUpgraded = EventProxy(Unit.UnitPersistentUpgraded, function(owner: number, unitName: string, newLevel: number)
+	if (owner ~= LocalPlayer.UserId) then return end
+
+	localPlayerUnitPersistentUpgradeLevels[unitName] = newLevel
+end)
+
 --- Class
 
 Unit.GetAttribute = function(self, attributeName: string)
@@ -186,6 +200,7 @@ local constructUnit = function(unitModel)
 	local unit = setmetatable({
 		Id = unitModel:GetAttribute("Id"),
 		Name = unitName,
+		DisplayName = unitModel:GetAttribute("DisplayName"),
 		Type = unitModel:GetAttribute("Type"),
 		Owner = unitModel:GetAttribute("Owner"),
 		Level = unitModel:GetAttribute("Level"),
@@ -267,12 +282,6 @@ UnitData.ChildAdded:Connect(function(unitDataScript)
 	if (unitDataCache[unitName]) then return end
 
 	unitDataCache[unitName] = require(unitDataScript)
-end)
-
-Unit.UnitPersistentUpgraded:Connect(function(owner: number, unitName: string, newLevel: number)
-	if (owner ~= LocalPlayer.UserId) then return end
-
-	localPlayerUnitPersistentUpgradeLevels[unitName] = newLevel
 end)
 
 do

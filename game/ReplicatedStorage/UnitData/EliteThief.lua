@@ -8,19 +8,23 @@ local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 ---
 
 return {
+	DisplayName = "Elite Thief",
 	Type = GameEnum.UnitType.FieldUnit,
+
+	ImmutableAttributes = {
+		DMG = 0,
+		CD = 0,
+		RANGE = 0,
+
+		PathType = GameEnum.PathType.Ground,
+	},
 	
 	Progression = {
 		[1] = {
 			Attributes = {
-				MaxHP = 4,
+				MaxHP = 40,
 				DEF = 0,
-				DMG = 0,
-				CD = 0,
-				RANGE = 0,
-				SPD = 2,
-
-				PathType = GameEnum.PathType.Ground,
+				SPD = 16,
 			},
 		},
 	}

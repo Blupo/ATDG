@@ -110,11 +110,9 @@ PlayMenuMainPage.init = function(self)
     self.playerListLength, self.updatePlayerListLength = Roact.createBinding(0)
 
     self.updateGameList = function()
-        task.defer(function()
-            self:setState({
-                gameList = getSortedGameList()
-            })
-        end)
+        self:setState({
+            gameList = getSortedGameList()
+        })
     end
 
     self:setState({

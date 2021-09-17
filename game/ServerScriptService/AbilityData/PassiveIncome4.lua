@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -16,6 +17,12 @@ return {
     AbilityType = GameEnum.AbilityType.RoundStart,
 
     Callback = function(thisUnit)
-        PlayerData.DepositCurrencyToPlayer(thisUnit.Owner, GameEnum.CurrencyType.Points, 250)
+        local players = Players:GetPlayers()
+
+        for i = 1, #players do
+            local player = players[i]
+
+            PlayerData.DepositCurrencyToPlayer(player.UserId, GameEnum.CurrencyType.Points, (player.UserId == thisUnit.Owner) and 1000 or 750)
+        end
     end
 }

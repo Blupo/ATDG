@@ -16,6 +16,6 @@ return {
     AbilityType = GameEnum.AbilityType.RoundStart,
 
     Callback = function(thisUnit)
-        PlayerData.DepositCurrencyToPlayer(thisUnit.Owner, GameEnum.CurrencyType.Points, 250)
+        PlayerData.DepositCurrencyToPlayer(thisUnit.Owner, GameEnum.CurrencyType.Points, 750)
     end
 }

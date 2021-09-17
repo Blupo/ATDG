@@ -7,15 +7,15 @@ local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
-local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
+local StatusEffects = require(GameModules:FindFirstChild("StatusEffects"))
 
 ---
 
 return {
     UnitType = GameEnum.UnitType.TowerUnit,
-    AbilityType = GameEnum.AbilityType.RoundStart,
+    AbilityType = GameEnum.AbilityType.OnHit,
 
-    Callback = function(thisUnit)
-        PlayerData.DepositCurrencyToPlayer(thisUnit.Owner, GameEnum.CurrencyType.Points, 250)
+    Callback = function(_, data)
+        StatusEffects.ApplyEffect(data.TargetUnit.Id, "Frozen", 5)
     end
 }

@@ -16,21 +16,36 @@ return {
 		DEF = 0,
 		SPD = 0,
 
-		UnitTargeting = GameEnum.UnitTargeting.AreaOfEffect,
 		PathType = GameEnum.PathType.Ground,
 	},
 	
 	Progression = {
 		[1] = {
 			Attributes = {
-				DMG = 2,
-				CD = 5,
+				DMG = 0.75,
+				CD = 0.5,
 				RANGE = 10,
 			},
-
-			Abilities = {
-				Freezer = true,
-			}
 		},
+		
+		[2] = {
+			Attributes = {
+				DMG = 0.85,
+				CD = 0.4,
+			},
+		},
+		
+		[3] = {
+			Attributes = {
+				DMG = 0.95
+			},
+		},
+
+		[4] = {
+			Attributes = {
+				DMG = 1.05,
+				CD = 0.3,
+			}
+		}
 	}
 }

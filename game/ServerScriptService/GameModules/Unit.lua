@@ -97,6 +97,13 @@ Unit.GetUnitType = function(unitName: string): string?
 	return unitDataCache[unitName].Type
 end
 
+Unit.GetUnitDisplayName = function(unitName: string): string?
+	if (not Unit.DoesUnitExist(unitName)) then return end
+
+	local unitData = unitDataCache[unitName]
+	return unitData.DisplayName or unitName
+end
+
 Unit.GetTowerUnitSurfaceType = function(unitName: string): string?
 	if (not Unit.DoesUnitExist(unitName)) then return end
 	if (Unit.GetUnitType(unitName) ~= GameEnum.UnitType.TowerUnit) then return end
@@ -250,6 +257,7 @@ Unit.new = function(unitName: string, owner: number?)
 	local self = setmetatable({
 		Id = HttpService:GenerateGUID(false),
 		Name = unitName,
+		DisplayName = unitData.DisplayName or unitName,
 		Type = unitType,
 		Owner = owner,
 		Level = newUnitLevel,
@@ -282,6 +290,7 @@ Unit.new = function(unitName: string, owner: number?)
 	newBaseModel.Name = self.Id
 	newBaseModel:SetAttribute("Id", self.Id)
 	newBaseModel:SetAttribute("Name", self.Name)
+	newBaseModel:SetAttribute("DisplayName", self.DisplayName)
 	newBaseModel:SetAttribute("Type", self.Type)
 	newBaseModel:SetAttribute("Owner", self.Owner)
 	newBaseModel:SetAttribute("Level", self.Level)

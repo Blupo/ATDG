@@ -3,6 +3,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
+local LocalPlayer = Players.LocalPlayer
+local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+local ClientScripts = PlayerScripts:WaitForChild("ClientScripts")
+local EventProxy = require(ClientScripts:WaitForChild("EventProxy"))
+
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
@@ -12,7 +17,6 @@ local SharedGameData = require(SharedModules:WaitForChild("SharedGameData"))
 local AutomaticObjectGrants = SharedGameData.AutomaticObjectGrants
 local EphemeralCurrencies = SharedGameData.EphemeralCurrencies
 
-local LocalPlayer = Players.LocalPlayer
 local PlayerData = SystemCoordinator.waitForSystem("PlayerData")
 
 ---
@@ -20,7 +24,7 @@ local PlayerData = SystemCoordinator.waitForSystem("PlayerData")
 local localPlayerData = {}
 local localPlayerEphemeralCurrenciesBalances = {}
 
-local localPlayerProxy = function(proxyCallback, mainCallback)
+local localPlayerProxy = function(mainCallback, proxyCallback)
     return function(userId, ...)
         if (userId == LocalPlayer.UserId) then
             return proxyCallback(userId, ...)
@@ -32,20 +36,50 @@ end
 
 ---
 
+PlayerData.CurrencyBalanceChanged = EventProxy(PlayerData.CurrencyBalanceChanged, function(userId: number, currencyType: string, newBalance: number, _)
+    if (userId ~= LocalPlayer.UserId) then return end
+
+    if (EphemeralCurrencies[currencyType]) then
+        localPlayerEphemeralCurrenciesBalances[currencyType] = newBalance
+    else
+        localPlayerData.Currencies[currencyType] = newBalance
+    end
+end)
+
+PlayerData.ObjectGranted = EventProxy(PlayerData.ObjectGranted, function(userId: number, objectType: string, objectName: string)
+    if (userId ~= LocalPlayer.UserId) then return end
+
+    localPlayerData.ObjectGrants[objectType][objectName] = true
+end)
+
+PlayerData.InventoryChanged = EventProxy(PlayerData.InventoryChanged, function(userId: number, itemType: string, itemName: string, newAmount: number, _)
+    if (userId ~= LocalPlayer.UserId) then return end
+
+    localPlayerData.Inventory[itemType][itemName] = newAmount
+end)
+
+PlayerData.HotbarChanged = EventProxy(PlayerData.HotbarChanged, function(userId: number, objectType: string, newHotbar: array<string>)
+    if (userId ~= LocalPlayer.UserId) then return end
+
+    localPlayerData.Hotbars[objectType] = newHotbar
+end)
+
+---
+
 local CacheProxy = {}
 
-CacheProxy.GetPlayerInventory = localPlayerProxy(function()
+CacheProxy.GetPlayerInventory = localPlayerProxy(PlayerData.GetPlayerInventory, function()
     return CopyTable(localPlayerData.Inventory)
-end, PlayerData.GetPlayerInventory)
+end)
 
-CacheProxy.GetPlayerInventoryItemCount = localPlayerProxy(function(_, itemType: string, itemName: string)
+CacheProxy.GetPlayerInventoryItemCount = localPlayerProxy(PlayerData.GetPlayerInventoryItemCount, function(_, itemType: string, itemName: string)
     local inventory = localPlayerData.Inventory[itemType]
     if (not inventory) then return end
 
     return inventory[itemName] or 0
-end, PlayerData.GetPlayerInventoryItemCount)
+end)
 
-CacheProxy.GetPlayerObjectGrants = localPlayerProxy(function()
+CacheProxy.GetPlayerObjectGrants = localPlayerProxy(PlayerData.GetPlayerObjectGrants, function()
     local grants = CopyTable(localPlayerData.ObjectGrants)
 
     for objectType, permaGrants in pairs(AutomaticObjectGrants) do
@@ -55,27 +89,27 @@ CacheProxy.GetPlayerObjectGrants = localPlayerProxy(function()
     end
 
     return grants
-end, PlayerData.GetPlayerObjectGrants)
+end)
 
-CacheProxy.PlayerHasObjectGrant = localPlayerProxy(function(_, objectType: string, objectName: string)
+CacheProxy.PlayerHasObjectGrant = localPlayerProxy(PlayerData.PlayerHasObjectGrant, function(_, objectType: string, objectName: string)
     local permaGrantStatus = AutomaticObjectGrants[objectType][objectName]
     if (permaGrantStatus) then return permaGrantStatus end
 
     return localPlayerData.ObjectGrants[objectType][objectName] and true or false
-end, PlayerData.PlayerHasObjectGrant)
+end)
 
-CacheProxy.GetPlayerHotbars = localPlayerProxy(function()
+CacheProxy.GetPlayerHotbars = localPlayerProxy(PlayerData.GetPlayerHotbars, function()
     return CopyTable(localPlayerData.Hotbars)
-end, PlayerData.GetPlayerHotbars)
+end)
 
-CacheProxy.GetPlayerHotbar = localPlayerProxy(function(_, objectType: string)
+CacheProxy.GetPlayerHotbar = localPlayerProxy(PlayerData.GetPlayerHotbar, function(_, objectType: string)
     local hotbar = localPlayerData.Hotbars[objectType]
     if (not hotbar) then return end
 
     return CopyTable(hotbar)
-end, PlayerData.GetPlayerHotbar)
+end)
 
-CacheProxy.GetPlayerAllCurrenciesBalances = localPlayerProxy(function()
+CacheProxy.GetPlayerAllCurrenciesBalances = localPlayerProxy(PlayerData.GetPlayerAllCurrenciesBalances, function()
     local currenciesBalances = {}
 
     for currency in pairs(GameEnum.CurrencyType) do -- badness
@@ -87,15 +121,15 @@ CacheProxy.GetPlayerAllCurrenciesBalances = localPlayerProxy(function()
     end
 
     return currenciesBalances
-end, PlayerData.GetPlayerAllCurrenciesBalances)
+end)
 
-CacheProxy.GetPlayerCurrencyBalance = localPlayerProxy(function(_, currencyType: string)
+CacheProxy.GetPlayerCurrencyBalance = localPlayerProxy(PlayerData.GetPlayerCurrencyBalance, function(_, currencyType: string)
     if (EphemeralCurrencies[currencyType]) then
         return localPlayerEphemeralCurrenciesBalances[currencyType] or 0
     else
         return localPlayerData.Currencies[currencyType] or 0
     end
-end, PlayerData.GetPlayerCurrencyBalance)
+end)
 
 ---
 
@@ -109,33 +143,5 @@ do
         end
     end
 end
-
-PlayerData.CurrencyBalanceChanged:Connect(function(userId: number, currencyType: string, newBalance: number, _)
-    if (userId ~= LocalPlayer.UserId) then return end
-
-    if (EphemeralCurrencies[currencyType]) then
-        localPlayerEphemeralCurrenciesBalances[currencyType] = newBalance
-    else
-        localPlayerData.Currencies[currencyType] = newBalance
-    end
-end)
-
-PlayerData.ObjectGranted:Connect(function(userId: number, objectType: string, objectName: string)
-    if (userId ~= LocalPlayer.UserId) then return end
-
-    localPlayerData.ObjectGrants[objectType][objectName] = true
-end)
-
-PlayerData.InventoryChanged:Connect(function(userId: number, itemType: string, itemName: string, newAmount: number, _)
-    if (userId ~= LocalPlayer.UserId) then return end
-
-    localPlayerData.Inventory[itemType][itemName] = newAmount
-end)
-
-PlayerData.HotbarChanged:Connect(function(userId: number, objectType: string, newHotbar: array<string>)
-    if (userId ~= LocalPlayer.UserId) then return end
-
-    localPlayerData.Hotbars[objectType] = newHotbar
-end)
 
 return setmetatable(CacheProxy, { __index = PlayerData })

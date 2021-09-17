@@ -2,10 +2,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local PlayerScripts = script.Parent.Parent
-local GameModules = PlayerScripts:WaitForChild("GameModules")
-local Unit = require(GameModules:WaitForChild("Unit"))
-
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local ShopPrices = require(SharedModules:WaitForChild("ShopPrices"))

@@ -11,16 +11,11 @@ local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
 return {
     [GameEnum.ObjectType.Unit] = {
-        TestTowerUnit = 100,
-        TestHeavyTowerUnit = 300,
-        TestAoETowerUnit = 220,
-        TestAirTargetingTowerUnit = 370,
-        TestPassiveIncomeTowerUnit = 200,
-        TestFreezerTowerUnit = 200,
-
-        TestFieldUnit = 10,
-        TestBiggerFieldUnit = 50,
-        TestAirFieldUnit = 30,
+        ArmedGuard = 700,
+        Bob = 300,
+        Bank = 450,
+        FreezerTower = 600,
+        GiantBob = 900,
 
         DEBUG_Obliterator = 0,
     },

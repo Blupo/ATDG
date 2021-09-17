@@ -8,6 +8,7 @@ local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 ---
 
 return {
+	DisplayName = "Unit Data Example",
 	Type = GameEnum.UnitType.TowerUnit,
 	SurfaceType = GameEnum.SurfaceType.Terrain,
 	
@@ -17,28 +18,51 @@ return {
 		SPD = 0,
 
 		UnitTargeting = GameEnum.UnitTargeting.AreaOfEffect,
-		PathType = GameEnum.PathType.Ground,
+		PathType = GameEnum.PathType.GroundAndAir,
 	},
 
 	Progression = {
 		[1] = {
 			Attributes = {
-				DMG = 1,
-				CD = 1.5,
-				RANGE = 15,
+				DMG = 0,
+				CD = 3,
+				RANGE = 30,
 			},
+
+			Abilities = {
+				Freezer = true,
+			}
 		},
 		
 		[2] = {
 			Attributes = {
-				CD = 1.25,
+				DMG = 5,
+				CD = 2.5,
 			},
 		},
 		
 		[3] = {
 			Attributes = {
+				DMG = 10,
+				CD = 2,
+			},
+
+			Abilities = {
+				Freezer = false,
+				Freezer2 = true,
+			}
+		},
+
+		[4] = {
+			Attributes = {
+				DMG = 20,
 				CD = 1,
 			},
+
+			Abilities = {
+				Freezer2 = false,
+				Freezer3 = true,
+			}
 		}
 	}
 }

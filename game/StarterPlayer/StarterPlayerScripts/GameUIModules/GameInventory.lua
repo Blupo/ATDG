@@ -336,7 +336,7 @@ UnitInventory.render = function(self)
                         BackgroundTransparency = 1,
                         BorderSizePixel = 0,
 
-                        Text = selectedUnit .. " (" .. selectedUnitLevel .. ")",
+                        Text = Unit.GetUnitDisplayName(selectedUnit) .. " (" .. selectedUnitLevel .. ")",
                         Font = Style.Constants.MainFont,
                         TextSize = 16,
                         TextStrokeTransparency = 1,
@@ -571,7 +571,32 @@ GameInventory.willUnmount = function(self)
 end
 
 GameInventory.render = function(self)
-    if (self.state.placementFlowOpen) then return nil end
+    if (self.state.placementFlowOpen) then
+        return Roact.createElement("TextButton", {
+            AnchorPoint = Vector2.new(1, 1),
+            Size = UDim2.new(0, 250, 0, 24),
+            Position = UDim2.new(1, -Style.Constants.MajorElementPadding, 1, -Style.Constants.MajorElementPadding),
+            BackgroundTransparency = 0,
+            BorderSizePixel = 0,
+
+            Text = "Unit Placement (Q to Cancel)",
+            Font = Style.Constants.MainFont,
+            TextSize = 16,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Center,
+
+            BackgroundColor3 = Color3.new(1, 1, 1),
+            TextColor3 = Color3.new(0, 0, 0),
+
+            [Roact.Event.Activated] = function()
+                PlacementFlow.Stop()
+            end
+        }, {
+            UICorner = Roact.createElement("UICorner", {
+                CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius),
+            }),
+        })
+    end
 
     local isOpen = self.state.open
     local category = self.state.category

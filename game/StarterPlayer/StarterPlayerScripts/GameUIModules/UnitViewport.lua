@@ -112,19 +112,16 @@ UnitViewport.didMount = function(self)
     end)
 
     self.initObjectModel()
+    
+    local initUnitName = self.props.unitName
+    local initUnitType = Unit.GetUnitType(initUnitName)
+    local playerHotbar = PlayerData.GetPlayerHotbar(LocalPlayer.UserId, initUnitType)
 
-    -- need to defer to make sure that the cache gets updated
-    task.defer(function()
-        local initUnitName = self.props.unitName
-        local initUnitType = Unit.GetUnitType(initUnitName)
-        local playerHotbar = PlayerData.GetPlayerHotbar(LocalPlayer.UserId, initUnitType)
-
-        self:setState({
-            unitLevel = Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, self.props.unitName),
-            unitUnlocked = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, self.props.unitName),
-            hotbarKey = playerHotbar and table.find(playerHotbar, initUnitName) or nil,
-        })
-    end)
+    self:setState({
+        unitLevel = Unit.GetUnitPersistentUpgradeLevel(LocalPlayer.UserId, self.props.unitName),
+        unitUnlocked = PlayerData.PlayerHasObjectGrant(LocalPlayer.UserId, GameEnum.ObjectType.Unit, self.props.unitName),
+        hotbarKey = playerHotbar and table.find(playerHotbar, initUnitName) or nil,
+    })
 end
 
 UnitViewport.didUpdate = function(self, prevProps)
@@ -165,7 +162,7 @@ UnitViewport.render = function(self)
     if (titleDisplayType == "PlacementPrice") then
         titleText = Shop.GetObjectPlacementPrice(GameEnum.ObjectType.Unit, unitName) or "?"
     elseif (titleDisplayType == "UnitName") then
-        titleText = unitName
+        titleText = Unit.GetUnitDisplayName(unitName)
     else
         titleText = ""
     end
