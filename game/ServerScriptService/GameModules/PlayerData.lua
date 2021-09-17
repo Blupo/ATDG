@@ -130,10 +130,11 @@ local playerAdded = function(player: Player)
             for i = #towerUnitHotbar, 1, -1 do
                 local unitName = towerUnitHotbar[i]
 
+                local unitExists = Unit.DoesUnitExist(unitName)
                 local permaGrantStatus = AutomaticObjectGrants[GameEnum.ObjectType.Unit][unitName]
                 local grantStatus = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit][unitName]
 
-                if (not (permaGrantStatus or grantStatus)) then
+                if (not (unitExists and (permaGrantStatus or grantStatus))) then
                     table.remove(towerUnitHotbar, i)
                 end
             end
@@ -141,10 +142,11 @@ local playerAdded = function(player: Player)
             for i = #fieldUnitHotbar, 1, -1 do
                 local unitName = fieldUnitHotbar[i]
 
+                local unitExists = Unit.DoesUnitExist(unitName)
                 local permaGrantStatus = AutomaticObjectGrants[GameEnum.ObjectType.Unit][unitName]
                 local grantStatus = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit][unitName]
 
-                if (not (permaGrantStatus or grantStatus)) then
+                if (not (unitExists and (permaGrantStatus or grantStatus))) then
                     table.remove(fieldUnitHotbar, i)
                 end
             end

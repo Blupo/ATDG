@@ -170,4 +170,4 @@ Matchmaking.GameInitFailureNotification:Connect(function()
     sendNotification("Game Error", "There was a problem initialising your game. The party leader can try starting the game again.", "Game")
 end)
 
-return Matchmaking
+return setmetatable(CacheProxy, { __index = Matchmaking })
