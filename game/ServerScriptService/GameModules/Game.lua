@@ -227,7 +227,6 @@ end
 
 local getTicketReward = function(): number?
 	if (not currentGameData) then return end
-	if (currentGameData.GamePhase ~= GameEnum.GamePhase.Ended) then return end
 
 	local ticketRewards = challengeData.TicketRewards
 	local currentRound = currentGameData.CurrentRound
@@ -236,30 +235,40 @@ local getTicketReward = function(): number?
 	if (gameCompleted) then
 		return ticketRewards.Completion
 	else
-		for i = #challengeData.Rounds, currentRound, -1 do
-			local roundReward = ticketRewards[i]
-			if (roundReward) then return roundReward end
+		local reward = ticketRewards[currentRound]
+
+		while (not reward) do
+			if (currentRound <= 1) then
+				reward = 0
+				break
+			end
+
+			currentRound = currentRound - 1
+			reward = ticketRewards[currentRound]
 		end
+
+		return reward
 	end
 end
 
 local getPointsAllowance = function()
 	if (not currentGameData) then return end
 	
+	local pointsAllowance = challengeData.PointsAllowance
 	local currentRound = currentGameData.CurrentRound
-	local pointsAllowance = challengeData.PointsAllowance[currentRound]
+	local points = pointsAllowance[currentRound]
 	
-	while (not pointsAllowance) do
+	while (not points) do
 		if (currentRound <= 1) then
-			pointsAllowance = 0
+			points = 0
 			break
 		end
 		
 		currentRound = currentRound - 1
-		pointsAllowance = challengeData.PointsAllowance[currentRound]
+		points = pointsAllowance[currentRound]
 	end
 	
-	return pointsAllowance
+	return points
 end
 
 local advanceGamePhase

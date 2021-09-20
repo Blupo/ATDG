@@ -78,7 +78,7 @@ return {
 			If a round does not have an award specified,
 			it will be the same as the last specified award
 			
-			(e.g., rounds 2/3/4 will give 1 ticket, and 5+ will give 3)
+			(e.g., round 1 will give 0, rounds 2/3/4 will give 1, and 5+ will give 3)
 		]]
 	},
 	

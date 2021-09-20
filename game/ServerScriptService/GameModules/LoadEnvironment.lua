@@ -29,7 +29,7 @@ return function(environment)
 
 	if (terrain) then
 		local terrainProperties = terrain:GetAttributes()
-		local terrainCells = terrain:GetChildren()
+		local terrainChildren = terrain:GetChildren()
 
 		for property, value in pairs(terrainProperties) do
 			local material = string.match(property, "^MaterialColors%.(%a+)")
@@ -45,31 +45,37 @@ return function(environment)
 			end
 		end
 
-		for i = 1, #terrainCells do
-			local cell = terrainCells[i]
+		for i = 1, #terrainChildren do
+			local child = terrainChildren[i]
 
-			local cellCFrame = cell.CFrame
-			local cellSize = cell.Size
-			local cellMaterial = cell.Material
+			if (child:IsA("BasePart")) then
+				local cellCFrame = child.CFrame
+				local cellSize = child.Size
+				local cellMaterial = child.Material
 
-			if (cell:IsA("Part")) then
-				local shape = cell.Shape
+				if (child:IsA("Part")) then
+					local shape = child.Shape
 
-				if (shape == Enum.PartType.Block) then
-					Terrain:FillBlock(cellCFrame, cellSize, cellMaterial)
-				elseif (shape == Enum.PartType.Ball) then
-					-- I'm pretty sure the engine makes sure the size is uniform for Ball, so math.min is redundant
+					if (shape == Enum.PartType.Block) then
+						Terrain:FillBlock(cellCFrame, cellSize, cellMaterial)
+					elseif (shape == Enum.PartType.Ball) then
+						-- I'm pretty sure the engine makes sure the size is uniform for Ball, so math.min is redundant
 
-					Terrain:FillBall(cellCFrame.Position, math.min(cellSize.X, cellSize.Y, cellSize.Z) / 2, cellMaterial)
-				elseif (shape == Enum.PartType.Cylinder) then
-					Terrain:FillCylinder(cellCFrame * CFrame.Angles(0, 0, math.pi / 2), cellSize.X, math.min(cellSize.Y, cellSize.Z) / 2, cellMaterial)
+						Terrain:FillBall(cellCFrame.Position, math.min(cellSize.X, cellSize.Y, cellSize.Z) / 2, cellMaterial)
+					elseif (shape == Enum.PartType.Cylinder) then
+						Terrain:FillCylinder(cellCFrame * CFrame.Angles(0, 0, math.pi / 2), cellSize.X, math.min(cellSize.Y, cellSize.Z) / 2, cellMaterial)
+					end
+				elseif (child:IsA("WedgePart")) then
+					-- todo: verify that this works as intended
+
+					Terrain:FillWedge(cellCFrame, cellSize, cellMaterial)
+				else
+					warn("Unsupported terrain cell type " .. child.ClassName)
 				end
-			elseif (cell:IsA("WedgePart")) then
-				-- todo: verify that this works as intended
-
-				Terrain:FillWedge(cellCFrame, cellSize, cellMaterial)
+			elseif (child:IsA("Clouds")) then
+				child.Parent = Terrain
 			else
-				warn("Unsupported terrain cell type " .. cell.ClassName)
+				warn("Unsupported object type " .. child.ClassName)
 			end
 		end
 	end
