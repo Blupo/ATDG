@@ -231,7 +231,6 @@ Unit.new = function(unitName: string, owner: number?)
 
 	local unitData = unitDataCache[unitName]
 	local unitType = unitData.Type
-	local unitModel = UnitModels:FindFirstChild(unitName)
 	local newUnitLevel = 1
 	
 	if (unitPersistentUpgradeLevels[owner]) then
@@ -248,7 +247,18 @@ Unit.new = function(unitName: string, owner: number?)
 
 	attributes.HP = attributes.MaxHP
 	
-	local newBaseModel = unitModel:Clone()
+	local unitModel = UnitModels:FindFirstChild(unitName)
+	local _, unitModelBounds = unitModel:GetBoundingBox()
+
+	local newBaseModel = Instance.new("Model")
+	local unitModelBoundingPart = Instance.new("Part")
+	unitModelBoundingPart.Name = "_BoundingPart"
+	unitModelBoundingPart.Transparency = 1
+	unitModelBoundingPart.Size = unitModelBounds
+	unitModelBoundingPart.CanCollide = false
+	unitModelBoundingPart.CanTouch = false
+	unitModelBoundingPart.Parent = newBaseModel
+
 	local attributeChangedEvent = Instance.new("BindableEvent")
 	local upgradedEvent = Instance.new("BindableEvent")
 	local damageTakenEvent = Instance.new("BindableEvent")

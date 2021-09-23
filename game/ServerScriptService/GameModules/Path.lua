@@ -79,24 +79,22 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
 	if (not waypoints) then return end
 	
 	local unitModel = unit.Model
-	local primaryPart = unitModel.PrimaryPart
-	local primaryPartAttachment = Instance.new("Attachment")
+	local boundingPart = unitModel:FindFirstChild("_BoundingPart")
+	local heightOffset = boundingPart.Size.Y / 2
+
+	local boundingPartAttachment = Instance.new("Attachment")
 	local waypointAttachment = Instance.new("Attachment")
-	local primaryPartAlignPosition = Instance.new("AlignPosition")
-	local primaryPartAlignOrientation = Instance.new("AlignOrientation")
-	
-	local boundingBoxCFrame, boundingBoxSize = unitModel:GetBoundingBox()
-	local primaryPartCenterOffset = primaryPart.Position - boundingBoxCFrame.Position
-	local primaryPartHeightOffset = (boundingBoxSize.Y / 2) + primaryPartCenterOffset.Y
-	
+	local boundingPartAlignPosition = Instance.new("AlignPosition")
+	local boundingPartAlignOrientation = Instance.new("AlignOrientation")
+
 	local firstWaypointNum = (direction == GameEnum.PursuitDirection.Forward) and 0 or (#waypoints:GetChildren() - 1)
 	local secondWaypointNum = firstWaypointNum + ((direction == GameEnum.PursuitDirection.Forward) and 1 or -1)
 	
 	local unitSPDChanged = unit.AttributeChanged:Connect(function(attributeName: string, newValue: any)
 		if (attributeName ~= "SPD") then return end
 		
-		primaryPartAlignPosition.MaxVelocity = newValue
-		primaryPartAlignOrientation.MaxAngularVelocity = newValue
+		boundingPartAlignPosition.MaxVelocity = newValue
+		boundingPartAlignOrientation.MaxAngularVelocity = newValue
 	end)
 	
 	local setWaypointAttachmentWorldCFrame = function(thisWaypoint, nextWaypoint)
@@ -110,37 +108,38 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
 			waypointAttachment.WorldCFrame = CFrame.lookAt(
 				thisWaypointPart.Position,
 				Vector3.new(nextWaypointPart.Position.X, thisWaypointPart.Position.Y, nextWaypointPart.Position.Z)
-			) + nextWaypointPosOffset + Vector3.new(0, primaryPartHeightOffset, 0)
+			) + nextWaypointPosOffset + Vector3.new(0, heightOffset, 0)
 		else
-			waypointAttachment.Position = Vector3.new(0, primaryPartHeightOffset, 0)
+			waypointAttachment.Position = Vector3.new(0, heightOffset, 0)
 		end
 	end
 	
 	waypointAttachment.Name = unit.Id .. "_PursuitAttachment"
-	waypointAttachment.Position = Vector3.new(0, primaryPartHeightOffset, 0)
+	waypointAttachment.Position = Vector3.new(0, heightOffset, 0)
 	waypointAttachment.Parent = waypoints:FindFirstChild(tostring(secondWaypointNum))
 
-	primaryPartAttachment.Name = "PursuitAttachment"
-	primaryPartAttachment.Parent = primaryPart
+	boundingPartAttachment.Name = "PursuitAttachment"
+	boundingPartAttachment.Parent = boundingPart
 
-	primaryPartAlignPosition.RigidityEnabled = false
-	primaryPartAlignPosition.MaxForce = 10000
-	primaryPartAlignPosition.Responsiveness = 200
-	primaryPartAlignPosition.MaxVelocity = unit:GetAttribute("SPD")
-	primaryPartAlignPosition.Attachment0 = primaryPartAttachment
-	primaryPartAlignPosition.Attachment1 = waypointAttachment
-	primaryPartAlignPosition.Parent = primaryPart
+	boundingPartAlignPosition.RigidityEnabled = false
+	boundingPartAlignPosition.MaxForce = 10000
+	boundingPartAlignPosition.Responsiveness = 200
+	boundingPartAlignPosition.MaxVelocity = unit:GetAttribute("SPD")
+	boundingPartAlignPosition.Attachment0 = boundingPartAttachment
+	boundingPartAlignPosition.Attachment1 = waypointAttachment
+	boundingPartAlignPosition.Parent = boundingPart
 	
-	primaryPartAlignOrientation.RigidityEnabled = false
-	primaryPartAlignOrientation.MaxTorque = 10000
-	primaryPartAlignOrientation.Responsiveness = 200
-	primaryPartAlignOrientation.MaxAngularVelocity = unit:GetAttribute("SPD")
-	primaryPartAlignOrientation.Attachment0 = primaryPartAttachment
-	primaryPartAlignOrientation.Attachment1 = waypointAttachment
-	primaryPartAlignOrientation.Parent = primaryPart
+	boundingPartAlignOrientation.RigidityEnabled = false
+	boundingPartAlignOrientation.MaxTorque = 10000
+	boundingPartAlignOrientation.Responsiveness = 200
+	boundingPartAlignOrientation.MaxAngularVelocity = unit:GetAttribute("SPD")
+	boundingPartAlignOrientation.Attachment0 = boundingPartAttachment
+	boundingPartAlignOrientation.Attachment1 = waypointAttachment
+	boundingPartAlignOrientation.Parent = boundingPart
 	
 	setWaypointAttachmentWorldCFrame(firstWaypointNum, secondWaypointNum)
-	primaryPart.CFrame = CFrame.new(waypoints:FindFirstChild(tostring(firstWaypointNum)).Position) + Vector3.new(0, primaryPartHeightOffset, 0)
+	boundingPart:SetNetworkOwner(nil)
+	boundingPart.CFrame = CFrame.new(waypoints:FindFirstChild(tostring(firstWaypointNum)).Position) + Vector3.new(0, heightOffset, 0)
 	
 	activePursuits[unit.Id] = {
 		Path = pathNumber,
@@ -157,9 +156,9 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
 			local pursuitInfo = activePursuits[unit.Id]
 			
 			unitSPDChanged:Disconnect()
-			primaryPartAlignPosition:Destroy()
-			primaryPartAlignOrientation:Destroy()
-			primaryPartAttachment:Destroy()
+			boundingPartAlignPosition:Destroy()
+			boundingPartAlignOrientation:Destroy()
+			boundingPartAttachment:Destroy()
 			waypointAttachment:Destroy()
 
 			activePursuits[unit.Id] = nil
@@ -174,8 +173,8 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
 			else
 				local originalDirection = pursuitInfo.Direction
 				
-				primaryPartAlignPosition.Enabled = true
-				primaryPartAlignOrientation.Enabled = true
+				boundingPartAlignPosition.Enabled = true
+				boundingPartAlignOrientation.Enabled = true
 				
 				Promise.new(function(resolve)
 					while (
@@ -183,7 +182,7 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
 						(not pursuitInfo.Paused) and -- pursuit is paused
 						(originalDirection == pursuitInfo.Direction) -- direction changes
 					) do
-						if (primaryPartAttachment.WorldPosition:FuzzyEq(waypointAttachment.WorldPosition, 10E-4)) then
+						if (boundingPartAttachment.WorldPosition:FuzzyEq(waypointAttachment.WorldPosition, 10E-4)) then
 							resolve(true)
 							return
 						end
@@ -218,8 +217,8 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
 							setWaypointAttachmentWorldCFrame(thisWaypoint, nextWaypoint)
 						end
 					elseif (pursuitInfo.Paused) then
-						primaryPartAlignPosition.Enabled = false
-						primaryPartAlignOrientation.Enabled = false
+						boundingPartAlignPosition.Enabled = false
+						boundingPartAlignOrientation.Enabled = false
 					end
 				end):await()
 			end
@@ -276,19 +275,18 @@ coroutine.resume(coroutine.create(function()
 				
 				local unitModel = unit.Model
 				local boundingBoxCFrame, boundingBoxSize = unitModel:GetBoundingBox()
-				
+				local currentPosition = boundingBoxCFrame.Position - Vector3.new(0, boundingBoxSize.Y / 2, 0)
+
 				local waypoints = Paths:FindFirstChild(pathType):FindFirstChild(tostring(pursuitInfo.Path))
 				local pathDistance = getPathDistance(pursuitInfo.Path, pathType)
 				
 				local nextWaypoint = pursuitInfo.NextWaypoint
 				local currentWaypoint = nextWaypoint + ((pursuitInfo.Direction == GameEnum.PursuitDirection.Forward) and -1 or 1)
+				local currentWaypointPosition = waypoints:FindFirstChild(tostring(currentWaypoint)).Position
 				local distanceUpToLastWaypoint = getPathDistance(pursuitInfo.Path, pathType, pursuitInfo.Direction,
-					nextWaypoint + ((pursuitInfo.Direction == GameEnum.PursuitDirection.Forward) and -2 or 2))
+					nextWaypoint + ((pursuitInfo.Direction == GameEnum.PursuitDirection.Forward) and -2 or 2))				
 				
-				local waypointPosition = waypoints:FindFirstChild(tostring(currentWaypoint)).Position
-				local currentPosition = boundingBoxCFrame.Position - Vector3.new(0, boundingBoxSize.Y / 2, 0)
-				
-				pursuitInfo.Progress = (distanceUpToLastWaypoint + (currentPosition - waypointPosition).Magnitude) / pathDistance
+				pursuitInfo.Progress = (distanceUpToLastWaypoint + (currentPosition - currentWaypointPosition).Magnitude) / pathDistance
 				pursuitInfo.AbsoluteProgress = (pursuitInfo.Direction == GameEnum.PursuitDirection.Forward) and pursuitInfo.Progress or (1 - pursuitInfo.Progress)
 			end
 		end

@@ -342,9 +342,6 @@ advanceGamePhase = function()
 							local newUnit = Unit.new(unitName)
 							table.insert(currentRoundUnits, newUnit.Id)
 							
-							newUnit.Model.Parent = Workspace
-							newUnit.Model.PrimaryPart:SetNetworkOwner(nil)
-							
 							if (difficulty == GameEnum.Difficulty.Easy) then
 								newUnit:ApplyAttributeModifier("Difficulty", "HP", GameEnum.AttributeModifierType.Multiplicative, function(stat)
 									return stat - (stat * (1/2))
@@ -398,6 +395,7 @@ advanceGamePhase = function()
 								Abilities.GiveAbility(newUnit.Id, abilityName)
 							end
 							
+							newUnit.Model.Parent = Workspace
 							Path.PursuePath(newUnit, pathNum)
 						end
 					end):finally(function()

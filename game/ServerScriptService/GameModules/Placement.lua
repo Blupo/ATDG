@@ -116,6 +116,7 @@ Placement.GetPlacementLimits = function()
 end
 
 Placement.PlaceObject = function(owner: number, objType: string, objName: string, position: Vector3, rotation: number)
+	--[[
 	local placementResult = Placement.CanPlace(owner, objType, objName, position, rotation)
 	
 	if (not placementResult.Success) then
@@ -141,6 +142,7 @@ Placement.PlaceObject = function(owner: number, objType: string, objName: string
 	)
 	
 	objModel.Parent = Workspace
+	--]]
 end
 
 ---
