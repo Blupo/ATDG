@@ -32,6 +32,13 @@ local Style = {
 
         InventoryIcon = "rbxassetid://6967724371",
         --
+
+        UpgradeUnitIcon = "rbxassetid://7539734507",
+        SellUnitIcon = "rbxassetid://7198417722",
+        PlaceUnitIcon = "rbxassetid://7539733428",
+
+        TicketsCurrencyIcon = "rbxassetid://327284812",
+        PointsCurrencyIcon = "rbxassetid://7539615442",
     },
 
     Colors = {

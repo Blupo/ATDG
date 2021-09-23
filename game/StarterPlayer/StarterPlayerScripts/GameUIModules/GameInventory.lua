@@ -285,7 +285,7 @@ UnitInventory.render = function(self)
                         LayoutOrder = 1,
 
                         Text = Shop.GetObjectPlacementPrice(GameEnum.ObjectType.Unit, selectedUnit) or "?",
-                        Image = "rbxassetid://6837004068",
+                        Image = Style.Images.PlaceUnitIcon,
 
                         onActivated = function()
 
@@ -312,7 +312,7 @@ UnitInventory.render = function(self)
                         LayoutOrder = 2,
 
                         Text = Shop.GetUnitPersistentUpgradePrice(selectedUnit, selectedUnitLevel) or "MAX",
-                        Image = "rbxassetid://6837004663",
+                        Image = Style.Images.UpgradeUnitIcon,
 
                         onActivated = function()
                             Shop.PurchaseUnitPersistentUpgrade(LocalPlayer.UserId, selectedUnit)

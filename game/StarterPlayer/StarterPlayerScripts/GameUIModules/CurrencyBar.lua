@@ -42,9 +42,9 @@ CurrencyItem.render = function(self)
             Position = UDim2.new(0, 2, 0.5, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            Image = self.props.Image or "rbxasset://textures/ui/GuiImagePlaceholder.png",
+            Image = self.props.Image or "",
 
-            ImageColor3 = self.props.ImageColor3
+            ImageColor3 = self.props.ImageColor3 or Color3.new(0, 0, 0),
         }),
 
         Label = Roact.createElement("TextLabel", {
@@ -119,8 +119,6 @@ CurrencyBar.render = function(self)
 
             Text = self.state.currencies[GameEnum.CurrencyType.Tickets],
             Image = "rbxassetid://327284812",
-
-            ImageColor3 = Color3.new(0, 0, 0)
         }),
 
         Points = (serverType == GameEnum.ServerType.Game) and
@@ -130,7 +128,8 @@ CurrencyBar.render = function(self)
                 BorderSizePixel = 0,
                 LayoutOrder = 1,
 
-                Text = self.state.currencies[GameEnum.CurrencyType.Points]
+                Text = self.state.currencies[GameEnum.CurrencyType.Points],
+                Image = "rbxassetid://7539615442",
             })
         or nil
     })

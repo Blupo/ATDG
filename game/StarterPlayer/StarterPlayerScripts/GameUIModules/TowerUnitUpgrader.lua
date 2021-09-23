@@ -332,7 +332,7 @@ TowerUnitUpgradeBillboard.render = function(self)
             UpgradeButton = Roact.createElement("TextButton", {
                 AnchorPoint = Vector2.new(1, 1),
                 Size = UDim2.new(0.5, -4, 0, 32),
-                Position = UDim2.new(1, 0, 1, 0),
+                Position = UDim2.new(1, 0, 1, -40),
                 BackgroundTransparency = 0,
                 BorderSizePixel = 0,
 
@@ -359,7 +359,7 @@ TowerUnitUpgradeBillboard.render = function(self)
                     BorderSizePixel = 0,
                     SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-                    Image = "rbxassetid://6837004663",
+                    Image = Style.Images.UpgradeUnitIcon,
                     ImageColor3 = Color3.new(0, 0, 0),
                 }),
 
@@ -381,7 +381,7 @@ TowerUnitUpgradeBillboard.render = function(self)
             SellButton = Roact.createElement("TextButton", {
                 AnchorPoint = Vector2.new(1, 1),
                 Size = UDim2.new(0.5, -4, 0, 32),
-                Position = UDim2.new(1, 0, 1, -40),
+                Position = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 0,
                 BorderSizePixel = 0,
 
@@ -407,7 +407,7 @@ TowerUnitUpgradeBillboard.render = function(self)
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
 
-                    Image = "rbxassetid://7198417722",
+                    Image = Style.Images.SellUnitIcon,
                     ImageColor3 = Color3.new(0, 0, 0),
                 }),
 

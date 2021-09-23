@@ -281,7 +281,7 @@ UnitShopPage.render = function(self)
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
 
-                Image = (selectedUnitLevel == 1) and "rbxassetid://3482240803" or "rbxassetid://6837004663",
+                Image = Style.Images[(selectedUnitLevel == 1) and "PlaceUnitIcon" or "UpgradeUnitIcon"],
                 ImageColor3 = Color3.new(0, 0, 0)
             }),
 
@@ -315,7 +315,7 @@ UnitShopPage.render = function(self)
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
 
-                Image = "rbxassetid://7198417722",
+                Image = Style.Images.SellUnitIcon,
                 ImageColor3 = Color3.new(0, 0, 0)
             }),
 
@@ -561,7 +561,7 @@ UnitShopPage.render = function(self)
                             BorderSizePixel = 0,
                             LayoutOrder = 1,
 
-                            Image = "rbxassetid://327284812",
+                            Image = Style.Images.TicketsCurrencyIcon,
                             ImageColor3 = Color3.new(0, 0, 0)
                         })
                     or nil
@@ -1155,7 +1155,7 @@ SpecialShopPage.render = function(self)
                         BorderSizePixel = 0,
                         LayoutOrder = 1,
 
-                        Image = "rbxassetid://327284812",
+                        Image = Style.Images.TicketsCurrencyIcon,
                         ImageColor3 = Color3.new(0, 0, 0)
                     })
                 }),
