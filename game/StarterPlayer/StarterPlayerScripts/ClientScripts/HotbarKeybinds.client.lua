@@ -29,7 +29,7 @@ local bindHotbarKeys = function()
         ContextActionService:BindAction("Hotbar " .. i, function(_, inputState)
             if (inputState ~= Enum.UserInputState.Begin) then return end
 
-            PlacementFlow.Start(GameEnum.ObjectType.Unit, hotbar[i])
+            PlacementFlow.Start(hotbar[i])
         end, false, Enum.KeyCode[KEYS[i]])
     end
 end

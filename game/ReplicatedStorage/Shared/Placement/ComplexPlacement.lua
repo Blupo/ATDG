@@ -27,7 +27,9 @@ ComplexPlacement.new = function(placements)
 			
 			local thisCanvas = self:GetCanvas()
 			local thisCanvasCFrame, thisCanvasSize = thisCanvas.CFrame, thisCanvas.Size
-			local modelSize = WorldBoundingBox(CFrame.Angles(0, rotation, 0), model.PrimaryPart.Size)
+
+			local _, modelBounds = model:GetBoundingBox()
+			local modelSize = WorldBoundingBox(CFrame.Angles(0, rotation, 0), modelBounds)
 
 			-- use AABB to make sure the model has no 2D area on other canvases
 			local sum = 0
@@ -50,7 +52,7 @@ ComplexPlacement.new = function(placements)
 			
 			local lpos = thisCanvasCFrame:PointToObjectSpace(position)
 			local size2 = (thisCanvasSize - Vector2.new(modelSize.X, modelSize.Z)) / 2
-			
+
 			local x = clamp and math.clamp(lpos.X, -size2.X, size2.X) or lpos.X
 			local y = clamp and math.clamp(lpos.Y, -size2.Y, size2.Y) or lpos.Y
 

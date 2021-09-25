@@ -191,11 +191,37 @@ Unit.SetAttribute = function(self, attributeName: string, newValue: any)
 end
 
 local constructUnit = function(unitModel)
-	local unitName = unitModel:GetAttribute("Name")
-	
 	local diedEvent = Instance.new("BindableEvent")
 	local attributeChangedEvent = Instance.new("BindableEvent")
 	local upgradedEvent = Instance.new("BindableEvent")
+
+	local unitName = unitModel:GetAttribute("Name")
+	local appearanceModel = UnitModels:FindFirstChild(unitName):Clone()
+	local appearanceModelPrimaryPart = appearanceModel.PrimaryPart
+	local unitModelBoundingPart = unitModel:WaitForChild("_BoundingPart")
+
+	local appearanceModelOrientation = appearanceModel:GetBoundingBox()
+	local unitModelOrientation = unitModel:GetBoundingBox()
+	
+	appearanceModel:SetPrimaryPartCFrame(
+		unitModelOrientation:ToWorldSpace(
+			appearanceModelOrientation:ToObjectSpace(appearanceModelPrimaryPart.CFrame)
+		)
+	)
+	
+	local boundingPartWeld = Instance.new("WeldConstraint")
+	boundingPartWeld.Name = "BoundingPartWeld"
+	boundingPartWeld.Part0 = unitModelBoundingPart
+	boundingPartWeld.Part1 = appearanceModelPrimaryPart
+	boundingPartWeld.Parent = unitModelBoundingPart
+
+	local appearanceModelChildren = appearanceModel:GetChildren()
+	
+	for i = 1, #appearanceModelChildren do
+		appearanceModelChildren[i].Parent = unitModel
+	end
+
+	unitModel.PrimaryPart = appearanceModelPrimaryPart
 	
 	local unit = setmetatable({
 		Id = unitModel:GetAttribute("Id"),

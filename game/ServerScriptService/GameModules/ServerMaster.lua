@@ -53,10 +53,11 @@ local ServerMaster = {
     ServerInitialised = ServerInitialisedEvent.Event,
 }
 
-ServerMaster.InitServer = function(initServerType: string)
+ServerMaster.InitServer = function(initServerType: string, debugGameData)
     if (serverType) then return end
+    serverType = initServerType
 
-    if (initServerType == GameEnum.ServerType.Game) then
+    if (serverType == GameEnum.ServerType.Game) then
         local Game = require(GameModules:FindFirstChild("Game"))
 
         Promise.new(function(resolve, reject)
@@ -65,13 +66,7 @@ ServerMaster.InitServer = function(initServerType: string)
             if (privateServerId == "") then
                 if (RunService:IsStudio()) then
                     warn("Studio Testing, using debug game info")
-
-                    resolve({
-                        MapName = "Skymaze",
-                        GameMode = GameEnum.GameMode.TowerDefense,
-                        Difficulty = GameEnum.Difficulty.Normal,
-                    })
-                    
+                    resolve(debugGameData)
                     return
                 else
                     reject("PrivateServerId is missing")
@@ -93,13 +88,12 @@ ServerMaster.InitServer = function(initServerType: string)
         end)
     end
 
-    local modules = serverModules[initServerType]
+    local modules = serverModules[serverType]
 
     for module in pairs(modules) do
         require(GameModules:FindFirstChild(module))
     end
-
-    serverType = initServerType
+    
     ServerInitialisedEvent:Fire(serverType)
 end
 

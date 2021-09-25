@@ -58,9 +58,7 @@ UnitViewport.init = function(self)
         objectModel = objectModel:Clone()
         objectModel:SetPrimaryPartCFrame(CFrame.new(0, 0, 0))
 
-        local primaryPart = objectModel.PrimaryPart
-        local _, boundingBoxSize = objectModel:GetBoundingBox()
-
+        local orientation, boundingBoxSize = objectModel:GetBoundingBox()
         local viewport = self.viewport:getValue()
 
         if (viewport) then
@@ -71,7 +69,7 @@ UnitViewport.init = function(self)
             objectModel = objectModel,
 
             -- todo: make this look better
-            cameraCFrame = primaryPart.CFrame:ToWorldSpace(CFrame.new(0, 0, -boundingBoxSize.Z) * CFrame.Angles(0, math.pi, 0))
+            cameraCFrame = orientation:ToWorldSpace(CFrame.new(0, 0, -math.max(boundingBoxSize.X, boundingBoxSize.Y)) * CFrame.Angles(0, math.pi, 0))
         })
     end
 

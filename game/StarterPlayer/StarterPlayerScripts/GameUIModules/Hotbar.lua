@@ -124,7 +124,7 @@ Hotbar.render = function(self)
                 if (serverType == GameEnum.ServerType.Game) then
                     -- todo: check for available funds first
 
-                    PlacementFlow.Start(GameEnum.ObjectType.Unit, objectName)
+                    PlacementFlow.Start(objectName)
                 elseif (serverType == GameEnum.ServerType.Lobby) then
                     local newHotbar = CopyTable(hotbar)
                     table.remove(newHotbar, i)

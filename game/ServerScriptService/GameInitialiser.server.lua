@@ -14,6 +14,12 @@ local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local serverType
 local placeId = game.PlaceId
 
+local debugGameData = {
+    MapName = "Treasure",
+    GameMode = GameEnum.GameMode.TowerDefense,
+    Difficulty = GameEnum.Difficulty.Normal,
+}
+
 if (placeId == 6421134421) then
     serverType = GameEnum.ServerType.Lobby
 elseif (placeId == 6432648941) then
@@ -27,4 +33,4 @@ end
 
 ---
 
-ServerMaster.InitServer(serverType)
+ServerMaster.InitServer(serverType, debugGameData)

@@ -288,14 +288,13 @@ UnitInventory.render = function(self)
                         Image = Style.Images.PlaceUnitIcon,
 
                         onActivated = function()
-
                             if (unitType == GameEnum.UnitType.TowerUnit) then
                                 -- todo: check for available funds first
                                 self:setState({
                                     selectedUnit = Roact.None,
                                 })
                                 
-                                PlacementFlow.Start(GameEnum.ObjectType.Unit, selectedUnit)
+                                PlacementFlow.Start(selectedUnit)
                             elseif (unitType == GameEnum.UnitType.FieldUnit) then
                                 -- todo
                                 print("Coming in a future update.")
@@ -571,32 +570,7 @@ GameInventory.willUnmount = function(self)
 end
 
 GameInventory.render = function(self)
-    if (self.state.placementFlowOpen) then
-        return Roact.createElement("TextButton", {
-            AnchorPoint = Vector2.new(1, 1),
-            Size = UDim2.new(0, 250, 0, 24),
-            Position = UDim2.new(1, -Style.Constants.MajorElementPadding, 1, -Style.Constants.MajorElementPadding),
-            BackgroundTransparency = 0,
-            BorderSizePixel = 0,
-
-            Text = "Unit Placement (Q to Cancel)",
-            Font = Style.Constants.MainFont,
-            TextSize = 16,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            TextYAlignment = Enum.TextYAlignment.Center,
-
-            BackgroundColor3 = Color3.new(1, 1, 1),
-            TextColor3 = Color3.new(0, 0, 0),
-
-            [Roact.Event.Activated] = function()
-                PlacementFlow.Stop()
-            end
-        }, {
-            UICorner = Roact.createElement("UICorner", {
-                CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius),
-            }),
-        })
-    end
+    if (self.state.placementFlowOpen) then return end
 
     local isOpen = self.state.open
     local category = self.state.category

@@ -19,16 +19,28 @@ local Unit = require(GameModules:WaitForChild("Unit"))
 
 local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
 local Roact = require(GameUIModules:WaitForChild("Roact"))
+local Style = require(GameUIModules:WaitForChild("Style"))
 local TowerUnitUpgrader = require(GameUIModules:WaitForChild("TowerUnitUpgrader"))
 
 local CurrentCamera = Workspace.CurrentCamera
 
+local RadiusPart = Instance.new("Part")
+RadiusPart.Name = "TowerUnitUI.RadiusPart"
+RadiusPart.CFrame = CFrame.new(0, math.huge, 0)
+RadiusPart.Size = Vector3.new(0, 0, 0)
+RadiusPart.Transparency = -1
+RadiusPart.CastShadow = false
+RadiusPart.CanCollide = false
+RadiusPart.CanTouch = false
+--RadiusPart.CanQuery = false
+RadiusPart.Anchored = true
+RadiusPart.Material = Enum.Material.ForceField
+RadiusPart.Shape = Enum.PartType.Ball
+RadiusPart.Color = Style.Colors.RANGEAttributeIconColor
+
 ---
 
-local CLICK_TIME = 0.5
-
 local lastUnitId
-local lastMouseDownTime = 0
 
 local towerUnitModels = {}
 local guiTree
@@ -41,8 +53,8 @@ local dismountUpgradeGui = function()
 end
 
 local mountUpgradeGui = function(x, y)
-    local ray = CurrentCamera:ViewportPointToRay(x, y)
-    local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 500)
+    local ray = CurrentCamera:ScreenPointToRay(x, y)
+    local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 1000)
 
     if (not raycastResult) then
         lastUnitId = nil
@@ -77,6 +89,7 @@ local mountUpgradeGui = function(x, y)
     lastUnitId = unitId
 
     dismountUpgradeGui()
+
     guiTree = Roact.mount(Roact.createElement(TowerUnitUpgrader, {
         unitId = unitId,
     }), PlayerGui, unitId .. "_Billboard")
@@ -86,18 +99,8 @@ end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     if (gameProcessedEvent) then return end
-    if (input.UserInputType ~= Enum.UserInputType.MouseButton1) then return end
+    if ((input.UserInputType ~= Enum.UserInputType.MouseButton1) --[[and (input.UserInputType ~= Enum.UserInputType.Touch)]]) then return end
 
-    lastMouseDownTime = os.clock()
-end)
-
-UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
-    if (gameProcessedEvent) then return end
-    if (input.UserInputType ~= Enum.UserInputType.MouseButton1) then return end
-
-    local now = os.clock()
-    if ((now - lastMouseDownTime) > CLICK_TIME) then return end
-    
     local inputPosition = input.Position
     mountUpgradeGui(inputPosition.X, inputPosition.Y)
 end)

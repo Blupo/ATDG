@@ -7,7 +7,7 @@ local SimplePlacement = {}
 SimplePlacement.new = function(canvasPart: BasePart, gridSnap: number?, surface: Enum.NormalId?)
 	return setmetatable({
 		CanvasPart = canvasPart,
-		GridSnap = math.max(gridSnap or 0, 1/10),
+		GridSnap = math.max(gridSnap or 0, 5/100),
 		Surface = surface or Enum.NormalId.Top,
 	}, { __index = SimplePlacement })
 end
@@ -37,7 +37,9 @@ SimplePlacement.GetPlacementCFrame = function(self, model: Model, position: Vect
 	
 	local canvas = self:GetCanvas()
 	local canvasCFrame, canvasSize = canvas.CFrame, canvas.Size
-	local modelSize = WorldBoundingBox(CFrame.Angles(0, rotation, 0), model.PrimaryPart.Size)
+
+	local _, modelBounds = model:GetBoundingBox()
+	local modelSize = WorldBoundingBox(CFrame.Angles(0, rotation, 0), modelBounds)
 	
 	local lpos = canvasCFrame:PointToObjectSpace(position)
 	local size2 = (canvasSize - Vector2.new(modelSize.X, modelSize.Z)) / 2

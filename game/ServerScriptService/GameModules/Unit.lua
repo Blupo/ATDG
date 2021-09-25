@@ -1,3 +1,4 @@
+local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -253,6 +254,7 @@ Unit.new = function(unitName: string, owner: number?)
 	local newBaseModel = Instance.new("Model")
 	local unitModelBoundingPart = Instance.new("Part")
 	unitModelBoundingPart.Name = "_BoundingPart"
+	unitModelBoundingPart.Material = Enum.Material.SmoothPlastic
 	unitModelBoundingPart.Transparency = 1
 	unitModelBoundingPart.Size = unitModelBounds
 	unitModelBoundingPart.CanCollide = false
@@ -312,13 +314,10 @@ Unit.new = function(unitName: string, owner: number?)
 	self.AttributeChanged:Connect(function(attributeName: string, newValue: any)
 		newBaseModel:SetAttribute(attributeName, newValue)
 	end)
-	
-	-- temp?
-	game:GetService("CollectionService"):AddTag(newBaseModel, "Unit")
-	--
-	
+
 	units[self.Id] = self
 	UnitAddedEvent:Fire(self.Id)
+	CollectionService:AddTag(newBaseModel, GameEnum.ObjectType.Unit)
 	return self
 end
 
