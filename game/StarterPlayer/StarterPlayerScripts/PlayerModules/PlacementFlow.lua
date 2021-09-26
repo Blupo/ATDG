@@ -1,4 +1,4 @@
--- TODO: Disable CanQuery for RadiusPart when it has been released
+-- TODO: Disable CanQuery when it has been released
 
 local CollectionService = game:GetService("CollectionService")
 local ContextActionService = game:GetService("ContextActionService")
@@ -46,10 +46,6 @@ PointerPart.CanCollide = false
 PointerPart.CanTouch = false
 PointerPart.Anchored = true
 PointerPart.Material = Enum.Material.SmoothPlastic
-PointerPart.TopSurface = Enum.SurfaceType.Smooth
-PointerPart.BottomSurface = Enum.SurfaceType.Smooth
-PointerPart.LeftSurface = Enum.SurfaceType.Smooth
-PointerPart.RightSurface = Enum.SurfaceType.Smooth
 
 local RadiusPart = Instance.new("Part")
 RadiusPart.Name = "PlacementFlow.RadiusPart"
@@ -176,23 +172,23 @@ end
 local updateModel = function(mousePosition: Vector2 | Vector3, ignoreGuiInset: boolean?)
     if (not currentObjModel) then return end
 
-	local ray = ignoreGuiInset and
-		CurrentCamera:ViewportPointToRay(mousePosition.X, mousePosition.Y, 0)
-	or CurrentCamera:ScreenPointToRay(mousePosition.X, mousePosition.Y, 0)
+    local ray = ignoreGuiInset and
+        CurrentCamera:ViewportPointToRay(mousePosition.X, mousePosition.Y, 0)
+    or CurrentCamera:ScreenPointToRay(mousePosition.X, mousePosition.Y, 0)
 
-	local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 1000, raycastParams)
+    local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 1000, raycastParams)
 
     lastRaycastOrigin = ray.Origin
     lastRaycastDirection = ray.Direction
 
-	if (raycastResult) then
-		local raycastPart = raycastResult.Instance
+    if (raycastResult) then
+        local raycastPart = raycastResult.Instance
         local placement = placementsMap[raycastPart]
-		if (not placement) then return end
-		
+        if (not placement) then return end
+        
         local currentObjModelInfo = unitModelInfoCache[currentObjName]
         local raycastPosition = raycastResult.Position
-		local modelCFrame = placement:GetPlacementCFrame(currentObjModel, raycastPosition, rotation)
+        local modelCFrame = placement:GetPlacementCFrame(currentObjModelInfo.Bounds, raycastPosition, rotation)
 
         currentObjModel:SetPrimaryPartCFrame(modelCFrame:ToWorldSpace(currentObjModelInfo.PrimaryPartCenterOffset))
         PointerPart.CFrame = modelCFrame
@@ -203,49 +199,49 @@ local updateModel = function(mousePosition: Vector2 | Vector3, ignoreGuiInset: b
 
         local isClear = (#touching < 1) and correctTag
         PointerPart.Color = isClear and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
-	end
+    end
 end
 
 local updateModelRotationFromInput = function(_, inputState: Enum.UserInputState, input: InputObject)
     if (not placementActive) then return end
-	if (inputState ~= Enum.UserInputState.Begin) then return end
-	
-	local sign
-	local keyCode = input.KeyCode
-	
-	if ((keyCode == Enum.KeyCode.R) or (keyCode == Enum.KeyCode.ButtonR1)) then
-		sign = 1
-	elseif (keyCode == Enum.KeyCode.ButtonL1) then
-		sign = -1
-	else
-		return
-	end
+    if (inputState ~= Enum.UserInputState.Begin) then return end
+    
+    local sign
+    local keyCode = input.KeyCode
+    
+    if ((keyCode == Enum.KeyCode.R) or (keyCode == Enum.KeyCode.ButtonR1)) then
+        sign = 1
+    elseif (keyCode == Enum.KeyCode.ButtonL1) then
+        sign = -1
+    else
+        return
+    end
 
-	rotation = rotation + (sign * (math.pi / 2))
-	updateModel(lastMousePosition)
+    rotation = rotation + (sign * (math.pi / 2))
+    updateModel(lastMousePosition)
 end
 
 -- We need to return Pass so that it doesn't interfere with player/camera bindings
 local updateModelFromInput = function(_, inputState: Enum.UserInputState, input: InputObject): Enum.ContextActionResult?
     if (not placementActive) then return end
 
-	local inputType = input.UserInputType
-	local inputPosition = input.Position
+    local inputType = input.UserInputType
+    local inputPosition = input.Position
 
-	if (inputType == Enum.UserInputType.MouseMovement) then
-		if (inputState ~= Enum.UserInputState.Change) then return Enum.ContextActionResult.Pass end
-	elseif (inputType == Enum.UserInputType.Touch) then
-		if (inputState ~= Enum.UserInputState.Begin) then return Enum.ContextActionResult.Pass end
-	elseif (inputType == Enum.UserInputType.Gamepad1) then
-		if (inputState ~= Enum.UserInputState.Change) then return Enum.ContextActionResult.Pass end
+    if (inputType == Enum.UserInputType.MouseMovement) then
+        if (inputState ~= Enum.UserInputState.Change) then return Enum.ContextActionResult.Pass end
+    elseif (inputType == Enum.UserInputType.Touch) then
+        if (inputState ~= Enum.UserInputState.Begin) then return Enum.ContextActionResult.Pass end
+    elseif (inputType == Enum.UserInputType.Gamepad1) then
+        if (inputState ~= Enum.UserInputState.Change) then return Enum.ContextActionResult.Pass end
 
-		inputPosition = UserInputService:GetMouseLocation()
-	else
-		return Enum.ContextActionResult.Pass
-	end
+        inputPosition = UserInputService:GetMouseLocation()
+    else
+        return Enum.ContextActionResult.Pass
+    end
 
-	lastMousePosition = inputPosition
-	updateModel(inputPosition, inputType == Enum.UserInputType.Gamepad1)
+    lastMousePosition = inputPosition
+    updateModel(inputPosition, inputType == Enum.UserInputType.Gamepad1)
 
     return Enum.ContextActionResult.Pass
 end
@@ -306,6 +302,7 @@ PlacementFlow.Start = function(unitName: string)
     if (Unit.GetUnitType(unitName) ~= GameEnum.UnitType.TowerUnit) then return end
 
     local unitModelInfo = unitModelInfoCache[unitName]
+    local unitModelBounds = unitModelInfo.Bounds
 
     currentObjName = unitName
     currentObjModel = unitModelInfo.Model
@@ -327,7 +324,7 @@ PlacementFlow.Start = function(unitName: string)
     end
     
     RadiusPart.Size = Vector3.new(unitAttributes.RANGE, unitAttributes.RANGE, unitAttributes.RANGE) * 2
-    PointerPart.Size = unitModelInfo.Bounds
+    PointerPart.Size = unitModelBounds
 
     ContextActionService:BindActionAtPriority(
         MOVE_MODEL_ACTION_KEY,
@@ -433,7 +430,7 @@ do
         local unitModel = unitModels[i]
         local unitName = unitModel.Name
 
-        if (Unit.DoesUnitExist(unitName)) then
+        if (Unit.DoesUnitExist(unitName) and (Unit.GetUnitType(unitName) == GameEnum.UnitType.TowerUnit)) then
             local unitModelClone = unitModel:Clone()
             local unitModelCloneDescendants = unitModelClone:GetDescendants()
 
@@ -498,7 +495,7 @@ Unit.UnitAdded:Connect(function(unitId: string)
     local boundingPart = unitModel:WaitForChild("_BoundingPart")
 
     table.insert(overlapParamsFilter, boundingPart)
-	overlapParams.FilterDescendantsInstances = overlapParamsFilter
+    overlapParams.FilterDescendantsInstances = overlapParamsFilter
 
     if (placementActive) then
         boundingPart.Color = BrickColor.new("Bright red").Color
@@ -507,17 +504,15 @@ Unit.UnitAdded:Connect(function(unitId: string)
 end)
 
 Unit.UnitRemoving:Connect(function(unitId: string)
-	local unit = Unit.fromId(unitId)
-	if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return end
+    local unit = Unit.fromId(unitId)
+    local unitModel = unit.Model
+    local boundingPart = unitModel:FindFirstChild("_BoundingPart")
 
-	local unitModel = unit.Model
-	local boundingPart = unitModel:FindFirstChild("_BoundingPart")
+    local boundingPartIndex = table.find(overlapParamsFilter, boundingPart)
+    if (not boundingPartIndex) then return end
 
-	local boundingPartIndex = table.find(overlapParamsFilter, boundingPart)
-	if (not boundingPartIndex) then return end
-
-	table.remove(overlapParamsFilter, boundingPartIndex)
-	overlapParams.FilterDescendantsInstances = overlapParamsFilter
+    table.remove(overlapParamsFilter, boundingPartIndex)
+    overlapParams.FilterDescendantsInstances = overlapParamsFilter
 end)
 
 CollectionService:GetInstanceAddedSignal(GameEnum.SurfaceType.Terrain):Connect(surfacePartAdded)

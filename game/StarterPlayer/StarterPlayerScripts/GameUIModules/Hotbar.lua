@@ -253,6 +253,27 @@ Hotbar.render = function(self)
             }, attributesPreviewChildren)
         or nil,
 
+        AttributesPreviewNameLabel = self.state.hoverObjectName and
+            Roact.createElement("TextLabel", {
+                AnchorPoint = Vector2.new(0.5, 1),
+                Size = UDim2.new(1, 0, 0, 16),
+                Position = UDim2.new(0.5, 0, 0, -Style.Constants.MinorElementPadding),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+
+                Text = self.state.hoverObjectName,
+                Font = Style.Constants.MainFont,
+                TextSize = 16,
+                TextStrokeTransparency = 0.5,
+                TextScaled = true,
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextYAlignment = Enum.TextYAlignment.Center,
+
+                TextColor3 = Color3.new(0, 0, 0),
+                TextStrokeColor3 = Color3.new(1, 1, 1)
+            })
+        or nil,
+
         HotbarList = Roact.createElement("Frame", {
             AnchorPoint = Vector2.new(0.5, 1),
             Size = UDim2.new(1, 0, 0, Style.Constants.UnitViewportFrameSize),

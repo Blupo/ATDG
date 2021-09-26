@@ -7,6 +7,8 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
+local CurrentCamera = Workspace.CurrentCamera
+
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 
@@ -17,15 +19,17 @@ local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))
 
+local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
+local PlacementFlow = require(PlayerModules:WaitForChild("PlacementFlow"))
+
 local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
+local ObjectSelectionSurfaceGui = require(GameUIModules:WaitForChild("ObjectSelectionSurfaceGui"))
 local Roact = require(GameUIModules:WaitForChild("Roact"))
 local Style = require(GameUIModules:WaitForChild("Style"))
-local TowerUnitUpgrader = require(GameUIModules:WaitForChild("TowerUnitUpgrader"))
-
-local CurrentCamera = Workspace.CurrentCamera
+local TowerUnitUpgradeUI = require(GameUIModules:WaitForChild("TowerUnitUpgradeUI"))
 
 local RadiusPart = Instance.new("Part")
-RadiusPart.Name = "TowerUnitUI.RadiusPart"
+RadiusPart.Name = "TowerUnitUI.SelectedUnitRadiusPart"
 RadiusPart.CFrame = CFrame.new(0, math.huge, 0)
 RadiusPart.Size = Vector3.new(0, 0, 0)
 RadiusPart.Transparency = -1
@@ -38,86 +42,168 @@ RadiusPart.Material = Enum.Material.ForceField
 RadiusPart.Shape = Enum.PartType.Ball
 RadiusPart.Color = Style.Colors.RANGEAttributeIconColor
 
+local SurfaceGuiPart = Instance.new("Part")
+SurfaceGuiPart.Name = "TowerUnitUI.SelectedUnitSurfaceGuiPart"
+SurfaceGuiPart.CFrame = CFrame.new(0, math.huge, 0)
+SurfaceGuiPart.Size = Vector3.new(0, 0, 0)
+SurfaceGuiPart.Transparency = 1
+SurfaceGuiPart.CastShadow = false
+SurfaceGuiPart.CanCollide = false
+SurfaceGuiPart.CanTouch = false
+--SurfaceGuiPart.CanQuery = false
+SurfaceGuiPart.Anchored = true
+
 ---
 
-local lastUnitId
+local lastUnit
+local surfaceGuiTree
+local upgradeGuiTree
+local unitUpgradedConnection
 
-local towerUnitModels = {}
-local guiTree
+local raycastParamsFilter = {}
+local raycastParams = RaycastParams.new()
+raycastParams.FilterType = Enum.RaycastFilterType.Whitelist
+raycastParams.FilterDescendantsInstances = {}
 
-local dismountUpgradeGui = function()
-    if (not guiTree) then return end
+local reset = function()
+    lastUnit = nil
 
-    Roact.unmount(guiTree)
-    guiTree = nil
+    if (unitUpgradedConnection) then
+        unitUpgradedConnection:Disconnect()
+        unitUpgradedConnection = nil
+    end
+
+    if (upgradeGuiTree) then
+        Roact.unmount(upgradeGuiTree)
+        upgradeGuiTree = nil
+    end
+
+    RadiusPart.CFrame = CFrame.new(0, math.huge, 0)
+
+    Roact.update(surfaceGuiTree, Roact.createElement(ObjectSelectionSurfaceGui, {
+        Adornee = SurfaceGuiPart,
+        enabled = false,
+    }))
 end
 
-local mountUpgradeGui = function(x, y)
-    local ray = CurrentCamera:ScreenPointToRay(x, y)
-    local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 1000)
+---
+
+surfaceGuiTree = Roact.mount(Roact.createElement(ObjectSelectionSurfaceGui, {
+    Adornee = SurfaceGuiPart,
+    enabled = false,
+}), PlayerGui, "TowerUnitUI.SelectedUnitSurfaceGui")
+
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    local isTouch = (input.UserInputType == Enum.UserInputType.Touch)
+
+    if (gameProcessedEvent) then return end
+    if ((input.UserInputType ~= Enum.UserInputType.MouseButton1) and (not isTouch)) then return end
+    if (input.UserInputState ~= Enum.UserInputState.Begin) then return end
+
+    local inputPosition = input.Position
+    local ray = CurrentCamera:ScreenPointToRay(inputPosition.X, inputPosition.Y)
+    local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 1000, raycastParams)
 
     if (not raycastResult) then
-        lastUnitId = nil
-        dismountUpgradeGui()
+        if (not isTouch) then
+            reset()
+        end
+
         return
     end
 
     local raycastPart = raycastResult.Instance
 
     if (not raycastPart:IsA("BasePart")) then
-        lastUnitId = nil
-        dismountUpgradeGui()
+        if (not isTouch) then
+            reset()
+        end
+
         return
     end
 
-    local unitId
+    local unit
 
-    for id, model in pairs(towerUnitModels) do
-        if (raycastPart:IsDescendantOf(model)) then
-            unitId = id
+    for i = 1, #raycastParamsFilter do
+        local unitModel = raycastParamsFilter[i]
+
+        if (raycastPart:IsDescendantOf(unitModel)) then
+            unit = Unit.fromModel(unitModel)
             break
         end
     end
 
-    if (not unitId) then
-        lastUnitId = nil
-        dismountUpgradeGui()
+    if (not unit) then
+        if (not isTouch) then
+            reset()
+        end
+
         return
     end
 
-    if (lastUnitId == unitId) then return end
-    lastUnitId = unitId
+    if (lastUnit == unit) then return end
+    lastUnit = unit
 
-    dismountUpgradeGui()
+    local unitRange = unit:GetAttribute("RANGE")
+    local orientation, bounds = unit.Model:GetBoundingBox()
+    local surfaceGuiPartSize = math.max(bounds.X, bounds.Z) + 1
 
-    guiTree = Roact.mount(Roact.createElement(TowerUnitUpgrader, {
-        unitId = unitId,
-    }), PlayerGui, unitId .. "_Billboard")
-end
+    RadiusPart.Size = Vector3.new(unitRange, unitRange, unitRange) * 2
+    SurfaceGuiPart.Size = Vector3.new(surfaceGuiPartSize, 0, surfaceGuiPartSize)
+    RadiusPart.CFrame = orientation
+    SurfaceGuiPart.CFrame = orientation:ToWorldSpace(CFrame.new(0, -(bounds.Y / 2), 0))
 
----
+    unitUpgradedConnection = unit.Upgraded:Connect(function()
+        local newRange = unit:GetAttribute("RANGE")
 
-UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-    if (gameProcessedEvent) then return end
-    if ((input.UserInputType ~= Enum.UserInputType.MouseButton1) --[[and (input.UserInputType ~= Enum.UserInputType.Touch)]]) then return end
+        RadiusPart.Size = Vector3.new(newRange, newRange, newRange) * 2
+    end)
 
-    local inputPosition = input.Position
-    mountUpgradeGui(inputPosition.X, inputPosition.Y)
+    if (upgradeGuiTree) then
+        Roact.unmount(upgradeGuiTree)
+        upgradeGuiTree = nil
+    end
+
+    Roact.update(surfaceGuiTree, Roact.createElement(ObjectSelectionSurfaceGui, {
+        Adornee = SurfaceGuiPart,
+        enabled = true,
+    }))
+    
+    upgradeGuiTree = Roact.mount(Roact.createElement(TowerUnitUpgradeUI, {
+        unitId = unit.Id,
+        onClose = reset,
+    }), PlayerGui, "TowerUnitUI.UpgradeGui")
 end)
 
-Unit.UnitAdded:Connect(function(unitId)
+Unit.UnitAdded:Connect(function(unitId: string)
     local unit = Unit.fromId(unitId)
     if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return end
     if (unit.Owner ~= LocalPlayer.UserId) then return end
 
-    towerUnitModels[unitId] = unit.Model
+    table.insert(raycastParamsFilter, unit.Model)
+    raycastParams.FilterDescendantsInstances = raycastParamsFilter
 end)
 
-Unit.UnitRemoving:Connect(function(unitId)
-    if (unitId == lastUnitId) then
-        dismountUpgradeGui()
-        lastUnitId = nil
+Unit.UnitRemoving:Connect(function(unitId: string)
+    local unit = Unit.fromId(unitId)
+    local unitModel = unit.Model
+
+    if (unit == lastUnit) then
+        reset()
     end
 
-    towerUnitModels[unitId] = nil
+    local unitModelIndex = table.find(raycastParamsFilter, unitModel)
+    if (not unitModelIndex) then return end
+
+    table.remove(raycastParamsFilter, unitModelIndex)
+    raycastParams.FilterDescendantsInstances = raycastParamsFilter
 end)
+
+PlacementFlow.Started:Connect(function()
+    if (lastUnit) then
+        reset()
+    end
+end)
+
+RadiusPart.Parent = CurrentCamera
+SurfaceGuiPart.Parent = CurrentCamera

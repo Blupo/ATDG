@@ -41,20 +41,22 @@ local ATTRIBUTE_PREVIEW = { "DMG", "RANGE", "CD" }
 
 ---
 
-local TowerUnitUpgradeBillboard = Roact.PureComponent:extend("TowerUnitUpgradeBillboard")
+local TowerUnitUpgradeUI = Roact.PureComponent:extend("TowerUnitUpgradeUI")
 
-TowerUnitUpgradeBillboard.init = function(self)
+TowerUnitUpgradeUI.init = function(self)
     self:setState({
         name = "",
         level = 1,
         target = "First",
-        
-        attributeChanges = {},
+
+        thisLevelAttributes = {},
+        nextLevelAttributes = {},
     })
 end
 
-TowerUnitUpgradeBillboard.didMount = function(self)
+TowerUnitUpgradeUI.didMount = function(self)
     local unitId = self.props.unitId
+
     local unit = Unit.fromId(unitId)
     local unitName = unit.Name
     local unitLevel = unit.Level
@@ -65,41 +67,21 @@ TowerUnitUpgradeBillboard.didMount = function(self)
     local thisLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, unitLevel)
     local nextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, unitLevel + 1)
 
-    local attributeChanges = {}
-
-    for i = 1, #ATTRIBUTE_PREVIEW do
-        local attribute = ATTRIBUTE_PREVIEW[i]
-        local thisLevelAttributeValue = thisLevelBaseAttributes[attribute]
-        local nextLevelAttributeValue = nextLevelBaseAttributes[attribute]
-
-        if (thisLevelAttributeValue ~= nextLevelAttributeValue) then
-            attributeChanges[attribute] = {thisLevelAttributeValue, nextLevelAttributeValue}
-        end
-    end
-
     self.unitUpgraded = unit.Upgraded:Connect(function(newLevel)
         local newLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel)
         local newNextLevelBaseAttributes = Unit.GetUnitBaseAttributes(unitName, newLevel + 1)
+
         local newUpgradePrice = Shop.GetUnitUpgradePrice(unitName, newLevel)
         local newSellingPrice = Shop.GetUnitSellingPrice(unitName, newLevel)
-        local newAttributeChanges = {}
-
-        for i = 1, #ATTRIBUTE_PREVIEW do
-            local attribute = ATTRIBUTE_PREVIEW[i]
-            local newLevelAttributeValue = newLevelBaseAttributes[attribute]
-            local newNextLevelAttributeValue = newNextLevelBaseAttributes[attribute]
-
-            if (newNextLevelAttributeValue ~= newLevelAttributeValue) then
-                newAttributeChanges[attribute] = {newLevelAttributeValue, newNextLevelAttributeValue}
-            end
-        end
 
         self:setState({
             level = newLevel,
 
             upgradePrice = newUpgradePrice or Roact.None,
             sellingPrice = newSellingPrice,
-            attributeChanges = newAttributeChanges,
+
+            thisLevelAttributes = newLevelBaseAttributes,
+            nextLevelAttributes = newNextLevelBaseAttributes,
         })
     end)
 
@@ -118,16 +100,18 @@ TowerUnitUpgradeBillboard.didMount = function(self)
 
         upgradePrice = upgradePrice,
         sellingPrice = sellingPrice,
-        attributeChanges = attributeChanges,
+
+        thisLevelAttributes = thisLevelBaseAttributes,
+        nextLevelAttributes = nextLevelBaseAttributes,
     })
 end
 
-TowerUnitUpgradeBillboard.willUnmount = function(self)
+TowerUnitUpgradeUI.willUnmount = function(self)
     self.unitUpgraded:Disconnect()
     self.targetChanged:Disconnect()
 end
 
-TowerUnitUpgradeBillboard.render = function(self)
+TowerUnitUpgradeUI.render = function(self)
     local unitId = self.props.unitId
     local unit = Unit.fromId(unitId)
     if (not unit) then return end
@@ -136,10 +120,16 @@ TowerUnitUpgradeBillboard.render = function(self)
     local upgradePrice = self.state.upgradePrice
     local sellingPrice = self.state.sellingPrice
 
-    local changesListChildren = {}
+    local thisLevelAttributes = self.state.thisLevelAttributes
+    local nextLevelAttributes = self.state.nextLevelAttributes
+    local attributesListElements = {}
 
-    for attribute, values in pairs(self.state.attributeChanges) do
-        changesListChildren[attribute] = Roact.createElement("Frame", {
+    for i = 1, #ATTRIBUTE_PREVIEW do
+        local attribute = ATTRIBUTE_PREVIEW[i]
+        local thisLevelAttributeValue = thisLevelAttributes[attribute]
+        local nextLevelAttributeValue = nextLevelAttributes[attribute]
+
+        attributesListElements[attribute] = Roact.createElement("Frame", {
             Size = UDim2.new(1, 0, 0, 20),
             LayoutOrder = table.find(ATTRIBUTE_PREVIEW, attribute),
             BackgroundTransparency = 1,
@@ -156,17 +146,6 @@ TowerUnitUpgradeBillboard.render = function(self)
                 ImageColor3 = Style.Colors[attribute .. "AttributeIconColor"],
             }),
 
-            TransitionIcon = Roact.createElement("ImageLabel", {
-                AnchorPoint = Vector2.new(1, 0.5),
-                Size = UDim2.new(0, 20, 0, 20),
-                Position = UDim2.new(0.625, 0, 0.5, 0),
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
-
-                Image = "rbxassetid://2089572676",
-                ImageColor3 = Color3.new(0, 0, 0),
-            }),
-
             OriginalValueLabel = Roact.createElement("TextLabel", {
                 AnchorPoint = Vector2.new(0, 0.5),
                 Size = UDim2.new(0.35, 0, 1, 0),
@@ -174,30 +153,45 @@ TowerUnitUpgradeBillboard.render = function(self)
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
 
-                Text = values[1],
+                Text = thisLevelAttributeValue,
                 Font = Style.Constants.MainFont,
                 TextSize = 16,
 
                 TextColor3 = Color3.new(0, 0, 0)
             }),
 
-            NewValueLabel = Roact.createElement("TextLabel", {
-                AnchorPoint = Vector2.new(1, 0.5),
-                Size = UDim2.new(0.35, 0, 1, 0),
-                Position = UDim2.new(1, 0, 0.5, 0),
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
+            TransitionIcon = (nextLevelAttributeValue ~= thisLevelAttributeValue) and
+                Roact.createElement("ImageLabel", {
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    Size = UDim2.new(0, 20, 0, 20),
+                    Position = UDim2.new(0.625, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
 
-                Text = values[2] or "",
-                Font = Style.Constants.MainFont,
-                TextSize = 16,
+                    Image = "rbxassetid://2089572676",
+                    ImageColor3 = Color3.new(0, 0, 0),
+                })
+            or nil,
 
-                TextColor3 = Color3.new(0, 0, 0)
-            })
+            NewValueLabel = (nextLevelAttributeValue ~= thisLevelAttributeValue) and
+                Roact.createElement("TextLabel", {
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    Size = UDim2.new(0.35, 0, 1, 0),
+                    Position = UDim2.new(1, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Text = nextLevelAttributeValue or "?",
+                    Font = Style.Constants.MainFont,
+                    TextSize = 16,
+
+                    TextColor3 = Color3.new(0, 0, 0)
+                })
+            or nil
         })
     end
 
-    changesListChildren.UIListLayout = Roact.createElement("UIListLayout", {
+    attributesListElements.UIListLayout = Roact.createElement("UIListLayout", {
         Padding = UDim.new(0, 0),
         FillDirection = Enum.FillDirection.Vertical,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
@@ -226,6 +220,36 @@ TowerUnitUpgradeBillboard.render = function(self)
                 PaddingBottom = UDim.new(0, Style.Constants.MajorElementPadding),
                 PaddingLeft = UDim.new(0, Style.Constants.MajorElementPadding),
                 PaddingRight = UDim.new(0, Style.Constants.MajorElementPadding),
+            }),
+
+            CloseButton = Roact.createElement("TextButton", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(0, 24, 0, 24),
+                Position = UDim2.new(1, Style.Constants.MajorElementPadding, 0, -Style.Constants.MajorElementPadding),
+                BackgroundTransparency = 0,
+                BorderSizePixel = 0,
+
+                Text = "",
+                TextTransparency = 1,
+
+                BackgroundColor3 = Color3.fromRGB(200, 0, 0),
+
+                [Roact.Event.Activated] = self.props.onClose,
+            }, {
+                UICorner = Roact.createElement("UICorner", {
+                    CornerRadius = UDim.new(1, 0)
+                }),
+
+                ImageLabel = Roact.createElement("ImageLabel", {
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    Size = UDim2.new(1, -Style.Constants.MinorElementPadding / 2, 1, -Style.Constants.MinorElementPadding / 2),
+                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+
+                    Image = "rbxassetid://367878870",
+                    ImageColor3 = Color3.new(1, 1, 1)
+                })
             }),
 
             UnitNameLabel = Roact.createElement("TextLabel", {
@@ -266,13 +290,13 @@ TowerUnitUpgradeBillboard.render = function(self)
                 }),
             }),
 
-            ChangesList = Roact.createElement("Frame", {
+            AttributesList = Roact.createElement("Frame", {
                 AnchorPoint = Vector2.new(0.5, 0),
                 Size = UDim2.new(1, 0, 1, -92),
                 Position = UDim2.new(0.5, 0, 0, 28),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
-            }, changesListChildren),
+            }, attributesListElements),
 
             TargetingToggle = Roact.createElement("Frame", {
                 AnchorPoint = Vector2.new(0, 1),
@@ -429,4 +453,4 @@ TowerUnitUpgradeBillboard.render = function(self)
     })
 end
 
-return TowerUnitUpgradeBillboard
+return TowerUnitUpgradeUI

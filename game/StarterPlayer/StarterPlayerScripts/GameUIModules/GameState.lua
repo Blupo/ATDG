@@ -73,8 +73,8 @@ end
 
 local formatTime = function(t: number): string
     t = math.ceil(t)
-	
-	return string.format("%02d:%02d", t / 60, t % 60)
+    
+    return string.format("%02d:%02d", t / 60, t % 60)
 end
 
 local roundedCornersChildren = function(radiusScale, radiusOffset, children)

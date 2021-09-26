@@ -29,10 +29,10 @@ local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
 ---
 
 local IGNORED_ATTRIBUTES = {
-	Id = true,
-	Name = true,
-	Type = true,
-	Owner = true,
+    Id = true,
+    Name = true,
+    Type = true,
+    Owner = true,
 }
 
 local units = {}
@@ -47,246 +47,246 @@ Unit.UnitAdded = UnitAddedEvent.Event
 Unit.UnitRemoving = UnitRemovingEvent.Event
 
 Unit.fromModel = function(model: Model)
-	for _, unit in pairs(units) do
-		if (unit.Model == model) then
-			return unit
-		end
-	end
+    for _, unit in pairs(units) do
+        if (unit.Model == model) then
+            return unit
+        end
+    end
 end
 
 Unit.fromId = function(id: string)
-	return units[id]
+    return units[id]
 end
 
 Unit.GetUnits = function(filterCallback: (any) -> boolean)
-	local unitList = {}
+    local unitList = {}
 
-	for _, unit in pairs(units) do
-		if ((not filterCallback) and true or filterCallback(unit)) then
-			table.insert(unitList, unit)
-		end
-	end
+    for _, unit in pairs(units) do
+        if ((not filterCallback) and true or filterCallback(unit)) then
+            table.insert(unitList, unit)
+        end
+    end
 
-	return unitList
+    return unitList
 end
 
 Unit.DoesUnitExist = function(unitName: string): boolean
-	local unitData = unitDataCache[unitName]
-	if (not unitData) then return false end
-	
-	local unitModel = UnitModels:FindFirstChild(unitName)
-	if (not unitModel) then return false end
+    local unitData = unitDataCache[unitName]
+    if (not unitData) then return false end
+    
+    local unitModel = UnitModels:FindFirstChild(unitName)
+    if (not unitModel) then return false end
 
-	return true
+    return true
 end
 
 Unit.GetUnitPersistentUpgradeLevel = function(owner: number, unitName: string): number?
-	if (owner ~= LocalPlayer.UserId) then
-		return GetUnitPersistentUpgradeLevelRemoteFunction(owner, unitName)
-	end
+    if (owner ~= LocalPlayer.UserId) then
+        return GetUnitPersistentUpgradeLevelRemoteFunction(owner, unitName)
+    end
 
-	if (not Unit.DoesUnitExist(unitName)) then return end
+    if (not Unit.DoesUnitExist(unitName)) then return end
 
-	return localPlayerUnitPersistentUpgradeLevels[unitName] or 1
+    return localPlayerUnitPersistentUpgradeLevels[unitName] or 1
 end
 
 Unit.GetUnitType = function(unitName: string): string?
-	if (not Unit.DoesUnitExist(unitName)) then return end
+    if (not Unit.DoesUnitExist(unitName)) then return end
 
-	return unitDataCache[unitName].Type
+    return unitDataCache[unitName].Type
 end
 
 Unit.GetUnitDisplayName = function(unitName: string): string?
-	if (not Unit.DoesUnitExist(unitName)) then return end
+    if (not Unit.DoesUnitExist(unitName)) then return end
 
-	local unitData = unitDataCache[unitName]
-	return unitData.DisplayName or unitName
+    local unitData = unitDataCache[unitName]
+    return unitData.DisplayName or unitName
 end
 
 Unit.GetTowerUnitSurfaceType = function(unitName: string): string?
-	if (not Unit.DoesUnitExist(unitName)) then return end
-	if (Unit.GetUnitType(unitName) ~= GameEnum.UnitType.TowerUnit) then return end
+    if (not Unit.DoesUnitExist(unitName)) then return end
+    if (Unit.GetUnitType(unitName) ~= GameEnum.UnitType.TowerUnit) then return end
 
-	return unitDataCache[unitName].SurfaceType
+    return unitDataCache[unitName].SurfaceType
 end
 
 Unit.GetUnitMaxLevel = function(unitName: string): number?
-	if (not Unit.DoesUnitExist(unitName)) then return end
+    if (not Unit.DoesUnitExist(unitName)) then return end
 
-	return #unitDataCache[unitName].Progression
+    return #unitDataCache[unitName].Progression
 end
 
 Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictionary<string, any>?
-	if (not Unit.DoesUnitExist(unitName)) then return end
+    if (not Unit.DoesUnitExist(unitName)) then return end
 
-	local unitData = unitDataCache[unitName]
-	local immutableAttributes = unitData.ImmutableAttributes or {}
-	local attributes = {}
+    local unitData = unitDataCache[unitName]
+    local immutableAttributes = unitData.ImmutableAttributes or {}
+    local attributes = {}
 
-	local maxLevel = Unit.GetUnitMaxLevel(unitName)
-	level = (level <= maxLevel) and level or maxLevel
+    local maxLevel = Unit.GetUnitMaxLevel(unitName)
+    level = (level <= maxLevel) and level or maxLevel
 
-	for i = 1, level do
-		local progressionData = unitData.Progression[i]
-		local progressionDataAttributes = progressionData.Attributes or {}
+    for i = 1, level do
+        local progressionData = unitData.Progression[i]
+        local progressionDataAttributes = progressionData.Attributes or {}
 
-		for attributeName, baseValue in pairs(progressionDataAttributes) do
-			if (immutableAttributes[attributeName] == nil) then
-				attributes[attributeName] = baseValue
-			end
-		end
-	end
+        for attributeName, baseValue in pairs(progressionDataAttributes) do
+            if (immutableAttributes[attributeName] == nil) then
+                attributes[attributeName] = baseValue
+            end
+        end
+    end
 
-	for attributeName, baseValue in pairs(immutableAttributes) do
-		attributes[attributeName] = baseValue
-	end
+    for attributeName, baseValue in pairs(immutableAttributes) do
+        attributes[attributeName] = baseValue
+    end
 
-	return attributes
+    return attributes
 end
 
 Unit.GetUnitAbilities = function(unitName: string, level: number): {string}?
-	if (not Unit.DoesUnitExist(unitName)) then return end
+    if (not Unit.DoesUnitExist(unitName)) then return end
 
-	local unitData = unitDataCache[unitName]
-	local abilities = {}
+    local unitData = unitDataCache[unitName]
+    local abilities = {}
 
-	local maxLevel = Unit.GetUnitMaxLevel(unitName)
-	level = (level <= maxLevel) and level or maxLevel
+    local maxLevel = Unit.GetUnitMaxLevel(unitName)
+    level = (level <= maxLevel) and level or maxLevel
 
-	for i = 1, level do
-		local unitProgression = unitData.Progression[i]
+    for i = 1, level do
+        local unitProgression = unitData.Progression[i]
 
-		if (unitProgression) then
-			local levelAbilities = unitProgression.Abilities or {}
+        if (unitProgression) then
+            local levelAbilities = unitProgression.Abilities or {}
 
-			for ability, action in pairs(levelAbilities) do
-				if (action == true) then
-					abilities[ability] = true
-				elseif (action == false) then
-					abilities[ability] = nil
-				end
-			end
-		end
-	end
+            for ability, action in pairs(levelAbilities) do
+                if (action == true) then
+                    abilities[ability] = true
+                elseif (action == false) then
+                    abilities[ability] = nil
+                end
+            end
+        end
+    end
 
-	return abilities
+    return abilities
 end
 
 Unit.UnitPersistentUpgraded = EventProxy(Unit.UnitPersistentUpgraded, function(owner: number, unitName: string, newLevel: number)
-	if (owner ~= LocalPlayer.UserId) then return end
+    if (owner ~= LocalPlayer.UserId) then return end
 
-	localPlayerUnitPersistentUpgradeLevels[unitName] = newLevel
+    localPlayerUnitPersistentUpgradeLevels[unitName] = newLevel
 end)
 
 --- Class
 
 Unit.GetAttribute = function(self, attributeName: string)
-	if (IGNORED_ATTRIBUTES[attributeName] and (attributeName ~= "Level")) then return end
+    if (IGNORED_ATTRIBUTES[attributeName] and (attributeName ~= "Level")) then return end
 
-	return self.Model:GetAttribute(attributeName)
+    return self.Model:GetAttribute(attributeName)
 end
 
 Unit.SetAttribute = function(self, attributeName: string, newValue: any)
-	SetAttributeRemoteFunction(self.Id, attributeName, newValue)
+    SetAttributeRemoteFunction(self.Id, attributeName, newValue)
 end
 
 local constructUnit = function(unitModel)
-	local diedEvent = Instance.new("BindableEvent")
-	local attributeChangedEvent = Instance.new("BindableEvent")
-	local upgradedEvent = Instance.new("BindableEvent")
+    local diedEvent = Instance.new("BindableEvent")
+    local attributeChangedEvent = Instance.new("BindableEvent")
+    local upgradedEvent = Instance.new("BindableEvent")
 
-	local unitName = unitModel:GetAttribute("Name")
-	local appearanceModel = UnitModels:FindFirstChild(unitName):Clone()
-	local appearanceModelPrimaryPart = appearanceModel.PrimaryPart
-	local unitModelBoundingPart = unitModel:WaitForChild("_BoundingPart")
+    local unitName = unitModel:GetAttribute("Name")
+    local appearanceModel = UnitModels:FindFirstChild(unitName):Clone()
+    local appearanceModelPrimaryPart = appearanceModel.PrimaryPart
+    local unitModelBoundingPart = unitModel:WaitForChild("_BoundingPart")
 
-	local appearanceModelOrientation = appearanceModel:GetBoundingBox()
-	local unitModelOrientation = unitModel:GetBoundingBox()
-	
-	appearanceModel:SetPrimaryPartCFrame(
-		unitModelOrientation:ToWorldSpace(
-			appearanceModelOrientation:ToObjectSpace(appearanceModelPrimaryPart.CFrame)
-		)
-	)
-	
-	local boundingPartWeld = Instance.new("WeldConstraint")
-	boundingPartWeld.Name = "BoundingPartWeld"
-	boundingPartWeld.Part0 = unitModelBoundingPart
-	boundingPartWeld.Part1 = appearanceModelPrimaryPart
-	boundingPartWeld.Parent = unitModelBoundingPart
+    local appearanceModelOrientation = appearanceModel:GetBoundingBox()
+    local unitModelOrientation = unitModel:GetBoundingBox()
+    
+    appearanceModel:SetPrimaryPartCFrame(
+        unitModelOrientation:ToWorldSpace(
+            appearanceModelOrientation:ToObjectSpace(appearanceModelPrimaryPart.CFrame)
+        )
+    )
+    
+    local boundingPartWeld = Instance.new("WeldConstraint")
+    boundingPartWeld.Name = "BoundingPartWeld"
+    boundingPartWeld.Part0 = unitModelBoundingPart
+    boundingPartWeld.Part1 = appearanceModelPrimaryPart
+    boundingPartWeld.Parent = unitModelBoundingPart
 
-	local appearanceModelChildren = appearanceModel:GetChildren()
-	
-	for i = 1, #appearanceModelChildren do
-		appearanceModelChildren[i].Parent = unitModel
-	end
+    local appearanceModelChildren = appearanceModel:GetChildren()
+    
+    for i = 1, #appearanceModelChildren do
+        appearanceModelChildren[i].Parent = unitModel
+    end
 
-	unitModel.PrimaryPart = appearanceModelPrimaryPart
-	
-	local unit = setmetatable({
-		Id = unitModel:GetAttribute("Id"),
-		Name = unitName,
-		DisplayName = unitModel:GetAttribute("DisplayName"),
-		Type = unitModel:GetAttribute("Type"),
-		Owner = unitModel:GetAttribute("Owner"),
-		Level = unitModel:GetAttribute("Level"),
-		Model = unitModel,
-		
-		Died = diedEvent.Event,
-		AttributeChanged = attributeChangedEvent.Event,
-		Upgraded = upgradedEvent.Event,
-		
-		__diedEvent = diedEvent,
-		__attributeChangedEvent = attributeChangedEvent,
-		__upgradedEvent = upgradedEvent,
-	}, {
-		__index = Unit,
+    unitModel.PrimaryPart = appearanceModelPrimaryPart
+    
+    local unit = setmetatable({
+        Id = unitModel:GetAttribute("Id"),
+        Name = unitName,
+        DisplayName = unitModel:GetAttribute("DisplayName"),
+        Type = unitModel:GetAttribute("Type"),
+        Owner = unitModel:GetAttribute("Owner"),
+        Level = unitModel:GetAttribute("Level"),
+        Model = unitModel,
+        
+        Died = diedEvent.Event,
+        AttributeChanged = attributeChangedEvent.Event,
+        Upgraded = upgradedEvent.Event,
+        
+        __diedEvent = diedEvent,
+        __attributeChangedEvent = attributeChangedEvent,
+        __upgradedEvent = upgradedEvent,
+    }, {
+        __index = Unit,
 
-		__tostring = function(self)
-			return self.Id
-		end,
+        __tostring = function(self)
+            return self.Id
+        end,
 
-		__eq = function(unitA, unitB)
-			return unitA.Id == unitB.Id
-		end,
-	})
-	
-	unitModel.AttributeChanged:Connect(function(attributeName)
-		if (IGNORED_ATTRIBUTES[attributeName]) then return end
-		
-		if (attributeName == "HP") then
-			local newHP = unitModel:GetAttribute(attributeName)
-			
-			if (newHP <= 0) then
-				unit.__diedEvent:Fire()
-			end
-		elseif (attributeName == "Level") then
-			local newLevel = unitModel:GetAttribute(attributeName)
+        __eq = function(unitA, unitB)
+            return unitA.Id == unitB.Id
+        end,
+    })
+    
+    unitModel.AttributeChanged:Connect(function(attributeName)
+        if (IGNORED_ATTRIBUTES[attributeName]) then return end
+        
+        if (attributeName == "HP") then
+            local newHP = unitModel:GetAttribute(attributeName)
+            
+            if (newHP <= 0) then
+                unit.__diedEvent:Fire()
+            end
+        elseif (attributeName == "Level") then
+            local newLevel = unitModel:GetAttribute(attributeName)
 
-			unit.Level = newLevel
-			unit.__upgradedEvent:Fire(newLevel)
-			return
-		end
-		
-		attributeChangedEvent:Fire(attributeName, unitModel:GetAttribute(attributeName))
-	end)
-	
-	units[unit.Id] = unit
-	UnitAddedEvent:Fire(unit.Id)
+            unit.Level = newLevel
+            unit.__upgradedEvent:Fire(newLevel)
+            return
+        end
+        
+        attributeChangedEvent:Fire(attributeName, unitModel:GetAttribute(attributeName))
+    end)
+    
+    units[unit.Id] = unit
+    UnitAddedEvent:Fire(unit.Id)
 end
 
 local destroyUnit = function(unit)
-	UnitRemovingEvent:Fire(unit.Id)
-	
-	unit.__diedEvent:Destroy()
-	unit.__attributeChangedEvent:Destroy()
-	unit.__upgradedEvent:Destroy()
-	
-	-- defer so that subscriptions have a chance to obtain the Unit for cleanup
-	Promise.defer(function(resolve)
-		units[unit.Id] = nil
-		resolve()
-	end)
+    UnitRemovingEvent:Fire(unit.Id)
+    
+    unit.__diedEvent:Destroy()
+    unit.__attributeChangedEvent:Destroy()
+    unit.__upgradedEvent:Destroy()
+    
+    -- defer so that subscriptions have a chance to obtain the Unit for cleanup
+    Promise.defer(function(resolve)
+        units[unit.Id] = nil
+        resolve()
+    end)
 end
 
 ---
@@ -294,39 +294,39 @@ end
 localPlayerUnitPersistentUpgradeLevels = Unit.GetAllUnitsPersistentUpgradeLevels(LocalPlayer.UserId)
 
 for _, unitDataScript in pairs(UnitData:GetChildren()) do
-	local unitName = unitDataScript.Name
+    local unitName = unitDataScript.Name
 
-	if (unitDataScript:IsA("ModuleScript") and (not unitDataCache[unitName])) then
-		unitDataCache[unitDataScript.Name] = require(unitDataScript)
-	end
+    if (unitDataScript:IsA("ModuleScript") and (not unitDataCache[unitName])) then
+        unitDataCache[unitDataScript.Name] = require(unitDataScript)
+    end
 end
 
 UnitData.ChildAdded:Connect(function(unitDataScript)
-	if (not unitDataScript:IsA("ModuleScript")) then return end
+    if (not unitDataScript:IsA("ModuleScript")) then return end
 
-	local unitName = unitDataScript.Name
-	if (unitDataCache[unitName]) then return end
+    local unitName = unitDataScript.Name
+    if (unitDataCache[unitName]) then return end
 
-	unitDataCache[unitName] = require(unitDataScript)
+    unitDataCache[unitName] = require(unitDataScript)
 end)
 
 do
-	local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
+    local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
 
-	if (serverType == GameEnum.ServerType.Game) then
-		for _, unitModel in pairs(CollectionService:GetTagged(GameEnum.ObjectType.Unit)) do
-			constructUnit(unitModel)
-		end
+    if (serverType == GameEnum.ServerType.Game) then
+        for _, unitModel in pairs(CollectionService:GetTagged(GameEnum.ObjectType.Unit)) do
+            constructUnit(unitModel)
+        end
 
-		CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(constructUnit)
+        CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(constructUnit)
 
-		CollectionService:GetInstanceRemovedSignal(GameEnum.ObjectType.Unit):Connect(function(unitModel)
-			local unit = Unit.fromModel(unitModel)
-			if (not unit) then return end
-			
-			destroyUnit(unit)
-		end)
-	end
+        CollectionService:GetInstanceRemovedSignal(GameEnum.ObjectType.Unit):Connect(function(unitModel)
+            local unit = Unit.fromModel(unitModel)
+            if (not unit) then return end
+            
+            destroyUnit(unit)
+        end)
+    end
 end
 
 return Unit

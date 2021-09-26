@@ -17,7 +17,7 @@ local Unit = require(GameModules:FindFirstChild("Unit"))
 ---
 
 local PLACEMENT_LIMITS = {
-	["*"] = 30,
+    ["*"] = 30,
 }
 
 local placementsArray = {}
@@ -57,66 +57,66 @@ end
 local Placement = {}
 
 Placement.CanPlace = function(owner: number, objType: string, objName: string, rayOrigin: Vector3, rayDirection: Vector3, rotation: number)
-	-- TODO: Check limits
+    -- TODO: Check limits
 
-	rayDirection = rayDirection.Unit
+    rayDirection = rayDirection.Unit
 
-	if (objType ~= GameEnum.ObjectType.Unit) then return end
-	if (not Unit.DoesUnitExist(objName)) then return end
-	if (Unit.GetUnitType(objName) ~= GameEnum.UnitType.TowerUnit) then return end
+    if (objType ~= GameEnum.ObjectType.Unit) then return end
+    if (not Unit.DoesUnitExist(objName)) then return end
+    if (Unit.GetUnitType(objName) ~= GameEnum.UnitType.TowerUnit) then return end
 
-	local raycastResult = Workspace:Raycast(rayOrigin, rayDirection * 1000, raycastParams)
-	if (not raycastResult) then return end
-	
-	local unitSurfaceType = Unit.GetTowerUnitSurfaceType(objName)
-	local raycastPart = raycastResult.Instance
-	if (not CollectionService:HasTag(raycastPart, unitSurfaceType)) then return end
+    local raycastResult = Workspace:Raycast(rayOrigin, rayDirection * 1000, raycastParams)
+    if (not raycastResult) then return end
+    
+    local unitSurfaceType = Unit.GetTowerUnitSurfaceType(objName)
+    local raycastPart = raycastResult.Instance
+    if (not CollectionService:HasTag(raycastPart, unitSurfaceType)) then return end
 
-	local placement = placementsMap[raycastPart]
-	if (not placement) then return end
+    local placement = placementsMap[raycastPart]
+    if (not placement) then return end
 
-	local objModel = UnitModels:FindFirstChild(objName)
-	local _, objModelBounds = objModel:GetBoundingBox()
-	local modelCFrame = placement:GetPlacementCFrame(objModel, raycastResult.Position, rotation)
+    local objModel = UnitModels:FindFirstChild(objName)
+    local _, objModelBounds = objModel:GetBoundingBox()
+    local modelCFrame = placement:GetPlacementCFrame(objModelBounds, raycastResult.Position, rotation)
 
-	local collisionPart = Instance.new("Part")
-	collisionPart.CFrame = modelCFrame
-	collisionPart.Size = objModelBounds
-	collisionPart.Transparency = 1
-	collisionPart.CastShadow = false
-	collisionPart.CanCollide = false
-	collisionPart.CanTouch = false
-	collisionPart.Anchored = true
-	collisionPart.Parent = Workspace
+    local collisionPart = Instance.new("Part")
+    collisionPart.CFrame = modelCFrame
+    collisionPart.Size = objModelBounds
+    collisionPart.Transparency = 1
+    collisionPart.CastShadow = false
+    collisionPart.CanCollide = false
+    collisionPart.CanTouch = false
+    collisionPart.Anchored = true
+    collisionPart.Parent = Workspace
 
-	local touching = Workspace:GetPartsInPart(collisionPart, overlapParams)
-	collisionPart:Destroy()
+    local touching = Workspace:GetPartsInPart(collisionPart, overlapParams)
+    collisionPart:Destroy()
 
-	if (#touching > 0) then return end
-	return modelCFrame
+    if (#touching > 0) then return end
+    return modelCFrame
 end
 
 Placement.GetPlacementLimits = function()
-	
+    
 end
 
 Placement.PlaceObject = function(owner: number, objType: string, objName: string, rayOrigin: Vector3, rayDirection: Vector3, rotation: number)
-	local modelCFrame = Placement.CanPlace(owner, objType, objName, rayOrigin, rayDirection, rotation)
-	if (not modelCFrame) then return end
+    local modelCFrame = Placement.CanPlace(owner, objType, objName, rayOrigin, rayDirection, rotation)
+    if (not modelCFrame) then return end
 
-	local newUnit = Unit.new(objName, owner)
-	local newUnitModel = newUnit.Model
-	local boundingPart = newUnitModel:FindFirstChild("_BoundingPart")
-	
-	boundingPart.Anchored = true
-	boundingPart.CFrame = modelCFrame
-	newUnitModel.Parent = Workspace
+    local newUnit = Unit.new(objName, owner)
+    local newUnitModel = newUnit.Model
+    local boundingPart = newUnitModel:FindFirstChild("_BoundingPart")
+    
+    boundingPart.Anchored = true
+    boundingPart.CFrame = modelCFrame
+    newUnitModel.Parent = Workspace
 end
 
 ---
 
 do
-	local terrainParts = CollectionService:GetTagged(GameEnum.SurfaceType.Terrain)
+    local terrainParts = CollectionService:GetTagged(GameEnum.SurfaceType.Terrain)
     local elevatedTerrainParts = CollectionService:GetTagged(GameEnum.SurfaceType.ElevatedTerrain)
     local pathParts = CollectionService:GetTagged(GameEnum.SurfaceType.Path)
 
@@ -136,28 +136,28 @@ do
 end
 
 Unit.UnitAdded:Connect(function(unitId: string)
-	local unit = Unit.fromId(unitId)
-	if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return end
+    local unit = Unit.fromId(unitId)
+    if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return end
 
-	local unitModel = unit.Model
-	local boundingPart = unitModel:FindFirstChild("_BoundingPart")
+    local unitModel = unit.Model
+    local boundingPart = unitModel:FindFirstChild("_BoundingPart")
 
-	table.insert(overlapParamsFilter, boundingPart)
-	overlapParams.FilterDescendantsInstances = overlapParamsFilter
+    table.insert(overlapParamsFilter, boundingPart)
+    overlapParams.FilterDescendantsInstances = overlapParamsFilter
 end)
 
 Unit.UnitRemoving:Connect(function(unitId: string)
-	local unit = Unit.fromId(unitId)
-	if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return end
+    local unit = Unit.fromId(unitId)
+    if (unit.Type ~= GameEnum.UnitType.TowerUnit) then return end
 
-	local unitModel = unit.Model
-	local boundingPart = unitModel:FindFirstChild("_BoundingPart")
+    local unitModel = unit.Model
+    local boundingPart = unitModel:FindFirstChild("_BoundingPart")
 
-	local boundingPartIndex = table.find(overlapParamsFilter, boundingPart)
-	if (not boundingPartIndex) then return end
+    local boundingPartIndex = table.find(overlapParamsFilter, boundingPart)
+    if (not boundingPartIndex) then return end
 
-	table.remove(overlapParamsFilter, boundingPartIndex)
-	overlapParams.FilterDescendantsInstances = overlapParamsFilter
+    table.remove(overlapParamsFilter, boundingPartIndex)
+    overlapParams.FilterDescendantsInstances = overlapParamsFilter
 end)
 
 CollectionService:GetInstanceAddedSignal(GameEnum.SurfaceType.Terrain):Connect(surfacePartAdded)

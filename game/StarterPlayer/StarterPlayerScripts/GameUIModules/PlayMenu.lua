@@ -26,7 +26,7 @@ local SimpleGameCreationPage = Roact.PureComponent:extend("GameCreationPage")
 
 local difficultyDescriptions = {
     [GameEnum.Difficulty.Easy] = "Enemy Units are easier to deal with.",
-    [GameEnum.Difficulty.Normal] = "A very normal game.", -- todo
+    [GameEnum.Difficulty.Normal] = "",
     [GameEnum.Difficulty.Hard] = "Enemy Units are more difficult to deal with, and less Points are given at the start of each round.",
 }
 
@@ -132,23 +132,23 @@ PlayMenuMainPage.didMount = function(self)
     end)
 
     self.gameClosed = Matchmaking.GameClosed:Connect(function(gameId)
-        self.updateGameList()
-        
         if (self.state.currentParty == gameId) then
             self:setState({
                 currentParty = Roact.None
             })
         end
+        
+        self.updateGameList()
     end)
 
     self.gameStarting = Matchmaking.GameStarting:Connect(function(gameId)
-        self.updateGameList()
-
         if (self.state.currentParty == gameId) then
             self:setState({
                 currentParty = Roact.None
             })
         end
+        
+        self.updateGameList()
     end)
 
     self.playerJoinedGame = Matchmaking.PlayerJoinedGame:Connect(function(gameId, player)
@@ -162,13 +162,13 @@ PlayMenuMainPage.didMount = function(self)
     end)
 
     self.playerLeftGame = Matchmaking.PlayerLeftGame:Connect(function(_, player, _)
-        self.updateGameList()
-        
         if (player == LocalPlayer) then
             self:setState({
                 currentParty = Roact.None
             })
         end
+        
+        self.updateGameList()
     end)
 
     self.playerJoinedGameQueue = Matchmaking.PlayerJoinedGameQueue:Connect(function(gameId, player)
@@ -182,13 +182,13 @@ PlayMenuMainPage.didMount = function(self)
     end)
 
     self.playerLeftGameQueue = Matchmaking.PlayerLeftGameQueue:Connect(function(_, player, joined)
-        self.updateGameList()
-        
         if ((player == LocalPlayer) and (not joined)) then
             self:setState({
                 currentParty = Roact.None
             })
         end
+        
+        self.updateGameList()
     end)
 
     local gameList = getSortedGameList()
