@@ -15,7 +15,7 @@ local serverType
 local placeId = game.PlaceId
 
 local debugGameData = {
-    MapName = "Treasure",
+    MapName = "Rings",
     GameMode = GameEnum.GameMode.TowerDefense,
     Difficulty = GameEnum.Difficulty.Normal,
 }

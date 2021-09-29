@@ -259,6 +259,7 @@ Unit.new = function(unitName: string, owner: number?)
     unitModelBoundingPart.Size = unitModelBounds
     unitModelBoundingPart.CanCollide = false
     unitModelBoundingPart.CanTouch = false
+    unitModelBoundingPart.Massless = true
     unitModelBoundingPart.Parent = newBaseModel
 
     local attributeChangedEvent = Instance.new("BindableEvent")

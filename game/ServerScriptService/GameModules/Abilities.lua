@@ -60,6 +60,10 @@ Abilities.GiveUnitAbility = function(unit, abilityName: string)
     
     unitAbilities[unit.Id][abilityName] = true
     AbilityGivenEvent:Fire(unit.Id, abilityName)
+
+    if (abilityData.AbilityType == GameEnum.AbilityType.OnApply) then
+        abilityData.Callback(unit, {})
+    end
 end
 
 Abilities.RemoveUnitAbility = function(unit, abilityName: string)
@@ -98,6 +102,7 @@ Unit.UnitAdded:Connect(function(unitId)
     if (not unit) then return end
 
     unitAbilities[unitId] = Unit.GetUnitAbilities(unit.Name, unit.Level)
+    Abilities.ActivateAbilities(unit, GameEnum.AbilityType.OnApply)
 
     unitUpgradedConnections[unitId] = unit.Upgraded:Connect(function(newLevel)
         unitAbilities[unitId] = Unit.GetUnitAbilities(unit.Name, newLevel)

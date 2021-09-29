@@ -93,7 +93,7 @@ local PlayerDataTemplate: PlayerData = {
 
 local ProfileStore = ProfileService.GetProfileStore({
     Name = "PlayerData",
-    Scope = "InDev"
+    Scope = SharedGameData.Scope
 }, PlayerDataTemplate)
 
 ProfileStore = RunService:IsStudio() and ProfileStore.Mock or ProfileStore

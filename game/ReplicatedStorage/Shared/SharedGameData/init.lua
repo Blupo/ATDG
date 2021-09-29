@@ -10,4 +10,6 @@ return {
     AutomaticObjectGrants = AutomaticObjectGrants,
     EphemeralCurrencies = EphemeralCurrencies,
     GameConstants = GameConstants,
+
+    Scope = "InDev",
 }

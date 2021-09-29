@@ -27,8 +27,12 @@ return {
 
             return GameEnum.StatusEffectInteractionResult.DoNotApply
         end,
-        
-        Immune = function()
+
+        InnateHeat = function()
+            return GameEnum.StatusEffectInteractionResult.DoNotApply
+        end,
+
+        Incorporeality = function()
             return GameEnum.StatusEffectInteractionResult.DoNotApply
         end,
     }

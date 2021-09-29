@@ -4,16 +4,19 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 local ServerScriptService = game:GetService("ServerScriptService")
+local ServerStorage = game:GetService("ServerStorage")
 
 ---
 
-local GameDataStore = DataStoreService:GetDataStore("GameData", "InDev") -- todo
+local Lobbies = ServerStorage:FindFirstChild("Lobbies")
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
+local LoadEnvironment = require(GameModules:FindFirstChild("LoadEnvironment"))
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
+local SharedGameData = require(SharedModules:FindFirstChild("SharedGameData"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 
 local ServerInitialisedEvent = Instance.new("BindableEvent")
@@ -21,6 +24,7 @@ local ServerInitialisedEvent = Instance.new("BindableEvent")
 local System = SystemCoordinator.newSystem("ServerMaster")
 local GameInitFailureNotificationRemoteEvent = System.addEvent("GameInitFailureNotification")
 
+local GameDataStore = DataStoreService:GetDataStore("GameData", SharedGameData.Scope)
 
 ---
 
@@ -86,6 +90,8 @@ ServerMaster.InitServer = function(initServerType: string, debugGameData)
                 TeleportService:TeleportAsync(6421134421, Players:GetPlayers())
             end)
         end)
+    elseif (serverType == GameEnum.ServerType.Lobby) then
+        LoadEnvironment(Lobbies:FindFirstChild(SharedGameData.Scope))
     end
 
     local modules = serverModules[serverType]

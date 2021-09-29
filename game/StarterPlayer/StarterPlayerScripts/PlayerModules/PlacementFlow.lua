@@ -17,6 +17,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
+local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 local Shop = require(GameModules:WaitForChild("Shop"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
@@ -398,8 +399,13 @@ placeObject = function()
     if (not placementActive) then return end
 
     local cacheObjName, cacheRaycastOrigin, cacheRaycastDirection, cacheRotation = currentObjName, lastRaycastOrigin, lastRaycastDirection, rotation
-
+    
     PlacementFlow.Stop()
+
+    local unitPrice = Shop.GetObjectPlacementPrice(GameEnum.ObjectType.Unit, cacheObjName)
+    local playerPoints = PlayerData.GetPlayerCurrencyBalance(LocalPlayer.UserId, GameEnum.CurrencyType.Points)
+    if (unitPrice > playerPoints) then return end
+
     Shop.PurchaseObjectPlacement(LocalPlayer.UserId, GameEnum.ObjectType.Unit, cacheObjName, cacheRaycastOrigin, cacheRaycastDirection, cacheRotation)
 end
 

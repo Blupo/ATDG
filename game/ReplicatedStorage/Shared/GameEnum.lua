@@ -31,7 +31,7 @@ return setmetatable({
     StatusEffectType = makeEnum("GameEnum.StatusEffectType", { "Instant", "Periodic", "Lingering" }),
     AttributeModifierType = makeEnum("GameEnum.AttributeModifierType", { "Multiplicative", "Additive", "Set" }),
     StatusEffectInteractionResult = makeEnum("GameEnum.StatusEffectInteractionResult", { "DoNotApply", "None" }),
-    AbilityType = makeEnum("GameEnum.AbilityType", { "RoundStart", "RoundEnd", "OnHit", "Manual" }),
+    AbilityType = makeEnum("GameEnum.AbilityType", { "RoundStart", "RoundEnd", "OnHit", "Manual", "OnApply" }),
     AbilityActionResult = makeEnum("GameRnums.AbilityActionResult", { "CancelEvent", "None" }),
     GamePhase = makeEnum("GameEnum.GamePhase", { "NotStarted", "Preparation", "Round", "Intermission", "FinalIntermission", "Ended" }),
     GameMode = makeEnum("GameEnum.GameMode", { "TowerDefense", "Endless" }),

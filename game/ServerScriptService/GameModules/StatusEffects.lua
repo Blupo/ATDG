@@ -40,7 +40,7 @@ local StatusEffects = {
 StatusEffects.UnitHasEffect = function(unitId: string, effectName: string): boolean
     local unitEffects = unitEffectPromises[unitId]
     if (not unitEffects) then return false end
-    
+
     return unitEffects[effectName] and true or false
 end
 
@@ -94,7 +94,7 @@ StatusEffects.ApplyEffect = function(unitId: string, effectName: string, duratio
     effectData.OnApplying(unit, effectConfig)
     
     -- schedule next action
-    if (effectType == GameEnum.StatusEffectType.Lingering) then        
+    if (effectType == GameEnum.StatusEffectType.Lingering) then
         unitEffects[effectName] = scheduleCallback(nil, function()
             local onRemoving = effectData.OnRemoving
 
@@ -154,7 +154,9 @@ end
 ---
 
 Unit.UnitAdded:Connect(function(unitId: string)
-    unitEffectPromises[unitId] = {}
+    if (not unitEffectPromises[unitId]) then
+        unitEffectPromises[unitId] = {}
+    end
 end)
 
 Unit.UnitRemoving:Connect(function(unitId: string)

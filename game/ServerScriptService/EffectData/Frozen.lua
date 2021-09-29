@@ -29,5 +29,17 @@ return {
             
             return GameEnum.StatusEffectInteractionResult.DoNotApply
         end,
+
+        InnateHeat = function()
+            return GameEnum.StatusEffectInteractionResult.DoNotApply
+        end,
+
+        InnateFrost = function()
+            return GameEnum.StatusEffectInteractionResult.DoNotApply
+        end,
+
+        Incorporeality = function()
+            return GameEnum.StatusEffectInteractionResult.DoNotApply
+        end,
     }
 }

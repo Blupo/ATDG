@@ -13,6 +13,7 @@ local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
+local SharedGameData = require(SharedModules:FindFirstChild("SharedGameData"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
 
@@ -65,7 +66,7 @@ type GameData = {
 
 local TEMP_MAX_PLAYERS = 4 -- todo: max players should depend on gamemode
 
-local GameDataStore = DataStoreService:GetDataStore("GameData", "InDev") -- todo
+local GameDataStore = DataStoreService:GetDataStore("GameData", SharedGameData.Scope)
 
 local games = {}
 local startingGames = {}

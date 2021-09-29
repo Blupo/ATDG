@@ -218,7 +218,22 @@ local constructUnit = function(unitModel)
     local appearanceModelChildren = appearanceModel:GetChildren()
     
     for i = 1, #appearanceModelChildren do
-        appearanceModelChildren[i].Parent = unitModel
+        local child = appearanceModelChildren[i]
+        local descendants = child:GetDescendants()
+
+        for j = 1, #descendants do
+            local descendant = descendants[j]
+
+            if (descendant:IsA("BasePart")) then
+                descendant.Massless = true
+            end
+        end
+
+        if (child:IsA("BasePart")) then
+            child.Massless = true
+        end
+
+        child.Parent = unitModel
     end
 
     unitModel.PrimaryPart = appearanceModelPrimaryPart

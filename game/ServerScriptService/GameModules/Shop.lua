@@ -1,5 +1,3 @@
--- todo: needs to work with ServerMaster
-
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
