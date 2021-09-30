@@ -4,6 +4,11 @@
     "tree": {
         "$className": "DataModel",
 
+        "ReplicatedFirst": {
+            "$className": "ReplicatedFirst",
+            "$path": "game/ReplicatedFirst"
+        },
+
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
             "$ignoreUnknownInstances": true,

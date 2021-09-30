@@ -1,5 +1,6 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
@@ -307,6 +308,18 @@ end
 ---
 
 localPlayerUnitPersistentUpgradeLevels = Unit.GetAllUnitsPersistentUpgradeLevels(LocalPlayer.UserId)
+
+do
+    local unitModelDescendantCounts = Unit.GetUnitModelDescendantCounts()
+
+    for unitName, numDescendants in pairs(unitModelDescendantCounts) do
+        local unitModel = UnitModels:WaitForChild(unitName)
+
+        while (#unitModel:GetDescendants() < numDescendants) do
+            RunService.Heartbeat:Wait()
+        end
+    end
+end
 
 for _, unitDataScript in pairs(UnitData:GetChildren()) do
     local unitName = unitDataScript.Name

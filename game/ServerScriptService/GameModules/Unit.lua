@@ -224,6 +224,18 @@ Unit.DoUnitPersistentUpgrade = function(owner: number, unitName: string)
     UnitPersistentUpgradedEvent:Fire(owner, unitName, nextLevel)
 end
 
+Unit.GetUnitModelDescendantCounts = function()
+    local descendantCounts = {}
+
+    for unitName in pairs(unitDataCache) do
+        if (Unit.DoesUnitExist(unitName)) then
+            descendantCounts[unitName] = #UnitModels:FindFirstChild(unitName):GetDescendants()
+        end
+    end
+
+    return descendantCounts
+end
+
 --- Class
 
 Unit.new = function(unitName: string, owner: number?)
@@ -534,5 +546,9 @@ System.addFunction("GetUnitPersistentUpgradeLevel", t.wrap(function(player: Play
 
     return Unit.GetUnitPersistentUpgradeLevel(owner, unitName)
 end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
+
+System.addFunction("GetUnitModelDescendantCounts", t.wrap(function()
+    return Unit.GetUnitModelDescendantCounts()
+end, t.tuple(t.instanceOf("Player"))), true)
 
 return Unit

@@ -261,7 +261,7 @@ Hotbar.render = function(self)
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
 
-                Text = self.state.hoverObjectName,
+                Text = Unit.GetUnitDisplayName(self.state.hoverObjectName),
                 Font = Style.Constants.MainFont,
                 TextSize = 16,
                 TextStrokeTransparency = 0.5,

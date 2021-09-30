@@ -16,6 +16,7 @@ local ClientScripts = PlayerScripts:WaitForChild("ClientScripts")
 local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
 local GameUI = GameUIModules:WaitForChild("GameUI")
 local LobbyUI = GameUIModules:WaitForChild("LobbyUI")
+local LoadingUI = require(GameUIModules:WaitForChild("LoadingUI"))
 local Roact = require(GameUIModules:WaitForChild("Roact"))
 
 local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
@@ -41,6 +42,10 @@ local initClientScripts = function(serverType: string)
     local scripts = clientScripts[serverType]
     local clientUI
 
+    local loadingUI = Roact.mount(Roact.createElement(LoadingUI, {
+        enabled = true,
+    }), PlayerGui, "LoadingGui")
+
     for scriptName in pairs(scripts) do
         ClientScripts:WaitForChild(scriptName).Disabled = false
     end
@@ -51,7 +56,16 @@ local initClientScripts = function(serverType: string)
         clientUI = require(GameUI)
     end
 
+    Roact.update(loadingUI, Roact.createElement(LoadingUI, {
+        enabled = false
+    }))
+
     Roact.mount(Roact.createElement(clientUI), PlayerGui, "ClientUI")
+
+    task.delay(5, function()
+        Roact.unmount(loadingUI)
+        loadingUI = nil
+    end)
 end
 
 ---
