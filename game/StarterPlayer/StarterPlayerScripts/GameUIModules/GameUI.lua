@@ -1,16 +1,18 @@
+local StarterPlayer = game:GetService("StarterPlayer")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
 local root = script.Parent
 
-local Roact = require(root:WaitForChild("Roact"))
 local CurrencyBar = require(root:WaitForChild("CurrencyBar"))
 local Hotbar = require(root:WaitForChild("Hotbar"))
 local GameInventory = require(root:WaitForChild("GameInventory"))
 local GameOverUI = require(root:WaitForChild("GameOverUI"))
 local GameState = require(root:WaitForChild("GameState"))
 local Padding = require(root:WaitForChild("Padding"))
+local Roact = require(root:WaitForChild("Roact"))
+local Style = require(root:WaitForChild("Style"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
@@ -30,11 +32,13 @@ GameUI.init = function(self)
 end
 
 GameUI.didMount = function(self)
+    local derivedGameState = Game.GetDerivedGameState()
     local gameRunning = Game.IsRunning()
 
     if (gameRunning) then
         self:setState({
-            gameRunning = gameRunning
+            gameRunning = gameRunning,
+            gamePhase = derivedGameState.GamePhase,
         })
     else
         self.gameStarted = Game.Started:Connect(function()
@@ -45,6 +49,10 @@ GameUI.didMount = function(self)
                 gameRunning = true
             })
         end)
+
+        self:setState({
+            gamePhase = derivedGameState.GamePhase,
+        })
     end
 
     self.phaseChanged = Game.PhaseChanged:Connect(function(phase: string)
@@ -97,6 +105,24 @@ GameUI.render = function(self)
         if (gamePhase == GameEnum.GamePhase.Ended) then
             ui = Roact.createElement(GameOverUI, {
                 gameCompleted = self.state.gameCompleted
+            })
+        elseif (gamePhase == GameEnum.GamePhase.NotStarted) then
+            ui = Roact.createElement("TextLabel", {
+                AnchorPoint = Vector2.new(0, 1),
+                Size = UDim2.new(1, -Style.Constants.MajorElementPadding * 2, 0, 24),
+                Position = UDim2.new(0, Style.Constants.MajorElementPadding, 1, -Style.Constants.MajorElementPadding),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+
+                Text = "Waiting for player data...",
+                Font = Style.Constants.MainFont,
+                TextSize = 24,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Center,
+                TextStrokeTransparency = 0.5,
+
+                TextColor3 = Color3.new(0, 0, 0),
+                TextStrokeColor3 = Color3.new(1, 1, 1),
             })
         end
     end

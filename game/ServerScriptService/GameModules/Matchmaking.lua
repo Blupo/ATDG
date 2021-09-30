@@ -432,6 +432,7 @@ Matchmaking.StartGame = function(gameId: string)
         table.insert(players, playerList[i])
     end
 
+    gameData.NumPlayers = #playerList
     startingGames[gameId] = gameData
     games[gameId] = nil
     GameStartingEvent:Fire(gameId)
@@ -456,6 +457,7 @@ Matchmaking.StartGame = function(gameId: string)
     end, function(error)
         warn(tostring(error))
 
+        gameData.NumPlayers = nil
         games[gameId] = gameData
         startingGames[gameId] = nil
 

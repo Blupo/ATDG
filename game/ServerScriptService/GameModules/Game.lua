@@ -102,7 +102,7 @@ type DerivedGameState = {
     CentralTowersHealth: dictionary<number, number>,
     Difficulty: string,
     CurrentChallenge: string?,
-    PlayTime: nubmer,
+    PlayTime: nubmer?,
     Completed: boolean,
 }
 
@@ -574,7 +574,7 @@ Game.GetDerivedGameState = function(): DerivedGameState?
         CentralTowersHealth = currentGameData.CentralTowersHealth,
         Difficulty = currentGameData.Difficulty,
         CurrentChallenge = currentGameData.CurrentChallenge,
-        PlayTime = os.time() - gameStartTime,
+        PlayTime = gameStartTime and (os.time() - gameStartTime) or nil,
         Completed = currentGameData.Completed,
     }
 end

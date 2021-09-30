@@ -36,7 +36,6 @@ local serverModules = {
         GameStats = true,
         Path = true,
         Placement = true,
-        PlayerData = true,
         Shop = true,
         SpecialActions = true,
         StatusEffects = true,
@@ -63,6 +62,7 @@ ServerMaster.InitServer = function(initServerType: string, debugGameData)
 
     if (serverType == GameEnum.ServerType.Game) then
         local Game = require(GameModules:FindFirstChild("Game"))
+        local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
 
         Promise.new(function(resolve, reject)
             local privateServerId = game.PrivateServerId
@@ -81,7 +81,43 @@ ServerMaster.InitServer = function(initServerType: string, debugGameData)
             resolve(GameDataStore:RemoveAsync(privateServerId))
         end):andThen(function(gameplayData)
             Game.LoadData(gameplayData.MapName, gameplayData.GameMode, gameplayData.Difficulty)
-            Game.Start()
+
+            Promise.new(function(resolve, _, onCancel)
+                local flag = true
+
+                onCancel(function()
+                    flag = false
+                end)
+
+                while ((#Players:GetPlayers() < gameplayData.NumPlayers) and flag) do
+                    RunService.Heartbeat:Wait()
+                end
+
+                if (flag) then
+                    resolve()
+                end
+            end):timeout(10):finally(function()
+                Promise.new(function(resolve, _, onCancel)
+                    local flag = true
+                    local players = Players:GetPlayers()
+
+                    onCancel(function()
+                        flag = false
+                    end)
+
+                    for i = 1, #players do
+                        if (not flag) then break end
+
+                        PlayerData.WaitForPlayerProfile(players[i].UserId):await()
+                    end
+
+                    if (flag) then
+                        resolve()
+                    end
+                end):timeout(20):finally(function()
+                    Game.Start()
+                end)
+            end)
         end, function(error)
             warn(tostring(error))
             GameInitFailureNotificationRemoteEvent:FireAllClients()

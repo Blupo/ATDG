@@ -10,6 +10,7 @@ local setCoreKV = {
 
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
 
 for k, v in pairs(setCoreKV) do
     local success

@@ -18,6 +18,7 @@ local debugGameData = {
     MapName = "Rings",
     GameMode = GameEnum.GameMode.TowerDefense,
     Difficulty = GameEnum.Difficulty.Normal,
+    NumPlayers = 0,
 }
 
 if (placeId == 6421134421) then
