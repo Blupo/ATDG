@@ -259,7 +259,7 @@ local getPointsAllowance = function()
     local points = pointsAllowance[currentRound]
     
     while (not points) do
-        if (currentRound <= 1) then
+        if (currentRound <= 0) then
             points = 0
             break
         end
@@ -292,29 +292,7 @@ advanceGamePhase = function()
         calculateUnitRoundData()
         
         local difficulty = currentGameData.Difficulty        
-        local pointsToAward = getPointsAllowance()
         local roundData = challengeData.Rounds[currentRound]
-        
-        -- award points
-        if (difficulty == GameEnum.Difficulty.Hard) then
-            pointsToAward = pointsToAward / 2
-
-            local wholePoints = math.floor(pointsToAward)
-            local difference = pointsToAward - wholePoints
-
-            -- add the difference into the accumulators
-            if (difference > 0) then
-                local players = Players:GetPlayers()
-
-                for i = 1, #players do
-                    addPointsToPlayerAccumulator(players[i].UserId, difference)
-                end
-            end
-
-            pointsToAward = wholePoints
-        end
-
-        PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Points, pointsToAward)
 
         -- trigger RoundStart abilities
         do
@@ -432,6 +410,30 @@ advanceGamePhase = function()
         if (nextRoundData) then
             phaseStartTime = syncedClock:GetTime()
             phaseLength = INTERMISSION_TIME
+
+            local difficulty = currentGameData.Difficulty        
+            local pointsToAward = getPointsAllowance()
+            
+            -- award points
+            if (difficulty == GameEnum.Difficulty.Hard) then
+                pointsToAward = pointsToAward / 2
+
+                local wholePoints = math.floor(pointsToAward)
+                local difference = pointsToAward - wholePoints
+
+                -- add the difference into the accumulators
+                if (difference > 0) then
+                    local players = Players:GetPlayers()
+
+                    for i = 1, #players do
+                        addPointsToPlayerAccumulator(players[i].UserId, difference)
+                    end
+                end
+
+                pointsToAward = wholePoints
+            end
+
+            PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Points, pointsToAward)
             
             -- todo: trigger RoundEnded abilities
 
