@@ -12,10 +12,13 @@ local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 local Shop = require(GameModules:WaitForChild("Shop"))
+local SpecialActions = require(GameModules:WaitForChild("SpecialActions"))
 local Unit = require(GameModules:WaitForChild("Unit"))
 
 local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
 local PreviewAttributes = require(PlayerModules:WaitForChild("PreviewAttributes"))
+local SpecialActionFlavorTexts = require(PlayerModules:WaitForChild("SpecialActionFlavorTexts"))
+local UnitFlavorTexts = require(PlayerModules:WaitForChild("UnitFlavorTexts"))
 
 local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
 local Padding = require(GameUIModules:WaitForChild("Padding"))
@@ -59,6 +62,49 @@ local shopCategories = {
         element = SpecialShopPage,
     }
 }
+
+local generateSpecialActionLimitDescription = function(limits)
+    local description = ""
+
+    local playerLimit = limits[GameEnum.SpecialActionLimitType.PlayerLimit]
+    local gameLimit = limits[GameEnum.SpecialActionLimitType.GameLimit]
+    local playerCooldown = limits[GameEnum.SpecialActionLimitType.PlayerCooldown]
+    local gameCooldown = limits[GameEnum.SpecialActionLimitType.GameCooldown]
+
+    if (playerLimit) then
+        description = description .. string.format(
+            "%sYou can only use this action %s per game.",
+            (description == "") and "" or "\n\n",
+            (playerLimit == 1) and "once" or (playerLimit .. " times")
+        )
+    end
+
+    if (gameLimit) then
+        description = description .. string.format(
+            "%sThis action can only be used %s per game, regardless of player.",
+            (description == "") and "" or "\n\n",
+            (gameLimit == 1) and "once" or (gameLimit .. " times")
+        )
+    end
+
+    if (playerCooldown) then
+        description = description .. string.format(
+            "%sYou can only use this action every %d seconds.",
+            (description == "") and "" or "\n\n",
+            playerCooldown
+        )
+    end
+
+    if (gameCooldown) then
+        description = description .. string.format(
+            "%sThis action can only be used every %d seconds, regardless of player.",
+            (description == "") and "" or "\n\n",
+            gameCooldown
+        )
+    end
+
+    return description
+end
 
 ---
 
@@ -491,7 +537,6 @@ UnitShopPage.render = function(self)
                     TextColor3 = Color3.new(0, 0, 0)
                 }),
 
-                -- TODO
                 FlavorTextLabel = Roact.createElement("TextLabel", {
                     AnchorPoint = Vector2.new(0.5, 0),
                     Size = UDim2.new(1, 0, 0, 32),
@@ -499,7 +544,7 @@ UnitShopPage.render = function(self)
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
 
-                    Text = "<i>" .. "Blupo please add details. >:(" .. "</i>",
+                    Text = "<i>" .. (UnitFlavorTexts[selectedUnit] or "") .. "</i>",
                     RichText = true,
                     Font = Enum.Font.Gotham,
                     TextSize = 16,
@@ -791,6 +836,7 @@ SpecialShopPage.render = function(self)
     end
 
     local selectedActionPriceTextSize = selectedAction and TextService:GetTextSize(selectedActionPrice or "?", 16, Style.Constants.MainFont, Vector2.new(math.huge, math.huge)) or nil
+    local selectedActionUsageLimits = selectedAction and SpecialActions.GetSpecialActionUsageLimits(selectedAction) or nil
 
     local ticketListElements = {}
     local actionListElements = {}
@@ -1056,22 +1102,25 @@ SpecialShopPage.render = function(self)
                     TextColor3 = Color3.new(0, 0, 0)
                 }),
 
-                -- TODO
-                FlavorTextLabel = Roact.createElement("TextLabel", {
+                DescriptionLabel = Roact.createElement("TextLabel", {
                     AnchorPoint = Vector2.new(0.5, 0),
                     Size = UDim2.new(1, 0, 1, -90),
                     Position = UDim2.new(0.5, 0, 0, 32),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
 
-                    Text = "Blupo, please add details. >:(",
+                    Text = (SpecialActionFlavorTexts[selectedAction] or "") ..
+                        (selectedActionUsageLimits and ("\n\n" .. generateSpecialActionLimitDescription(selectedActionUsageLimits)) or ""),
+
                     Font = Enum.Font.Gotham,
                     TextSize = 16,
                     TextWrapped = true,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
+                    TextStrokeTransparency = 0.5,
 
-                    TextColor3 = Color3.new(0, 0, 0)
+                    TextColor3 = Color3.new(0, 0, 0),
+                    TextStrokeColor3 = Color3.fromRGB(245, 245, 245)
                 }),
 
                 BackgroundImage = Roact.createElement("ImageLabel", {

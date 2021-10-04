@@ -47,6 +47,7 @@ local serverModules = {
         Matchmaking = true,
         PlayerData = true,
         Shop = true,
+        SpecialActions = true,
     },
 }
 
