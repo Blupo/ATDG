@@ -22,6 +22,7 @@ local EphemeralCurrencies = SharedGameData.EphemeralCurrencies
 local GameConstants = SharedGameData.GameConstants
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
+local ServerMaster = require(GameModules:FindFirstChild("ServerMaster"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
 local CurrencyBalanceChangedEvent = Instance.new("BindableEvent")
@@ -100,6 +101,7 @@ ProfileStore = RunService:IsStudio() and ProfileStore.Mock or ProfileStore
 
 local playerProfiles = {}
 local ephemeralCurrenciesBalances = {}
+local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
 
 local playerAdded = function(player: Player)
     local userId = player.UserId
@@ -151,8 +153,20 @@ local playerAdded = function(player: Player)
                 end
             end
 
-            for currencyType in pairs(EphemeralCurrencies) do
-                ephemeralCurrenciesBalance[currencyType] = 0
+            -- verify object grants
+            local unitGrants = profile.Data.ObjectGrants[GameEnum.ObjectType.Unit]
+
+            for unitName in pairs(unitGrants) do
+                if (not Unit.DoesUnitExist(unitName)) then
+                    unitGrants[unitName] = nil
+                end
+            end
+
+            -- setup ephemeral currencies
+            if (serverType == GameEnum.ServerType.Game) then
+                for currencyType in pairs(EphemeralCurrencies) do
+                    ephemeralCurrenciesBalance[currencyType] = 0
+                end
             end
 
             playerProfiles[userId] = profile

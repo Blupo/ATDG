@@ -16,7 +16,5 @@ return {
         Bank = 0,
         FreezerTower = 0,
         GiantBob = 0,
-
-        DEBUG_Obliterator = math.huge,
     },
 }

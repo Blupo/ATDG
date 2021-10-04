@@ -46,11 +46,6 @@ local unitPrices = ShopPrices.ObjectGrantPrices[GameEnum.ObjectType.Unit]
 local actionPrices = ShopPrices.ItemPrices[GameEnum.ItemType.SpecialAction]
 local actionPricesSorted = {}
 
-local unitPricesSorted = {
-    [GameEnum.UnitType.TowerUnit] = {},
-    [GameEnum.UnitType.FieldUnit] = {},
-}
-
 local shopCategories = {
     {
         name = "Units",
@@ -108,15 +103,6 @@ end
 
 ---
 
-for unitName, price in pairs(unitPrices) do
-    local unitType = Unit.GetUnitType(unitName)
-
-    table.insert(unitPricesSorted[unitType], {
-        unitName = unitName,
-        price = price,
-    })
-end
-
 for actionName, price in pairs(actionPrices) do
     table.insert(actionPricesSorted, {
         actionName = actionName,
@@ -124,18 +110,9 @@ for actionName, price in pairs(actionPrices) do
     })
 end
 
-table.sort(unitPricesSorted[GameEnum.UnitType.TowerUnit], function(a, b)
-    return a.price < b.price
-end)
-
-table.sort(unitPricesSorted[GameEnum.UnitType.FieldUnit], function(a, b)
-    return a.price < b.price
-end)
-
 table.sort(actionPricesSorted, function(a, b)
-    return a.price < b.price
+    return a.actionName < b.actionName
 end)
-
 
 ---
 
@@ -143,15 +120,56 @@ UnitShopPage.init = function(self)
     self.unitListLength, self.updateUnitListLength = Roact.createBinding(0)
     self.towerUnitListLength, self.updateTowerUnitListLength = Roact.createBinding(0)
     self.fieldUnitListLength, self.updateFieldUnitListLength = Roact.createBinding(0)
+
+    self.getUnitList = function()
+        local unitsMap = {}
+        local playerUnitGrants = PlayerData.GetPlayerObjectGrants(LocalPlayer.UserId)[GameEnum.ObjectType.Unit]
+
+        local unitsSorted = {
+            [GameEnum.UnitType.TowerUnit] = {},
+            [GameEnum.UnitType.FieldUnit] = {},
+        }
+
+        for unitName in pairs(unitPrices) do
+            unitsMap[unitName] = true
+        end
+
+        for unitName in pairs(playerUnitGrants) do
+            unitsMap[unitName] = true
+        end
+
+        for unitName in pairs(unitsMap) do
+            local unitType = Unit.GetUnitType(unitName)
+
+            table.insert(unitsSorted[unitType], unitName)
+        end
+
+        table.sort(unitsSorted[GameEnum.UnitType.TowerUnit], function(a, b)
+            return string.lower(a) < string.lower(b)
+        end)
+        
+        table.sort(unitsSorted[GameEnum.UnitType.FieldUnit], function(a, b)
+            return string.lower(a) < string.lower(b)
+        end)
+
+        return unitsSorted
+    end
+
+    self:setState({
+        showUnits = {
+            [GameEnum.UnitType.TowerUnit] = {},
+            [GameEnum.UnitType.FieldUnit] = {},
+        }
+    })
 end
 
 UnitShopPage.didMount = function(self)
     self.objectGrantedConnection = PlayerData.ObjectGranted:Connect(function(_, objectType: string, objectName: string)
         if (objectType ~= GameEnum.ObjectType.Unit) then return end
-        if (self.state.selectedUnit ~= objectName) then return end
-        
+
         self:setState({
-            playerOwnsSelectedUnit = true,
+            showUnits = self.getUnitList(),
+            playerOwnsSelectedUnit = (self.state.selectedUnit == objectName) and true or nil,
         })
     end)
 
@@ -166,6 +184,10 @@ UnitShopPage.didMount = function(self)
             selectedUnitHotbarIndex = table.find(newHotbar, selectedUnit) or Roact.None,
         })
     end)
+
+    self:setState({
+        showUnits = self.getUnitList()
+    })
 end
 
 UnitShopPage.willUnmount = function(self)
@@ -201,16 +223,15 @@ UnitShopPage.render = function(self)
 
     local grantPriceTextSize = selectedUnit and TextService:GetTextSize(selectedUnitGrantPrice or "?", 16, Style.Constants.MainFont, Vector2.new(math.huge, math.huge)) or nil
 
-    local towerUnitPrices = unitPricesSorted[GameEnum.UnitType.TowerUnit]
-    local fieldUnitPrices = unitPricesSorted[GameEnum.UnitType.FieldUnit]
+    local towerUnitPrices = self.state.showUnits[GameEnum.UnitType.TowerUnit]
+    local fieldUnitPrices = self.state.showUnits[GameEnum.UnitType.FieldUnit]
 
     local towerUnitListElements = {}
     local fieldUnitListElements = {}
     local statListElements = {}
 
     for i = 1, #towerUnitPrices do
-        local priceInfo = towerUnitPrices[i]
-        local unitName = priceInfo.unitName
+        local unitName = towerUnitPrices[i]
 
         towerUnitListElements[unitName] = Roact.createElement(UnitViewport, {
             LayoutOrder = i,
@@ -234,8 +255,7 @@ UnitShopPage.render = function(self)
     end
 
     for i = 1, #fieldUnitPrices do
-        local priceInfo = fieldUnitPrices[i]
-        local unitName = priceInfo.unitName
+        local unitName = fieldUnitPrices[i]
 
         fieldUnitListElements[unitName] = Roact.createElement(UnitViewport, {
             LayoutOrder = i,
