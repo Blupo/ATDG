@@ -23,6 +23,14 @@ local StatusEffects = SystemCoordinator.waitForSystem("StatusEffects")
 
 ---
 
+local defColorString = string.format("%d,%d,%d",
+    Style.Colors.DEFAttributeIconColor.R * 255,
+    Style.Colors.DEFAttributeIconColor.G * 255,
+    Style.Colors.DEFAttributeIconColor.B * 255
+)
+
+---
+
 --[[
     props
 
@@ -38,8 +46,10 @@ local FieldUnitBillboard = Roact.PureComponent:extend("FieldUnitBillboard")
 FieldUnitBillboard.init = function(self)
     self:setState({
         name = "",
+
         hp = 0,
         maxHP = 0,
+        def = 0,
 
         statusEffects = {},
     })
@@ -50,12 +60,16 @@ FieldUnitBillboard.didMount = function(self)
     local thisUnit = Unit.fromId(self.props.unitId)
     if (not thisUnit) then return end
 
-    self.hpChanged = thisUnit.AttributeChanged:Connect(function(attributeName, newValue)
-        if (attributeName ~= "HP") then return end
-
-        self:setState({
-            hp = newValue
-        })
+    self.attributeChanged = thisUnit.AttributeChanged:Connect(function(attributeName, newValue)
+        if (attributeName == "HP") then
+            self:setState({
+                hp = newValue
+            })
+        elseif (attributeName == "DEF") then
+            self:setState({
+                def = newValue
+            })
+        end
     end)
 
     self.effectApplied = StatusEffects.EffectApplied:Connect(function(unitId: string, effectName: string)
@@ -103,19 +117,21 @@ FieldUnitBillboard.didMount = function(self)
 
         hp = thisUnit:GetAttribute("HP"),
         maxHP = thisUnit:GetAttribute("MaxHP"),
+        def = thisUnit:GetAttribute("DEF"),
 
         statusEffects = statusEffectsDictionary,
     })
 end
 
 FieldUnitBillboard.willUnmount = function(self)
-    self.hpChanged:Disconnect()
+    self.attributeChanged:Disconnect()
     self.effectApplied:Disconnect()
     self.effectRemoved:Disconnect()
 end
 
 FieldUnitBillboard.render = function(self)
     local hp, maxHP = self.state.hp, self.state.maxHP
+    local def = self.state.def
     local statusEffects = self.state.statusEffects
 
     local statusEffectsAlphabetSort = {}
@@ -236,9 +252,16 @@ FieldUnitBillboard.render = function(self)
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
 
-                Text = string.format("%d/%d", math.ceil(hp), math.ceil(maxHP)),
+                Text = string.format(
+                    "%d/%d/<font color=\"rgb(" .. defColorString .. ")\">%d</font>",
+                    math.ceil(hp),
+                    math.ceil(maxHP),
+                    def
+                ),
+
                 Font = Style.Constants.MainFont,
                 TextScaled = true,
+                RichText = true,
                 TextXAlignment = Enum.TextXAlignment.Center,
                 TextYAlignment = Enum.TextYAlignment.Center,
 
