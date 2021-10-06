@@ -6,13 +6,18 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
+local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Abilities = require(GameModules:FindFirstChild("Abilities"))
 local Path = require(GameModules:FindFirstChild("Path"))
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
+local FiredEvent = Instance.new("BindableEvent")
 local HitEvent = Instance.new("BindableEvent")
+
+local System = SystemCoordinator.newSystem("TowerUnit")
+local HitRemoteEvent = System.addEvent("Hit")
 
 ---
 
@@ -146,6 +151,8 @@ local unitDamageCallback = function(thisUnit)
     if (#unitsInRange < 1) then return end
 
     if (unitTargeting == GameEnum.UnitTargeting.AreaOfEffect) then
+        FiredEvent:Fire(thisUnit.Id)
+
         for i = 1, #unitsInRange do
             local targetUnit = unitsInRange[i]
 
@@ -169,6 +176,7 @@ local unitDamageCallback = function(thisUnit)
         if (targetUnit:GetAttribute("HP") <= 0) then return end
         
         targetUnit:TakeDamage(thisUnit:GetAttribute("DMG"), GameEnum.DamageSourceType.Unit, thisUnit.Id)
+        FiredEvent:Fire(thisUnit.Id)
         HitEvent:Fire(thisUnit.Id, targetUnit.Id)
     end
 end
@@ -207,10 +215,15 @@ end
 ---
 
 local TowerUnit = {
+    Fired = FiredEvent.Event,
     Hit = HitEvent.Event,
 }
 
 ---
+
+for _, unit in pairs(Unit.GetUnits()) do
+    initUnit(unit)
+end
 
 HitEvent.Event:Connect(function(unitId, targetUnitId)
     local unit, targetUnit = Unit.fromId(unitId), Unit.fromId(targetUnitId)
@@ -219,6 +232,8 @@ HitEvent.Event:Connect(function(unitId, targetUnitId)
     Abilities.ActivateAbilities(unit, GameEnum.AbilityType.OnHit, {
         TargetUnit = targetUnit
     })
+
+    HitRemoteEvent:FireAllClients(unitId, targetUnitId)
 end)
 
 Unit.UnitAdded:Connect(function(unitId)
@@ -245,8 +260,6 @@ Unit.UnitRemoving:Connect(function(unitId)
     end
 end)
 
-for _, unit in pairs(Unit.GetUnits()) do
-    initUnit(unit)
-end
+System.addEvent("Fired", TowerUnit.Fired)
 
 return TowerUnit

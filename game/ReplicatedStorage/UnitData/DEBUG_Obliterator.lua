@@ -24,7 +24,7 @@ return {
         [1] = {
             Attributes = {
                 DMG = math.huge,
-                CD = 1/60,
+                CD = 0.5,
                 RANGE = math.huge,
             },
         },

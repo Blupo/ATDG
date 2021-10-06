@@ -203,13 +203,10 @@ local constructUnit = function(unitModel)
 
     local appearanceModelOrientation = appearanceModel:GetBoundingBox()
     local unitModelOrientation = unitModel:GetBoundingBox()
-    
-    appearanceModel:SetPrimaryPartCFrame(
-        unitModelOrientation:ToWorldSpace(
-            appearanceModelOrientation:ToObjectSpace(appearanceModelPrimaryPart.CFrame)
-        )
-    )
-    
+
+    local offset = appearanceModelOrientation:ToObjectSpace(appearanceModelPrimaryPart.CFrame)
+    appearanceModel:SetPrimaryPartCFrame(unitModelOrientation:ToWorldSpace(offset))
+
     local boundingPartWeld = Instance.new("WeldConstraint")
     boundingPartWeld.Name = "BoundingPartWeld"
     boundingPartWeld.Part0 = unitModelBoundingPart
@@ -226,11 +223,15 @@ local constructUnit = function(unitModel)
             local descendant = descendants[j]
 
             if (descendant:IsA("BasePart")) then
+                descendant.CanCollide = false
+                descendant.CanTouch = false
                 descendant.Massless = true
             end
         end
 
         if (child:IsA("BasePart")) then
+            child.CanCollide = false
+            child.CanTouch = false
             child.Massless = true
         end
 
@@ -325,7 +326,7 @@ for _, unitDataScript in pairs(UnitData:GetChildren()) do
     local unitName = unitDataScript.Name
 
     if (unitDataScript:IsA("ModuleScript") and (not unitDataCache[unitName])) then
-        unitDataCache[unitDataScript.Name] = require(unitDataScript)
+        unitDataCache[unitName] = require(unitDataScript)
     end
 end
 

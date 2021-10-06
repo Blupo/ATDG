@@ -27,6 +27,7 @@ local clientScripts = {
     [GameEnum.ServerType.Game] = {
         HotbarKeybinds = true,
         TowerUnitUI = true,
+        UnitAnimator = true,
         UnitBillboards = true,
 
         CoreGuiDisabler = true,

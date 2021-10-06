@@ -35,8 +35,8 @@ ObjectSelectionSurfaceGui.init = function(self)
         self.animators[i] = Animator.new({
             rotation = randomValueInRange(-360, 360),
             size = 0,
-            x = randomValueInRange(0.2, 0.8),
-            y = randomValueInRange(0.2, 0.8),
+            x = randomValueInRange(0, 1),
+            y = randomValueInRange(0, 1),
         })
     end
 
@@ -59,8 +59,8 @@ ObjectSelectionSurfaceGui.init = function(self)
             animator.Motor:setGoal({
                 rotation = Otter.spring(randomValueInRange(-360, 360)),
                 size = Otter.spring(0),
-                x = Otter.spring(randomValueInRange(0.2, 0.8)),
-                y = Otter.spring(randomValueInRange(0.2, 0.8))
+                x = Otter.spring(randomValueInRange(0, 1)),
+                y = Otter.spring(randomValueInRange(0, 1))
             })
         end
     end
