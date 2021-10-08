@@ -1,5 +1,3 @@
--- TODO: Implement other animation states (Climb, Fall, Idle)
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -7,8 +5,9 @@ local Workspace = game:GetService("Workspace")
 
 ---
 
-local LocalPlayer = Players.LocalPlayer
+local Paths = Workspace:WaitForChild("Paths")
 
+local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 local UnitAnimations = PlayerScripts:WaitForChild("UnitAnimations")
 
@@ -19,6 +18,7 @@ local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
+local Path = SystemCoordinator.waitForSystem("Path")
 local TowerUnit = SystemCoordinator.waitForSystem("TowerUnit")
 
 ---
@@ -26,10 +26,61 @@ local TowerUnit = SystemCoordinator.waitForSystem("TowerUnit")
 local ANIMATION_SPEED_FACTOR  = 8
 
 local unitAnimationsCache = {}
-local animationInstancesCache = {}
+local animationInstancesCache: {[string]: Animation} = {}
 
 local fieldUnitSPDChangedConnections = {}
 local fieldUnitAnimationStates = {}
+
+local getAnimation = function(animationId): Animation
+    local animation: Animation? = animationInstancesCache[animationId]
+
+    if (animation) then
+        return animation
+    else
+        local newAnimation: Animation = Instance.new("Animation")
+        newAnimation.AnimationId = animationId
+
+        animationInstancesCache[animationId] = newAnimation
+        return newAnimation
+    end
+end
+
+local updateFieldUnitAnimationState = function(unit, newState)
+    local unitId = unit.Id
+    local oldState = fieldUnitAnimationStates[unitId]
+    if (oldState and (oldState.state == newState)) then return end
+
+    local unitModel = unit.Model
+    if (not unitModel:IsDescendantOf(game)) then return end
+
+    local animationController = unitModel:FindFirstChild("AnimationController")
+    local animator = animationController:FindFirstChild("Animator")
+
+    local animations = unitAnimationsCache[unit.Name]
+    if (not animations) then return end
+
+    local animationId = animations[newState]
+    if (not animationId) then return end
+
+    local spd = unit:GetAttribute("SPD")
+    local animationTrack = animator:LoadAnimation(getAnimation(animationId))
+    
+    while (animationTrack.Length <= 0) do
+        RunService.Heartbeat:Wait()
+    end
+
+    if (oldState) then
+        oldState.animationTrack:Stop()
+    end
+
+    animationTrack.Looped = true
+    animationTrack:Play(0, 1, spd / ANIMATION_SPEED_FACTOR)
+
+    fieldUnitAnimationStates[unitId] = {
+        state = newState,
+        animationTrack = animationTrack
+    }
+end
 
 ---
 
@@ -48,6 +99,53 @@ UnitAnimations.ChildAdded:Connect(function(animationScript)
     if (unitAnimationsCache[unitName]) then return end
 
     unitAnimationsCache[unitName] = require(animationScript)
+end)
+
+Path.PursuitBegan:Connect(function(unitId: string, pathNum: number)
+    while (not fieldUnitAnimationStates[unitId]) do
+        RunService.Heartbeat:Wait()
+    end
+
+    local unit = Unit.fromId(unitId)
+    local pathType = unit:GetAttribute("PathType")
+    local path = Paths:FindFirstChild(pathType):FindFirstChild(pathNum)
+    local firstWaypoint = path:FindFirstChild("0")
+
+    updateFieldUnitAnimationState(unit, firstWaypoint:GetAttribute("AnimationState") or "Running")
+end)
+
+Path.PursuitEnded:Connect(function(unitId: string)
+    local unit = Unit.fromId(unitId)
+
+    updateFieldUnitAnimationState(unit, "Idle")
+end)
+
+Path.UnitPursuitWaypointChanged:Connect(function(unitId: string, pathNum: number, waypointNum: number, nextWaypointNum: number?)
+    if (not nextWaypointNum) then return end
+
+    local unit = Unit.fromId(unitId)
+    local pathType = unit:GetAttribute("PathType")
+    local path = Paths:FindFirstChild(pathType):FindFirstChild(pathNum)
+    local waypoint = path:FindFirstChild(waypointNum)
+
+    local animationState = waypoint:GetAttribute("AnimationState")
+
+    if (not animationState) then
+        -- calculate animation state based on positions
+
+        local nextWaypoint = path:FindFirstChild(nextWaypointNum)
+        local direction = (nextWaypoint.Position - waypoint.Position).Unit
+
+        if (direction:FuzzyEq(Vector3.new(0, 1, 0), 1E-3)) then
+            animationState = "Climbing"
+        elseif (direction:FuzzyEq(Vector3.new(0, -1, 0), 1E-3)) then
+            animationState = "Falling"
+        else
+            animationState = "Running"
+        end
+    end
+
+    updateFieldUnitAnimationState(unit, animationState)
 end)
 
 TowerUnit.Fired:Connect(function(unitId: string)
@@ -102,15 +200,6 @@ Unit.UnitAdded:Connect(function(unitId: string)
         local newAnimator = Instance.new("Animator")
         newAnimator.Name = "Animator"
 
-        for _, animationId in pairs(animations) do
-            if (not animationInstancesCache[animationId]) then
-                local newAnimation = Instance.new("Animation")
-                newAnimation.AnimationId = animationId
-
-                animationInstancesCache[animationId] = newAnimation
-            end
-        end
-
         newAnimator.Parent = newAnimationController
         newAnimationController.Parent = unitModel
         if (not unitModel:IsDescendantOf(game)) then return end -- in case the unit gets destroyed
@@ -130,20 +219,7 @@ Unit.UnitAdded:Connect(function(unitId: string)
             end
         end)
 
-        local spd = unit:GetAttribute("SPD")
-        local animationTrack = newAnimationController:LoadAnimation(animationInstancesCache[animations.Running])
-        
-        while(animationTrack.Length <= 0) do
-            RunService.Heartbeat:Wait()
-        end
-
-        animationTrack.Looped = true
-        animationTrack:Play(0, 1, spd / ANIMATION_SPEED_FACTOR)
-
-        fieldUnitAnimationStates[unitId] = {
-            state = "Running",
-            animationTrack = animationTrack
-        }
+        updateFieldUnitAnimationState(unit, "Idle")
     end
 end)
 

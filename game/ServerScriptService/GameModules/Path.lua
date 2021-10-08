@@ -10,12 +10,16 @@ local Paths = Workspace:WaitForChild("Paths")
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
+local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Unit = require(GameModules:FindFirstChild("Unit"))
 
 local PursuitBeganEvent = Instance.new("BindableEvent")
 local PursuitEndedEvent = Instance.new("BindableEvent")
+local UnitPursuitWaypointChangedEvent = Instance.new("BindableEvent")
+
+local System = SystemCoordinator.newSystem("Path")
 
 ---
 
@@ -63,6 +67,7 @@ end
 local Path = {
     PursuitBegan = PursuitBeganEvent.Event,
     PursuitEnded = PursuitEndedEvent.Event,
+    UnitPursuitWaypointChanged = UnitPursuitWaypointChangedEvent.Event,
 }
 
 Path.GetPursuitInfo = function(unit): PursuitInfo?
@@ -207,6 +212,7 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
                             )
                         ) then
                             -- done
+                            UnitPursuitWaypointChangedEvent:Fire(unit.Id, pathNumber, pursuitInfo.NextWaypoint)
                             cleanup(true)
                         else
                             local thisWaypoint = pursuitInfo.NextWaypoint
@@ -215,6 +221,7 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
                             pursuitInfo.NextWaypoint = nextWaypoint
                             waypointAttachment.Parent = waypoints:FindFirstChild(tostring(nextWaypoint))
                             setWaypointAttachmentWorldCFrame(thisWaypoint, nextWaypoint)
+                            UnitPursuitWaypointChangedEvent:Fire(unit.Id, pathNumber, thisWaypoint, nextWaypoint)
                         end
                     elseif (pursuitInfo.Paused) then
                         boundingPartAlignPosition.Enabled = false
@@ -225,7 +232,7 @@ Path.PursuePath = function(unit, pathNumber: number, direction: string?)
         end
     end))
     
-    PursuitBeganEvent:Fire(unit.Id)
+    PursuitBeganEvent:Fire(unit.Id, pathNumber)
 end
 
 Path.SwitchPursuitDirection = function(unit)
@@ -294,5 +301,9 @@ coroutine.resume(coroutine.create(function()
         RunService.Stepped:Wait()
     end
 end))
+
+System.addEvent("PursuitBegan", Path.PursuitBegan)
+System.addEvent("PursuitEnded", Path.PursuitEnded)
+System.addEvent("UnitPursuitWaypointChanged", Path.UnitPursuitWaypointChanged)
 
 return Path

@@ -15,7 +15,7 @@ local serverType
 local placeId = game.PlaceId
 
 local debugGameData = {
-    MapName = "Rings",
+    MapName = "AnimationTest",
     GameMode = GameEnum.GameMode.TowerDefense,
     Difficulty = GameEnum.Difficulty.Normal,
     NumPlayers = 0,
