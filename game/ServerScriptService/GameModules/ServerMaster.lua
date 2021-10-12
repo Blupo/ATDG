@@ -1,4 +1,6 @@
+local CollectionService = game:GetService("CollectionService")
 local DataStoreService = game:GetService("DataStoreService")
+local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -50,6 +52,46 @@ local serverModules = {
         SpecialActions = true,
     },
 }
+
+local onUnitAdded = function(unitModel)
+    local descendants = unitModel:GetDescendants()
+
+    for i = 1, #descendants do
+        local descendant = descendants[i]
+
+        if (descendant:IsA("BasePart")) then
+            PhysicsService:SetPartCollisionGroup(descendant, GameEnum.CollisionGroup.Units)
+        end
+    end
+end
+
+local onCharacterDescendantAdded = function(descendant)
+    if (descendant:IsA("BasePart")) then
+        PhysicsService:SetPartCollisionGroup(descendant, GameEnum.CollisionGroup.Players)
+    end
+end
+
+local onPlayerCharacterAdded = function(character)
+    character.DescendantAdded:Connect(onCharacterDescendantAdded)
+
+    local descendants = character:GetDescendants()
+
+    for i = 1, #descendants do
+        onCharacterDescendantAdded(descendants[i])
+    end
+end
+
+local onPlayerAdded = function(player)
+    player.CharacterAdded:Connect(onPlayerCharacterAdded)
+
+    if (player.Character) then
+        onPlayerCharacterAdded(player.Character)
+    end
+end
+
+local onNoUnitCollisionPartAdded = function(part: BasePart)
+    PhysicsService:SetPartCollisionGroup(part, GameEnum.CollisionGroup.NoUnitCollisions)
+end
 
 ---
 
@@ -145,6 +187,37 @@ ServerMaster.GetServerType = function()
 end
 
 ---
+
+PhysicsService:CreateCollisionGroup(GameEnum.CollisionGroup.Units)
+PhysicsService:CreateCollisionGroup(GameEnum.CollisionGroup.Players)
+PhysicsService:CreateCollisionGroup(GameEnum.CollisionGroup.NoUnitCollisions)
+
+PhysicsService:CollisionGroupSetCollidable(GameEnum.CollisionGroup.Units, GameEnum.CollisionGroup.Units, false)
+PhysicsService:CollisionGroupSetCollidable(GameEnum.CollisionGroup.Players, GameEnum.CollisionGroup.Players, false)
+PhysicsService:CollisionGroupSetCollidable(GameEnum.CollisionGroup.Units, GameEnum.CollisionGroup.Players, false)
+PhysicsService:CollisionGroupSetCollidable(GameEnum.CollisionGroup.NoUnitCollisions, GameEnum.CollisionGroup.Units, false)
+
+do
+    local players = Players:GetPlayers()
+    local units = CollectionService:GetTagged(GameEnum.ObjectType.Unit)
+    local noUnitCollisionParts = CollectionService:GetTagged(GameEnum.CollisionGroup.NoUnitCollisions)
+
+    for i = 1, #players do
+        onPlayerAdded(players[i])
+    end
+
+    for i = 1, #units do
+        onUnitAdded(units[i])
+    end
+
+    for i = 1, #noUnitCollisionParts do
+        onNoUnitCollisionPartAdded(noUnitCollisionParts[i])
+    end
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(onUnitAdded)
+CollectionService:GetInstanceAddedSignal(GameEnum.CollisionGroup.NoUnitCollisions):Connect(onNoUnitCollisionPartAdded)
 
 System.addEvent("ServerInitialised", ServerMaster.ServerInitialised)
 System.addFunction("GetServerType", ServerMaster.GetServerType)

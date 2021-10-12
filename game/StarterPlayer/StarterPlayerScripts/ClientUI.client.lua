@@ -31,7 +31,6 @@ local clientScripts = {
         UnitBillboards = true,
 
         CoreGuiDisabler = true,
-        TEMP_NonCollider = true,
     },
 
     [GameEnum.ServerType.Lobby] = {

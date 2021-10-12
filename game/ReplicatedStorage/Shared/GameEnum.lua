@@ -50,7 +50,7 @@ return setmetatable({
     GameStat = makeEnum("GameEnum.GameStat", { "TimePlayed" }),
     PlayerStat = makeEnum("GameEnum.PlayerStat", { "TotalDMG" }),
     ServerType = makeEnum("GameEnum.ServerType", { "Lobby", "Game" }),
-    CollisionGroup = makeEnum("GameEnum.CollisionGroup", { "Players", "Units" }),
+    CollisionGroup = makeEnum("GameEnum.CollisionGroup", { "Players", "Units", "NoUnitCollisions" }),
     GameAccessApprovalType = makeEnum("GameEnum.GameAccessApprovalType", { "AutomaticApproval", "ManualApproval", "AutoRuleset" }),
     GameAccessRuleType = makeEnum("GameEnum.GameAccessType", { "ApproveFriends", "Reject" }),
     GameJoinFailureResult = makeEnum("GameEnum.GameJoinResult", { "AlreadyInAGame", "AutoRulesetRejected" }),
