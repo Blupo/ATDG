@@ -14,5 +14,7 @@ return {
         Bank = true,
         FreezerTower = true,
         GiantBob = true,
+
+        DEBUG_Obliterator = true,
     },
 }

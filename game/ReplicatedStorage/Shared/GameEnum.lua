@@ -33,7 +33,7 @@ return setmetatable({
     StatusEffectInteractionResult = makeEnum("GameEnum.StatusEffectInteractionResult", { "DoNotApply", "None" }),
     AbilityType = makeEnum("GameEnum.AbilityType", { "RoundStart", "RoundEnd", "OnHit", "Manual", "OnApply" }),
     AbilityActionResult = makeEnum("GameRnums.AbilityActionResult", { "CancelEvent", "None" }),
-    GamePhase = makeEnum("GameEnum.GamePhase", { "NotStarted", "Preparation", "Round", "Intermission", "FinalIntermission", "Ended" }),
+    GamePhase = makeEnum("GameEnum.GamePhase", { "NotStarted", "Preparation", "Round", "Intermission", "FinalIntermission", "Ended", "FinalRound" }),
     GameMode = makeEnum("GameEnum.GameMode", { "TowerDefense", "Endless" }),
     PlacementFailureReason = makeEnum("GameEnum.PlacementFailureReason", { "ObjectDoesNotExist", "InvalidPosition", "IncorrectSurfaceType", "NotPointingUp", "NotBounded", "NoVerticalClearance", "ObjectCollision", "LimitExceeded" }),
     CurrencyType = makeEnum("GameEnum.CurrencyType", { "Tickets", "Points" }),

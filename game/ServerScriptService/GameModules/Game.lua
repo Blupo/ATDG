@@ -385,13 +385,20 @@ advanceGamePhase = function()
                 end
             end
         end
-        
-        phaseStartTime = syncedClock:GetTime()
-        phaseLength = roundData.Length
-        
-        gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
-        currentGameData.GamePhase = GameEnum.GamePhase.Round
-        
+
+        if (currentRound < #challengeData.Rounds) then
+            phaseStartTime = syncedClock:GetTime()
+            phaseLength = roundData.Length
+
+            gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
+            currentGameData.GamePhase = GameEnum.GamePhase.Round
+        else
+            phaseStartTime = nil
+            phaseLength = nil
+
+            currentGameData.GamePhase = GameEnum.GamePhase.FinalRound
+        end
+
         RoundStartedEvent:Fire(currentRound)
         PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
     elseif (currentPhase == GameEnum.GamePhase.FinalIntermission) then
@@ -402,7 +409,7 @@ advanceGamePhase = function()
 
         PhaseChangedEvent:Fire(currentGameData.GamePhase)
         EndedEvent:Fire(currentGameData.Completed)
-    elseif (currentPhase == GameEnum.GamePhase.Round) then
+    elseif ((currentPhase == GameEnum.GamePhase.Round) or (currentPhase == GameEnum.GamePhase.FinalRound)) then
         local currentRound = currentGameData.CurrentRound
         local nextRoundData = challengeData.Rounds[currentRound + 1]
         RoundEndedEvent:Fire(currentRound)
@@ -677,21 +684,36 @@ Unit.UnitRemoving:Connect(function(unitId)
     end
 
     if (not Game.IsRunning()) then return end
-    if (currentGameData.GamePhase ~= GameEnum.GamePhase.Round) then return end
-    
+
     local unit = Unit.fromId(unitId)
     if (unit.Owner ~= 0) then return end
     if (unit.Type ~= GameEnum.UnitType.FieldUnit) then return end
-    
+
     local index = table.find(currentRoundUnits, unitId)
     if (not index) then return end
 
     table.remove(currentRoundUnits, index)
-    
-    if ((#currentRoundUnits <= 0) and (#currentRoundSpawnPromises <= 0)) then
-        gamePhasePromise:cancel()
-        advanceGamePhase()
-    end    
+
+    if (currentGameData.GamePhase == GameEnum.GamePhase.Round) then
+        if ((#currentRoundUnits <= 0) and (#currentRoundSpawnPromises <= 0)) then
+            gamePhasePromise:cancel()
+            advanceGamePhase()
+        end
+    elseif (currentGameData.GamePhase == GameEnum.GamePhase.FinalRound) then
+        while (Unit.fromId(unitId)) do
+            RunService.Heartbeat:Wait()
+        end
+
+        local gameFieldUnits = Unit.GetUnits(function(thisUnit)
+            return ((thisUnit.Type == GameEnum.UnitType.FieldUnit) and (thisUnit.Owner == 0))
+        end)
+
+        if ((#gameFieldUnits <= 0) and (#currentRoundSpawnPromises <= 0)) then
+            advanceGamePhase()
+        end
+    else
+        return
+    end
 end)
 
 Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
@@ -723,7 +745,9 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
             table.clear(currentRoundSpawnPromises)
             
             if (currentGameData.RevivesRemaining > 0) then
-                gamePhasePromise:cancel()
+                if (gamePhasePromise) then
+                    gamePhasePromise:cancel()
+                end
 
                 phaseStartTime = syncedClock:GetTime()
                 phaseLength = FINAL_INTERMISSION_TIME
@@ -733,7 +757,9 @@ Path.PursuitEnded:Connect(function(unitId, destinationReached, direction)
                 RoundEndedEvent:Fire(currentGameData.CurrentRound)
                 PhaseChangedEvent:Fire(currentGameData.GamePhase, phaseStartTime, phaseLength)
             else
-                gamePhasePromise:cancel()
+                if (gamePhasePromise) then
+                    gamePhasePromise:cancel()
+                end
                 
                 currentGameData.GamePhase = GameEnum.GamePhase.Ended
                 PhaseChangedEvent:Fire(currentGameData.GamePhase)

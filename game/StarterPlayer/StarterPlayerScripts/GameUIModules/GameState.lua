@@ -1,4 +1,3 @@
-local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -10,7 +9,6 @@ local PlayerScripts = root.Parent
 local Animator = require(root:WaitForChild("Animator"))
 local Otter = require(root:WaitForChild("Otter"))
 local Roact = require(root:WaitForChild("Roact"))
-local Padding = require(root:WaitForChild("Padding"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local Unit = require(GameModules:WaitForChild("Unit"))
@@ -54,6 +52,13 @@ local BKG_COLORS = {
         CurrentRoundPrimaryBkg = Color3.new(1, 1, 0),
         CurrentRoundSecondaryBkg = Color3.new(1, 0, 1),
         TotalRoundsPrimaryBkg = Color3.fromRGB(255, 85, 127),
+        TotalRoundsSecondaryBkg = Color3.fromRGB(255, 128, 85),
+    },
+
+    [GameEnum.GamePhase.FinalRound] = {
+        CurrentRoundPrimaryBkg = Color3.new(0, 1, 1),
+        CurrentRoundSecondaryBkg = Color3.new(1, 0, 1),
+        TotalRoundsPrimaryBkg = Color3.fromRGB(255, 0, 64),
         TotalRoundsSecondaryBkg = Color3.fromRGB(255, 128, 85),
     },
 
@@ -297,7 +302,9 @@ GameState.init = function(self)
         local phaseText
 
         if (phase == GameEnum.GamePhase.Round) then
-            phaseText = phase .. " " .. self.state.currentRound
+            phaseText = "Round " .. self.state.currentRound
+        elseif (phase == GameEnum.GamePhase.FinalRound) then
+            phaseText = "Final Round"
         elseif (phase == GameEnum.GamePhase.FinalIntermission) then
             phaseText = "Game over"
         else
@@ -553,7 +560,7 @@ GameState.didMount = function(self)
 
     self.phaseChangedConnection = Game.PhaseChanged:Connect(function(phase, phaseStartTime, phaseLength)
         self.stopTimerLoop()
-        if (not (phaseStartTime and phaseLength)) then return end
+        if (phase == GameEnum.GamePhase.Ended) then return end
 
         self:setState({
             phaseText = self.getPhaseText(phase),
@@ -571,7 +578,12 @@ GameState.didMount = function(self)
             },
         })
 
-        self.makeTimerLoop(phaseStartTime, phaseLength)
+        if (phaseStartTime and phaseLength) then
+            self.makeTimerLoop(phaseStartTime, phaseLength)
+        else
+            self.updateTime(nil)
+        end
+
         self.resetPhaseTransitionAnimators()
         self.doPhaseTransitionAnimation(phase == GameEnum.GamePhase.FinalIntermission)
     end)
@@ -833,7 +845,7 @@ GameState.render = function(self)
                 "Ended"
             or
                 self.time:map(function(time)
-                    return formatTime(time)
+                    return time and formatTime(time) or ""
                 end),
 
             Font = FONT,

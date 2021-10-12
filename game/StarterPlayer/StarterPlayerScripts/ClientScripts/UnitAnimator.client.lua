@@ -102,11 +102,13 @@ UnitAnimations.ChildAdded:Connect(function(animationScript)
 end)
 
 Path.PursuitBegan:Connect(function(unitId: string, pathNum: number)
-    while (not fieldUnitAnimationStates[unitId]) do
+    local unit = Unit.fromId(unitId)
+
+    while (not (unit and fieldUnitAnimationStates[unitId])) do
+        unit = Unit.fromId(unitId)
         RunService.Heartbeat:Wait()
     end
 
-    local unit = Unit.fromId(unitId)
     local pathType = unit:GetAttribute("PathType")
     local path = Paths:FindFirstChild(pathType):FindFirstChild(pathNum)
     local firstWaypoint = path:FindFirstChild("0")
@@ -116,6 +118,7 @@ end)
 
 Path.PursuitEnded:Connect(function(unitId: string)
     local unit = Unit.fromId(unitId)
+    if (not unit) then return end
 
     updateFieldUnitAnimationState(unit, "Idle")
 end)

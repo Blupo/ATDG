@@ -15,7 +15,6 @@ local EventProxy = require(ClientScripts:WaitForChild("EventProxy"))
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared")
 local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
-local Promise = require(SharedModules:WaitForChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 
 local UnitAddedEvent = Instance.new("BindableEvent")
@@ -300,9 +299,8 @@ local destroyUnit = function(unit)
     unit.__upgradedEvent:Destroy()
     
     -- defer so that subscriptions have a chance to obtain the Unit for cleanup
-    Promise.defer(function(resolve)
+    task.defer(function()
         units[unit.Id] = nil
-        resolve()
     end)
 end
 

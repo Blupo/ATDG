@@ -11,7 +11,6 @@ local UnitModels = ReplicatedStorage:FindFirstChild("UnitModels")
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
-local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
 
@@ -344,9 +343,8 @@ Unit.Destroy = function(self)
     self.Model:Destroy()
     
     -- defer so that subscriptions have a chance to obtain the Unit for cleanup
-    Promise.defer(function(resolve)
+    task.defer(function()
         units[self.Id] = nil
-        resolve()
     end)
 end
 
