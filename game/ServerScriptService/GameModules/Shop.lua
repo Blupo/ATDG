@@ -117,24 +117,6 @@ Shop.GetProducts = function()
     return products
 end
 
--- Displays the appropriate dev product to prompt, Marketplace.ProcessReceipt handles the actual purchases
-Shop.PurchaseTickets = function(userId: number, quantity: number)
-    local player = Players:GetPlayerByUserId(userId)
-    if (not player) then return end
-
-    -- todo: implement sales
-    local now = DateTime.now().UnixTimestamp
-
-    local currentPromotion = GameEnum.PromotionalPricing.None
-    local products = devProducts[GameEnum.DevProductType.Ticket][currentPromotion]
-    if (not products) then return end
-
-    local productId = products[quantity]
-    if (not productId) then return end
-
-    MarketplaceService:PromptProductPurchase(player, productId, false)
-end
-
 Shop.PurchaseObjectGrant = function(userId: number, objectType: ObjectType, objectName: string): boolean
     local alreadyHasGrant = PlayerData.PlayerHasObjectGrant(userId, objectType, objectName)
     if (alreadyHasGrant) then return false end
@@ -345,12 +327,6 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 end
 
 System.addFunction("GetProducts", Shop.GetProducts, true)
-
-System.addFunction("PurchaseTickets", t.wrap(function(callingPlayer: Player, userId: number, quantity: number)
-    if (callingPlayer.UserId ~= userId) then return end
-
-    Shop.PurchaseTickets(userId, quantity)
-end, t.tuple(t.instanceOf("Player"), t.number, t.number)), true)
 
 System.addFunction("PurchaseObjectGrant", t.wrap(function(callingPlayer: Player, userId: number, objectType: string, objectName: string)
     if (callingPlayer.UserId ~= userId) then return end

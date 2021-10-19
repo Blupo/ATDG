@@ -53,7 +53,7 @@ local serverModules = {
     },
 }
 
-local onUnitAdded = function(unitModel)
+local onUnitModelAdded = function(unitModel)
     local descendants = unitModel:GetDescendants()
 
     for i = 1, #descendants do
@@ -199,15 +199,15 @@ PhysicsService:CollisionGroupSetCollidable(GameEnum.CollisionGroup.NoUnitCollisi
 
 do
     local players = Players:GetPlayers()
-    local units = CollectionService:GetTagged(GameEnum.ObjectType.Unit)
+    local unitModels = CollectionService:GetTagged(GameEnum.ObjectType.Unit)
     local noUnitCollisionParts = CollectionService:GetTagged(GameEnum.CollisionGroup.NoUnitCollisions)
 
     for i = 1, #players do
         onPlayerAdded(players[i])
     end
 
-    for i = 1, #units do
-        onUnitAdded(units[i])
+    for i = 1, #unitModels do
+        onUnitModelAdded(unitModels[i])
     end
 
     for i = 1, #noUnitCollisionParts do
@@ -216,7 +216,7 @@ do
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
-CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(onUnitAdded)
+CollectionService:GetInstanceAddedSignal(GameEnum.ObjectType.Unit):Connect(onUnitModelAdded)
 CollectionService:GetInstanceAddedSignal(GameEnum.CollisionGroup.NoUnitCollisions):Connect(onNoUnitCollisionPartAdded)
 
 System.addEvent("ServerInitialised", ServerMaster.ServerInitialised)
