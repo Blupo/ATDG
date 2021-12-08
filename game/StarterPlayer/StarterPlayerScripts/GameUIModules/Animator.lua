@@ -1,9 +1,9 @@
 -- wrapper around an Otter motor and a Roact binding
 
-local root = script.Parent
+local GameUIModules = script.Parent
 
-local Otter = require(root:WaitForChild("Otter"))
-local Roact = require(root:WaitForChild("Roact"))
+local Otter = require(GameUIModules:WaitForChild("Otter"))
+local Roact = require(GameUIModules:WaitForChild("Roact"))
 
 ---
 

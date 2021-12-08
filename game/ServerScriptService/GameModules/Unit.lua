@@ -145,7 +145,7 @@ Unit.GetUnitBaseAttributes = function(unitName: string, level: number): dictiona
     return attributes
 end
 
-Unit.GetUnitAbilities = function(unitName: string, level: number): {[string]: boolean}?
+Unit.GetUnitBaseAbilities = function(unitName: string, level: number): {[string]: boolean}?
     if (not Unit.DoesUnitExist(unitName)) then return end
 
     local unitData = unitDataCache[unitName]

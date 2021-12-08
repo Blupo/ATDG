@@ -18,8 +18,7 @@ local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
 local Promise = require(SharedModules:FindFirstChild("Promise"))
 local SystemCoordinator = require(SharedModules:FindFirstChild("SystemCoordinator"))
-local TimeSyncService = require(SharedModules:FindFirstChild("Nevermore"))("TimeSyncService")
-TimeSyncService:Init()
+local TimeSyncService = require(SharedModules:FindFirstChild("TimeSyncService"))
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local Abilities = require(GameModules:FindFirstChild("Abilities"))
@@ -442,7 +441,18 @@ advanceGamePhase = function()
 
             PlayerData.DepositCurrencyToAllPlayers(GameEnum.CurrencyType.Points, pointsToAward)
             
-            -- todo: trigger RoundEnded abilities
+            -- TODO: trigger RoundEnded abilities
+            --[[
+            do
+                local units = Unit.GetUnits()
+    
+                for i = 1, #units do
+                    local unit = units[i]
+                    
+                    Abilities.ActivateAbilities(unit, GameEnum.AbilityType.RoundEnded)
+                end
+            end
+            --]]
 
             gamePhasePromise = Promise.delay(phaseLength):andThen(advanceGamePhase)
             currentGameData.GamePhase = GameEnum.GamePhase.Intermission
@@ -500,6 +510,7 @@ local Game = {
     CentralTowerHealthChanged = CentralTowerHealthChangedEvent.Event,
     CentralTowerDestroyed = CentralTowerDestroyedEvent.Event,
     PhaseChanged = PhaseChangedEvent.Event,
+
     GetTicketReward = getTicketReward,
 }
 

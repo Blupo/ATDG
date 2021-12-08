@@ -59,15 +59,11 @@ return function(environment)
                     if (shape == Enum.PartType.Block) then
                         Terrain:FillBlock(cellCFrame, cellSize, cellMaterial)
                     elseif (shape == Enum.PartType.Ball) then
-                        -- I'm pretty sure the engine makes sure the size is uniform for Ball, so math.min is redundant
-
                         Terrain:FillBall(cellCFrame.Position, math.min(cellSize.X, cellSize.Y, cellSize.Z) / 2, cellMaterial)
                     elseif (shape == Enum.PartType.Cylinder) then
                         Terrain:FillCylinder(cellCFrame * CFrame.Angles(0, 0, math.pi / 2), cellSize.X, math.min(cellSize.Y, cellSize.Z) / 2, cellMaterial)
                     end
                 elseif (child:IsA("WedgePart")) then
-                    -- todo: verify that this works as intended
-
                     Terrain:FillWedge(cellCFrame, cellSize, cellMaterial)
                 else
                     warn("Unsupported terrain cell type " .. child.ClassName)

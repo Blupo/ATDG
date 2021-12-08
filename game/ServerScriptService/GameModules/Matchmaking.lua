@@ -317,8 +317,6 @@ Matchmaking.AddPlayerToGame = function(gameId: string, player: Player): ActionRe
     local numPlayers = #gameData.Players + 1
     if (numPlayers >= TEMP_MAX_PLAYERS) then return end -- GameIsFull
 
-    -- todo: should players be able to join a queue even when the party is full?
-
     local accessRules = gameData.AccessRules
     local approvalType = accessRules.ApprovalType
 

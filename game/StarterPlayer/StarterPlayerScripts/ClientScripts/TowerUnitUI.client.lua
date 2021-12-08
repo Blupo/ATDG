@@ -26,7 +26,7 @@ local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
 local ObjectSelectionSurfaceGui = require(GameUIModules:WaitForChild("ObjectSelectionSurfaceGui"))
 local Roact = require(GameUIModules:WaitForChild("Roact"))
 local Style = require(GameUIModules:WaitForChild("Style"))
-local TowerUnitUpgradeUI = require(GameUIModules:WaitForChild("TowerUnitUpgradeUI"))
+local TowerUnitUpgrader = require(GameUIModules:WaitForChild("TowerUnitUpgrader"))
 
 local RadiusPart = Instance.new("Part")
 RadiusPart.Name = "TowerUnitUI.SelectedUnitRadiusPart"
@@ -169,9 +169,13 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         enabled = true,
     }))
     
-    upgradeGuiTree = Roact.mount(Roact.createElement(TowerUnitUpgradeUI, {
-        unitId = unit.Id,
-        onClose = reset,
+    upgradeGuiTree = Roact.mount(Roact.createElement("ScreenGui", {
+        ResetOnSpawn = false,
+    }, {
+        Upgrader = Roact.createElement(TowerUnitUpgrader, {
+            unitId = unit.Id,
+            onClose = reset,
+        }),
     }), PlayerGui, "TowerUnitUI.UpgradeGui")
 end)
 

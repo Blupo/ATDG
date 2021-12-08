@@ -11,6 +11,7 @@ local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 
 local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
 local Roact = require(GameUIModules:WaitForChild("Roact"))
+local StandardComponents = require(GameUIModules:WaitForChild("StandardComponents"))
 local Style = require(GameUIModules:WaitForChild("Style"))
 
 local GameModules = PlayerScripts:WaitForChild("GameModules")
@@ -20,6 +21,8 @@ local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
 local StatusEffectColors = require(PlayerModules:WaitForChild("StatusEffectColors"))
 
 local StatusEffects = SystemCoordinator.waitForSystem("StatusEffects")
+
+local StandardTextLabel = StandardComponents.TextLabel
 
 ---
 
@@ -174,25 +177,18 @@ FieldUnitBillboard.render = function(self)
         ResetOnSpawn = false,
         ClipsDescendants = true,
     }, {
-        UnitNameLabel = Roact.createElement("TextLabel", {
+        UnitNameLabel = Roact.createElement(StandardTextLabel, {
             AnchorPoint = Vector2.new(0, 0),
             Size = UDim2.new(0.75, 0, 0.25, 0),
             Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
 
             Text = self.state.name,
-            Font = Style.Constants.MainFont,
             TextStrokeTransparency = 0.5,
             TextScaled = true,
             TextXAlignment = Enum.TextXAlignment.Left,
-            TextYAlignment = Enum.TextYAlignment.Center,
-
-            TextColor3 = Color3.new(0, 0, 0),
-            TextStrokeColor3 = Color3.new(1, 1, 1),
         }),
 
-        UnitLevelLabel = Roact.createElement("TextLabel", {
+        UnitLevelLabel = Roact.createElement(StandardTextLabel, {
             AnchorPoint = Vector2.new(1, 0),
             Size = UDim2.new(0.25, 0, 0.25, 0),
             Position = UDim2.new(1, 0, 0, 0),
@@ -201,13 +197,8 @@ FieldUnitBillboard.render = function(self)
             SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
             Text = self.state.level,
-            Font = Style.Constants.MainFont,
             TextScaled = true,
             TextXAlignment = Enum.TextXAlignment.Center,
-            TextYAlignment = Enum.TextYAlignment.Center,
-
-            BackgroundColor3 = Color3.new(1, 1, 1),
-            TextColor3 = Color3.new(0, 0, 0),
         }, {
             UICorner = Roact.createElement("UICorner", {
                 CornerRadius = UDim.new(Style.Constants.StandardCornerRadius / 50, 0)
@@ -245,12 +236,10 @@ FieldUnitBillboard.render = function(self)
                 BackgroundColor3 = Color3.new(0, 0, 0),
             }),
 
-            HPReadout = Roact.createElement("TextLabel", {
+            HPReadout = Roact.createElement(StandardTextLabel, {
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Size = UDim2.new(0.75, 0, 0.5, 0),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
 
                 Text = string.format(
                     "%d/%d/<font color=\"rgb(" .. defColorString .. ")\">%d</font>",
@@ -259,13 +248,9 @@ FieldUnitBillboard.render = function(self)
                     def
                 ),
 
-                Font = Style.Constants.MainFont,
                 TextScaled = true,
                 RichText = true,
                 TextXAlignment = Enum.TextXAlignment.Center,
-                TextYAlignment = Enum.TextYAlignment.Center,
-
-                TextColor3 = Color3.new(0, 0, 0),
             })
         })
     })

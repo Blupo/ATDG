@@ -11,18 +11,11 @@
 
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
+            "$path": "game/ReplicatedStorage",
             "$ignoreUnknownInstances": true,
 
             "Nevermore": {
                 "$path": "Nevermore/loader/ReplicatedStorage/Nevermore"
-            },
-
-            "Shared": {
-                "$path": "game/ReplicatedStorage/Shared"
-            },
-
-            "UnitData": {
-                "$path": "game/ReplicatedStorage/UnitData"
             }
         },
 

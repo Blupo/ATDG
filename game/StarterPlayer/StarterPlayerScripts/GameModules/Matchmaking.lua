@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterGui = game:GetService("StarterGui")
 
 ---
 
@@ -15,25 +14,14 @@ local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 local Matchmaking = SystemCoordinator.waitForSystem("Matchmaking")
 
+local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
+local Notifications = require(PlayerModules:WaitForChild("Notifications"))
+
 ---
 
 local cachedGameList = {}
 local cachedMapList = {}
 local localPlayerCurrentParty
-
-local notifyIcons = {
-    Party = "rbxassetid://7440497724",
-    Game = "rbxassetid://6868396182",
-    Teleport = "rbxassetid://6869244717",
-}
-
-local sendNotification = function(title, text, notifyType)
-    StarterGui:SetCore("SendNotification", {
-        Title = title,
-        Text = text,
-        Icon = notifyIcons[notifyType],
-    })
-end
 
 ---
 
@@ -50,7 +38,7 @@ Matchmaking.GameClosed = EventProxy(Matchmaking.GameClosed, function(gameId)
         local gameData = cachedGameList[gameId]
         
         if (gameData.Leader ~= LocalPlayer) then
-            sendNotification("Game Closed", gameData.Leader.Name .. "'s game was closed.", "Game")
+            Notifications.SendCoreNotification("Game Closed", gameData.Leader.Name .. "'s game was closed.", "Game")
         end
 
         localPlayerCurrentParty = nil
@@ -64,7 +52,7 @@ Matchmaking.GameStarting = EventProxy(Matchmaking.GameStarting, function(gameId)
         local gameData = cachedGameList[gameId]
         
         if ((gameData.Leader == LocalPlayer) or table.find(gameData.Players, LocalPlayer)) then
-            sendNotification("Game Starting", "Your game will be starting soon.", "Game")
+            Notifications.SendCoreNotification("Game Starting", "Your game will be starting soon.", "Game")
         end
 
         if (table.find(gameData.Queue, LocalPlayer)) then
@@ -98,7 +86,7 @@ Matchmaking.PlayerLeftGame = EventProxy(Matchmaking.PlayerLeftGame, function(gam
 
     if (player == LocalPlayer) then
         if (kicked) then
-            sendNotification("Kicked", "You were kicked from " .. gameData.Leader.Name .. "'s party.", "Party")
+            Notifications.SendCoreNotification("Kicked", "You were kicked from " .. gameData.Leader.Name .. "'s party.", "Party")
         end
 
         localPlayerCurrentParty = nil
@@ -127,7 +115,7 @@ Matchmaking.PlayerLeftGameQueue = EventProxy(Matchmaking.PlayerLeftGameQueue, fu
     table.remove(queue, playerIndex)
 
     if (player == LocalPlayer) then
-        sendNotification(
+        Notifications.SendCoreNotification(
             "Request " .. (joined and "Accepted" or "Rejected"),
             string.format("Your request to join %s's party was %s.", gameData.Leader.Name, joined and "accepted" or "rejected"),
             "Party"
@@ -163,11 +151,11 @@ cachedGameList = Matchmaking.GetGames()
 cachedMapList = Matchmaking.GetMaps()
 
 Matchmaking.TeleportNotification:Connect(function()
-    sendNotification("Teleporting", "You are now being teleported to your game, please wait.", "Teleport")
+    Notifications.SendCoreNotification("Teleporting", "You are now being teleported to your game, please wait.", "Teleport")
 end)
 
 Matchmaking.GameInitFailureNotification:Connect(function()
-    sendNotification("Game Error", "There was a problem initialising your game. The party leader can try starting the game again.", "Game")
+    Notifications.SendCoreNotification("Game Error", "There was a problem initialising your game. The party leader can try starting the game again.", "Game")
 end)
 
 return setmetatable(CacheProxy, { __index = Matchmaking })

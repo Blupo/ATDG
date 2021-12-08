@@ -2,10 +2,14 @@ local TextService = game:GetService("TextService")
 
 ---
 
-local root = script.Parent
+local GameUIModules = script.Parent
 
-local Roact = require(root:WaitForChild("Roact"))
-local Style = require(root:WaitForChild("Style"))
+local Roact = require(GameUIModules:WaitForChild("Roact"))
+local StandardComponents = require(GameUIModules:WaitForChild("StandardComponents"))
+local Style = require(GameUIModules:WaitForChild("Style"))
+
+local StandardTextLabel = StandardComponents.TextLabel
+local StandardUIListLayout = StandardComponents.UIListLayout
 
 ---
 
@@ -58,22 +62,18 @@ local generateControlFrame = function(control: Enum.UserInputType | Enum.KeyCode
         BackgroundColor3 = Color3.new(0, 0, 0)
     }, {
         UICorner = Roact.createElement("UICorner", {
-            CornerRadius = (controlType ~= "GamepadButton") and UDim.new(0, Style.Constants.SmallCornerRadius) or UDim.new(1, 0),
+            CornerRadius = (controlType ~= "GamepadButton") and UDim.new(0, Style.Constants.StandardCornerRadius) or UDim.new(1, 0),
         }),
 
         ControlText = (control ~= Enum.UserInputType.MouseButton1) and
-            Roact.createElement("TextLabel", {
+            Roact.createElement(StandardTextLabel, {
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Size = UDim2.new(1, 0, 1, 0),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
 
                 Text = controlText[control],
-                Font = Style.Constants.MainFont,
                 TextSize = 24,
                 TextXAlignment = Enum.TextXAlignment.Center,
-                TextYAlignment = Enum.TextYAlignment.Center,
 
                 TextColor3 = controlTextColors[control] or Color3.new(1, 1, 1),
             })
@@ -115,7 +115,7 @@ ControlInstructions.render = function(self)
 
     for control, controlInfo in pairs(controls) do
         local instructions = controlInfo.Instructions
-        local instructionsTextSize = TextService:GetTextSize(instructions, 20, Style.Constants.MainFont, Vector2.new(math.huge, math.huge))
+        local instructionsTextSize = TextService:GetTextSize(instructions, 20, Style.Constants.PrimaryFont, Vector2.new(math.huge, math.huge))
 
         controlListElements[tostring(control)] = Roact.createElement("Frame", {
             Size = UDim2.new(0, ICON_SIZE + Style.Constants.MinorElementPadding + instructionsTextSize.X, 1, 0),
@@ -125,33 +125,23 @@ ControlInstructions.render = function(self)
         }, {
             ControlFrame = generateControlFrame(control),
 
-            InstructionsLabel = Roact.createElement("TextLabel", {
+            InstructionsLabel = Roact.createElement(StandardTextLabel, {
                 AnchorPoint = Vector2.new(1, 0.5),
                 Size = UDim2.new(1, -ICON_SIZE, 1, 0),
                 Position = UDim2.new(1, 0, 0.5, 0),
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
 
                 Text = instructions,
-                Font = Style.Constants.MainFont,
                 TextSize = 20,
                 TextStrokeTransparency = 0.5,
                 TextXAlignment = Enum.TextXAlignment.Right,
-                TextYAlignment = Enum.TextYAlignment.Center,
-
-                TextColor3 = Color3.new(0, 0, 0),
-                TextStrokeColor3 = Color3.new(1, 1, 1)
             })
         })
     end
 
-    controlListElements.UIListLayout = Roact.createElement("UIListLayout", {
+    controlListElements.UIListLayout = Roact.createElement(StandardUIListLayout, {
         Padding = UDim.new(0, Style.Constants.MajorElementPadding),
 
         FillDirection = Enum.FillDirection.Horizontal,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        HorizontalAlignment = Enum.HorizontalAlignment.Center,
-        VerticalAlignment = Enum.VerticalAlignment.Center,
     })
 
     return Roact.createElement("ScreenGui", {

@@ -1,5 +1,3 @@
--- todo: replace this with a more Roblox-like Enum implementation (such as raphtalia/Enum or buildthomas/EnumExtender)
-
 local makeEnum = function(name, enumItems)
     local enum = {}
 
@@ -31,7 +29,7 @@ return setmetatable({
     StatusEffectType = makeEnum("GameEnum.StatusEffectType", { "Instant", "Periodic", "Lingering" }),
     AttributeModifierType = makeEnum("GameEnum.AttributeModifierType", { "Multiplicative", "Additive", "Set" }),
     StatusEffectInteractionResult = makeEnum("GameEnum.StatusEffectInteractionResult", { "DoNotApply", "None" }),
-    AbilityType = makeEnum("GameEnum.AbilityType", { "RoundStart", "RoundEnd", "OnHit", "Manual", "OnApply" }),
+    AbilityType = makeEnum("GameEnum.AbilityType", { "RoundStart", "RoundEnded", "OnHit", "Manual", "OnApply", }),
     AbilityActionResult = makeEnum("GameRnums.AbilityActionResult", { "CancelEvent", "None" }),
     GamePhase = makeEnum("GameEnum.GamePhase", { "NotStarted", "Preparation", "Round", "Intermission", "FinalIntermission", "Ended", "FinalRound" }),
     GameMode = makeEnum("GameEnum.GameMode", { "TowerDefense", "Endless" }),

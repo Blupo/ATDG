@@ -3,138 +3,191 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-local SpecialActionData = ServerScriptService:FindFirstChild("SpecialActionData")
+local SpecialActionCallbacks = ServerScriptService:FindFirstChild("SpecialActionCallbacks")
+local SpecialActionData = ReplicatedStorage:FindFirstChild("SpecialActionData")
 
 local GameModules = ServerScriptService:FindFirstChild("GameModules")
 local PlayerData = require(GameModules:FindFirstChild("PlayerData"))
 local ServerMaster = require(GameModules:FindFirstChild("ServerMaster"))
 
 local SharedModules = ReplicatedStorage:FindFirstChild("Shared")
-local CopyTable = require(SharedModules:FindFirstChild("CopyTable"))
 local GameEnum = require(SharedModules:FindFirstChild("GameEnum"))
-local MakeActionResult = require(SharedModules:FindFirstChild("MakeActionResult"))
 local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
 local t = require(SharedModules:FindFirstChild("t"))
+local TimeSyncService = require(SharedModules:FindFirstChild("TimeSyncService"))
 
-local SpecialActionUsedEvent = Instance.new("BindableEvent")
+local ActionUsedEvent = Instance.new("BindableEvent")
 
 local System = SystemCoordinator.newSystem("SpecialActions")
 
 ---
 
-local specialActionDataCache = {}
+local syncedClock = TimeSyncService:GetSyncedClock()
 local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
 
-local specialActionUsageTimes = {
-    ActionName = {
-        PlayerName = 0,
-    }    
-}
+local actionDataCache = {}
+local actionCallbackCache = {}
 
-local specialActionUsageCounts = {
-    ActionName = {
-        PlayerName = 0,
-    }
-}
+local actionUsageCooldownExpirys = {}
+local actionUsageCounts = {}
 
 ---
 
-local SpecialActions = {
-    SpecialActionUsed = SpecialActionUsedEvent.Event,
-}
+local SpecialActions = {}
 
-SpecialActions.GetAllSpecialActionsUsageLimits = function()
-    local actionUsageLimits = {}
-
-    for actionName, actionData in pairs(specialActionDataCache) do
-        actionUsageLimits[actionName] = CopyTable(actionData.Limits)
-    end
-
-    return actionUsageLimits
+SpecialActions.DoesActionExist = function(actionName: string): boolean
+    return actionDataCache[actionName] and actionCallbackCache[actionName]
 end
 
-SpecialActions.UseSpecialAction = (serverType == GameEnum.ServerType.Game) and
-    function(userId: number, actionName: string)
-        local specialActionData = specialActionDataCache[actionName]
-        if (not specialActionData) then return MakeActionResult(GameEnum.SpecialActionUsageResult.InvalidActionName) end
+SpecialActions.GetActions = function()
+    local actions = {}
 
-        local specialActionTokenCount = PlayerData.GetPlayerInventoryItemCount(userId, GameEnum.ItemType.SpecialAction, actionName)
-        if ((not specialActionTokenCount) or (specialActionTokenCount < 1)) then return MakeActionResult(GameEnum.SpecialActionUsageResult.NoInventory) end
-
-        -- check limits in the order: PlayerLimit, GameLimit, PlayerCooldowm, GameCooldown
-        local specialActionLimits = specialActionData.Limits
-        local actionUsageCounts = specialActionUsageCounts[actionName]
-        local actionUsageTimes = specialActionUsageTimes[actionName]
-
-        local playerUsageCount = actionUsageCounts[userId] or 0
-        local playerLastUsageTime = actionUsageTimes[userId]
-
-        local gameUsageCount = 0
-        local gameLastUsageTime = 0
-
-        for _, usageCount in pairs(actionUsageCounts) do
-            gameUsageCount = gameUsageCount + usageCount
+    for action in pairs(actionDataCache) do
+        if (SpecialActions.DoesActionExist(action)) then
+            actions[action] = true
         end
-
-        for _, lastUsageTime in pairs(actionUsageTimes) do
-            gameLastUsageTime = ((gameLastUsageTime or 0) < lastUsageTime) and lastUsageTime or gameLastUsageTime
-        end
-        
-        local now = os.clock()
-        local playerUsageLimit = specialActionLimits[GameEnum.SpecialActionLimitType.PlayerLimit]
-        local gameUsageLimit = specialActionLimits[GameEnum.SpecialActionLimitType.GameLimit]
-        local playerUsageCooldown = specialActionLimits[GameEnum.SpecialActionLimitType.PlayerCooldown]
-        local gameUsageCooldown = specialActionLimits[GameEnum.SpecialActionLimitType.GameCooldown]
-
-        if (playerUsageLimit and (playerUsageCount >= playerUsageLimit)) then
-            return MakeActionResult(GameEnum.SpecialActionUsageResult.PlayerLimited)
-        end
-
-        if (gameUsageLimit and (gameUsageCount >= gameUsageLimit)) then
-            return MakeActionResult(GameEnum.SpecialActionUsageResult.GameLimited)
-        end
-
-        if (playerUsageCooldown and ((now - (playerLastUsageTime or 0)) < playerUsageCooldown)) then
-            return MakeActionResult(GameEnum.SpecialActionUsageResult.PlayerCooldown)
-        end
-
-        if (gameUsageCooldown and ((now - (gameLastUsageTime or 0)) < gameUsageCooldown)) then
-            return MakeActionResult(GameEnum.SpecialActionUsageResult.GameCooldown)
-        end
-
-        -- execute
-        PlayerData.RemoveItemFromInventory(userId, GameEnum.ItemType.SpecialAction, actionName, 1)
-        actionUsageCounts[userId] = (actionUsageCounts[userId] or 0) + 1
-        actionUsageTimes[userId] = now
-
-        specialActionData.Callback()
-        SpecialActionUsedEvent:Fire(userId, actionName)
-
-        return MakeActionResult()
     end
-or nil
 
----
-
-for _, specialActionDataScript in pairs(SpecialActionData:GetChildren()) do
-    local actionName = specialActionDataScript.Name
-
-    if (specialActionDataScript:IsA("ModuleScript") and (not specialActionDataCache[actionName])) then
-        specialActionDataCache[actionName] = require(specialActionDataScript)
-        specialActionUsageCounts[actionName] = {}
-        specialActionUsageTimes[actionName] = {}
-    end
+    return actions
 end
-
-
-System.addEvent("SpecialActionUsed", SpecialActions.SpecialActionUsed)
-System.addFunction("GetAllSpecialActionsUsageLimits", SpecialActions.GetAllSpecialActionsUsageLimits, true)
 
 if (serverType == GameEnum.ServerType.Game) then
-    System.addFunction("UseSpecialAction", t.wrap(function(callingPlayer: Player, userId: number, actionName: string)
+    SpecialActions.ActionUsed = ActionUsedEvent.Event
+
+    SpecialActions.GetPlayerActionCooldownExpiry = function(userId: number, action: string): number?
+        if (not SpecialActions.DoesActionExist(action)) then return end
+
+        return actionUsageCooldownExpirys[action][userId] or 0
+    end
+
+    SpecialActions.GetPlayerActionUsageCount = function(userId: number, action: string): number?
+        if (not SpecialActions.DoesActionExist(action)) then return end
+
+        return actionUsageCounts[action][userId] or 0
+    end
+
+    SpecialActions.GetPlayerAllActionsCooldownExpirys = function(userId: number)
+        local actions = SpecialActions.GetActions()
+        local cooldownExpirys = {}
+
+        for action in pairs(actions) do
+            cooldownExpirys[action] = SpecialActions.GetPlayerActionCooldownExpiry(userId, action)
+        end
+
+        return cooldownExpirys
+    end
+
+    SpecialActions.GetPlayerAllActionsUsageCounts = function(userId: number)
+        local actions = SpecialActions.GetActions()
+        local usageCounts = {}
+
+        for action in pairs(actions) do
+            usageCounts[action] = SpecialActions.GetPlayerActionUsageCount(userId, action)
+        end
+
+        return usageCounts
+    end
+
+    SpecialActions.CanPlayerUseAction = function(userId: number, action: string): boolean
+        if (not SpecialActions.DoesActionExist(action)) then return end
+
+        local actionLimits = actionDataCache[action].Limits
+        local cooldownExpiry = SpecialActions.GetPlayerActionCooldownExpiry(userId, action)
+        local usageCount = SpecialActions.GetPlayerActionUsageCount(userId, action)
+
+        return (syncedClock:GetTime() >= cooldownExpiry) and (usageCount < (actionLimits[GameEnum.SpecialActionLimitType.PlayerLimit] or math.huge))
+    end
+
+    SpecialActions.UseAction = function(userId: number, action: string): boolean
+        if (not SpecialActions.DoesActionExist(action)) then return false end
+        if (not SpecialActions.CanPlayerUseAction(userId, action)) then return false end
+
+        local specialActionTokenCount = PlayerData.GetPlayerInventoryItemCount(userId, GameEnum.ItemType.SpecialAction, action)
+        if ((specialActionTokenCount or 0) < 1) then return false end
+
+        local usageCounts = actionUsageCounts[action]
+        local usageCooldownExpiry = actionUsageCooldownExpirys[action]
+
+        local actionLimits = actionDataCache[action].Limits
+        local actionCallback = actionCallbackCache[action]
+
+        local callbackResult = actionCallback()
+        if (callbackResult == false) then return false end
+
+        local now = syncedClock:GetTime()
+        local newUsageCount = (usageCounts[userId] or 0) + 1
+        local newUsageCooldownExpiry = now + (actionLimits[GameEnum.SpecialActionLimitType.PlayerCooldown] or 0)
+
+        usageCounts[userId] = newUsageCount
+        usageCooldownExpiry[userId] = newUsageCooldownExpiry
+        PlayerData.RemoveItemFromInventory(userId, GameEnum.ItemType.SpecialAction, action, 1) -- TODO: what if this fails
+
+        ActionUsedEvent:Fire(userId, action, newUsageCooldownExpiry, newUsageCount)
+        return true
+    end
+end
+
+---
+
+for _, actionDataScript in pairs(SpecialActionData:GetChildren()) do
+    local action = actionDataScript.Name
+
+    if (actionDataScript:IsA("ModuleScript") and (not actionDataCache[action])) then
+        actionDataCache[action] = require(actionDataScript)
+        actionUsageCounts[action] = {}
+        actionUsageCooldownExpirys[action] = {}
+    end
+end
+
+for _, actionCallbackScript in pairs(SpecialActionCallbacks:GetChildren()) do
+    local action = actionCallbackScript.Name
+
+    if (actionCallbackScript:IsA("ModuleScript") and (not actionCallbackCache[action])) then
+        actionCallbackCache[action] = require(actionCallbackScript)
+    end
+end
+
+System.addFunction("GetActions", t.wrap(function()
+    return SpecialActions.GetActions()
+end, t.tuple(t.instanceOf("Player"))), true)
+
+if (serverType == GameEnum.ServerType.Game) then
+    System.addEvent("ActionUsed", SpecialActions.ActionUsed)
+
+    System.addFunction("GetPlayerActionCooldownExpiry", t.wrap(function(callingPlayer: Player, userId: number, action: string)
         if (callingPlayer.UserId ~= userId) then return end
 
-        return SpecialActions.UseSpecialAction(userId, actionName)
+        return SpecialActions.GetPlayerActionCooldownExpiry(userId, action)
+    end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
+
+    System.addFunction("GetPlayerActionUsageCount", t.wrap(function(callingPlayer: Player, userId: number, action: string)
+        if (callingPlayer.UserId ~= userId) then return end
+
+        return SpecialActions.GetPlayerActionUsageCount(userId, action)
+    end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
+
+    System.addFunction("GetPlayerAllActionsCooldownExpirys", t.wrap(function(callingPlayer: Player, userId: number)
+        if (callingPlayer.UserId ~= userId) then return end
+
+        return SpecialActions.GetPlayerAllActionsCooldownExpirys(userId)
+    end, t.tuple(t.instanceOf("Player"), t.number)), true)
+
+    System.addFunction("GetPlayerAllActionsUsageCounts", t.wrap(function(callingPlayer: Player, userId: number)
+        if (callingPlayer.UserId ~= userId) then return end
+
+        return SpecialActions.GetPlayerAllActionsUsageCounts(userId)
+    end, t.tuple(t.instanceOf("Player"), t.number)), true)
+
+    System.addFunction("CanPlayerUseAction", t.wrap(function(callingPlayer: Player, userId: number, action: string)
+        if (callingPlayer.UserId ~= userId) then return false end
+
+        return SpecialActions.CanPlayerUseAction(userId, action)
+    end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
+    
+    System.addFunction("UseAction", t.wrap(function(callingPlayer: Player, userId: number, action: string)
+        if (callingPlayer.UserId ~= userId) then return end
+
+        return SpecialActions.UseAction(userId, action)
     end, t.tuple(t.instanceOf("Player"), t.number, t.string)), true)
 end
 

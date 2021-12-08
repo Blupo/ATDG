@@ -114,9 +114,7 @@ local playerAdded = function(player: Player)
 
         profile:ListenToRelease(function()
             playerProfiles[userId] = nil
-
-            -- todo: come up with a better message than this
-            player:Kick("User profile was released")
+            player:Kick("Player data is no longer available")
         end)
 
         if (player:IsDescendantOf(Players)) then
@@ -175,8 +173,7 @@ local playerAdded = function(player: Player)
             profile:Release()
         end
     else
-        -- todo: come up with a better message than this
-        player:Kick("Could not load user profile")
+        player:Kick("Could not load player data, please try again later.")
     end
 end
 

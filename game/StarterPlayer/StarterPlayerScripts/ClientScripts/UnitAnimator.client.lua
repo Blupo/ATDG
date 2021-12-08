@@ -54,7 +54,10 @@ local updateFieldUnitAnimationState = function(unit, newState)
     if (not unitModel:IsDescendantOf(game)) then return end
 
     local animationController = unitModel:FindFirstChild("AnimationController")
+    if (not animationController) then return end
+
     local animator = animationController:FindFirstChild("Animator")
+    if (not animator) then return end
 
     local animations = unitAnimationsCache[unit.Name]
     if (not animations) then return end

@@ -135,9 +135,7 @@ if (serverType == GameEnum.ServerType.Game) then
         if (upgradePrice > pointsBalance) then
             return false
         else
-            PlayerData.WithdrawCurrencyFromPlayer(ownerId, GameEnum.CurrencyType.Points, upgradePrice)
-            unit:Upgrade()
-            return true
+            return Shop.PurchaseUnitUpgrade(unitId)
         end
     end
 

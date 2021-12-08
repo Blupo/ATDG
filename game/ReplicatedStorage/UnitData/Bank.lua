@@ -35,18 +35,21 @@ return {
         
         [2] = {
             Abilities = {
+                PassiveIncome = false,
                 PassiveIncome2 = true,
             }
         },
         
         [3] = {
             Abilities = {
+                PassiveIncome2 = false,
                 PassiveIncome3 = true,
             }
         },
 
         [4] = {
             Abilities = {
+                PassiveIncome3 = false,
                 PassiveIncome4 = true,
             }
         }

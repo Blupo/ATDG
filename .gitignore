@@ -2,4 +2,5 @@
 /roblox.toml
 
 # build
-/atdg.rbxl*
+/*.rbxl
+/*.rbxl.lock

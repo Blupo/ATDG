@@ -8,8 +8,8 @@ local Promise = require(SharedModules:WaitForChild("Promise"))
 local GameUIModules = script.Parent
 local Animator = require(GameUIModules:WaitForChild("Animator"))
 local Otter = require(GameUIModules:WaitForChild("Otter"))
-local Padding = require(GameUIModules:WaitForChild("Padding"))
 local Roact = require(GameUIModules:WaitForChild("Roact"))
+local StandardComponents = require(GameUIModules:WaitForChild("StandardComponents"))
 local Style = require(GameUIModules:WaitForChild("Style"))
 
 ---
@@ -164,7 +164,7 @@ LoadingUI.render = function(self)
 
             BackgroundColor3 = Color3.new(0, 0, 0),
         }, {
-            UIPadding = Roact.createElement(Padding, { Style.Constants.MajorElementPadding }),
+            UIPadding = Roact.createElement(StandardComponents.UIPadding, { Style.Constants.MajorElementPadding }),
 
             LoadingText = Roact.createElement("TextLabel", {
                 AnchorPoint = Vector2.new(0, 1),
@@ -174,7 +174,7 @@ LoadingUI.render = function(self)
                 BorderSizePixel = 0,
 
                 Text = "Please wait...",
-                Font = Style.Constants.MainFont,
+                Font = Style.Constants.PrimaryFont,
                 TextSize = 48,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextYAlignment = Enum.TextYAlignment.Center,

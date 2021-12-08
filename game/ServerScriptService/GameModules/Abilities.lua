@@ -69,6 +69,9 @@ end
 Abilities.RemoveUnitAbility = function(unit, abilityName: string)
     if (not Abilities.UnitHasAbility(unit, abilityName)) then return end
 
+    local unitBaseAbilities = Unit.GetUnitBaseAbilities(unit.Name, unit.Level)
+    if (unitBaseAbilities[abilityName]) then return end
+
     unitAbilities[unit.Id][abilityName] = nil
     AbilityRemovedEvent:Fire(unit.Id, abilityName)
 end
@@ -101,11 +104,11 @@ Unit.UnitAdded:Connect(function(unitId)
     local unit = Unit.fromId(unitId)
     if (not unit) then return end
 
-    unitAbilities[unitId] = Unit.GetUnitAbilities(unit.Name, unit.Level)
+    unitAbilities[unitId] = Unit.GetUnitBaseAbilities(unit.Name, unit.Level)
     Abilities.ActivateAbilities(unit, GameEnum.AbilityType.OnApply)
 
     unitUpgradedConnections[unitId] = unit.Upgraded:Connect(function(newLevel)
-        unitAbilities[unitId] = Unit.GetUnitAbilities(unit.Name, newLevel)
+        unitAbilities[unitId] = Unit.GetUnitBaseAbilities(unit.Name, newLevel)
     end)
 end)
 

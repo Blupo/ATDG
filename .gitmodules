@@ -11,3 +11,6 @@
 [submodule "ProfileService"]
 	path = ProfileService
 	url = https://github.com/MadStudioRoblox/ProfileService/
+[submodule "game/StarterPlayer/StarterPlayerScripts/GameUIModules/Color"]
+	path = game/StarterPlayer/StarterPlayerScripts/GameUIModules/Color
+	url = https://github.com/Blupo/Color

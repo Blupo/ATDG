@@ -1,7 +1,11 @@
-local root = script.Parent
+local GameUIModules = script.Parent
 
-local Roact = require(root:WaitForChild("Roact"))
-local Style = require(root:WaitForChild("Style"))
+local Roact = require(GameUIModules:WaitForChild("Roact"))
+local StandardComponents = require(GameUIModules:WaitForChild("StandardComponents"))
+local Style = require(GameUIModules:WaitForChild("Style"))
+
+local StandardUICorner = StandardComponents.UICorner
+local StandardUIListLayout = StandardComponents.UIListLayout
 
 ---
 
@@ -23,9 +27,7 @@ local generateButton = function(props)
 
         [Roact.Event.Activated] = props.onActivated,
     }, {
-        UICorner = Roact.createElement("UICorner", {
-            CornerRadius = UDim.new(0, Style.Constants.SmallCornerRadius),
-        }),
+        UICorner = Roact.createElement(StandardUICorner),
 
         Image = Roact.createElement("ImageLabel", {
             AnchorPoint = Vector2.new(0.5, 0.5),
@@ -65,13 +67,10 @@ UnitPlacementTouchControls.render = function(self)
         ResetOnSpawn = false,
         ClipsDescendants = true,
     }, {
-        UIListLayout = Roact.createElement("UIListLayout", {
+        UIListLayout = Roact.createElement(StandardUIListLayout, {
             Padding = UDim.new(0, Style.Constants.MajorElementPadding),
     
             FillDirection = Enum.FillDirection.Horizontal,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center,
-            VerticalAlignment = Enum.VerticalAlignment.Center,
         }),
 
         RotateLeftButton = generateButton({

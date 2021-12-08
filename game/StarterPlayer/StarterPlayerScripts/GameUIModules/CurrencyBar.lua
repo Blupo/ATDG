@@ -1,11 +1,6 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
-
-local root = script.Parent
-
-local Roact = require(root:WaitForChild("Roact"))
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
@@ -13,126 +8,143 @@ local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 local GameModules = PlayerScripts:WaitForChild("GameModules")
 local PlayerData = require(GameModules:WaitForChild("PlayerData"))
 
-local SharedModules = ReplicatedStorage:WaitForChild("Shared")
-local CopyTable = require(SharedModules:WaitForChild("CopyTable"))
-local GameEnum = require(SharedModules:WaitForChild("GameEnum"))
-local SystemCoordinator = require(SharedModules:WaitForChild("SystemCoordinator"))
-
-local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
-
----
-
-local serverType = ServerMaster.GetServerType() or ServerMaster.ServerInitialised:Wait()
+local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
+local Color = require(GameUIModules:WaitForChild("Color"))
+local Roact = require(GameUIModules:WaitForChild("Roact"))
+local StandardComponents = require(GameUIModules:WaitForChild("StandardComponents"))
+local Style = require(GameUIModules:WaitForChild("Style"))
 
 ---
 
-local CurrencyItem = Roact.PureComponent:extend("CurrencyItem")
+--[[
+    props
 
-CurrencyItem.render = function(self)
-    return Roact.createElement("Frame", {
-        Size = UDim2.new(0, 90, 1, 0),
-        Position = self.props.Position,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        LayoutOrder = self.props.LayoutOrder,
-    }, {
-        Icon = Roact.createElement("ImageLabel", {
-            AnchorPoint = Vector2.new(0, 0.5),
-            Size = UDim2.new(0, 28, 0, 28),
-            Position = UDim2.new(0, 2, 0.5, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            Image = self.props.Image or "",
+        LayoutOrder?
 
-            ImageColor3 = self.props.ImageColor3 or Color3.new(0, 0, 0),
-        }),
+        currencyType: CurrencyType
+]]
 
-        Label = Roact.createElement("TextLabel", {
-            AnchorPoint = Vector2.new(1, 0.5),
-            Size = UDim2.new(1, -36, 0, 0),
-            Position = UDim2.new(1, 0, 0.5, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
+local CurrencyBarItem = Roact.PureComponent:extend("CurrencyBarItem")
 
-            Text = self.props.Text,
-            Font = Enum.Font.GothamBold,
-            TextSize = 16,
-            TextStrokeTransparency = 0.5,
-
-            TextColor3 = Color3.new(0, 0, 0),
-            TextStrokeColor3 = Color3.new(1, 1, 1),
-        })
-    })
-end
-
-local CurrencyBar = Roact.PureComponent:extend("CurrencyBar")
-
-CurrencyBar.init = function(self)
+CurrencyBarItem.init = function(self)
     self:setState({
-        currencies = {
-            [GameEnum.CurrencyType.Tickets] = 0,
-            [GameEnum.CurrencyType.Points] = 0,
-        }
+        amount = 0,
     })
 end
 
-CurrencyBar.didMount = function(self)
+CurrencyBarItem.didMount = function(self)
     self.currencyBalanceChanged = PlayerData.CurrencyBalanceChanged:Connect(function(_, currencyType, newBalance)
-        local currenciesCopy = CopyTable(self.state.currencies)
-        currenciesCopy[currencyType] = newBalance
+        if (currencyType ~= self.props.currencyType) then return end
 
         self:setState({
-            currencies = currenciesCopy
+            amount = newBalance
         })
     end)
 
     self:setState({
-        currencies = PlayerData.GetPlayerAllCurrenciesBalances(LocalPlayer.UserId)
+        amount = PlayerData.GetPlayerCurrencyBalance(LocalPlayer.UserId, self.props.currencyType)
     })
 end
 
-CurrencyBar.willUnmount = function(self)
+CurrencyBarItem.didUpdate = function(self, prevProps)
+    local currencyType = self.props.currencyType
+    if (currencyType == prevProps.currencyType) then return end
+
+    self:setState({
+        amount = PlayerData.GetPlayerCurrencyBalance(LocalPlayer.UserId, currencyType)
+    })
+end
+
+CurrencyBarItem.willUnmount = function(self)
     self.currencyBalanceChanged:Disconnect()
 end
 
-CurrencyBar.render = function(self)
+CurrencyBarItem.render = function(self)
+    local currencyType = self.props.currencyType
+    local currencyColor = Style.Colors[currencyType .. "CurrencyColor"]
+
     return Roact.createElement("Frame", {
-        AnchorPoint = Vector2.new(0.5, 1),
-        Size = UDim2.new(0, 220, 0, 32),
-        Position = UDim2.new(0.5, 0, 1, 0),
+        Size = UDim2.new(0, 90, 1, 0),
+        LayoutOrder = self.props.LayoutOrder,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
     }, {
-        UIListLayout = Roact.createElement("UIListLayout", {
-            Padding = UDim.new(0, 16),
-            FillDirection = Enum.FillDirection.Horizontal,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center,
-            VerticalAlignment = Enum.VerticalAlignment.Center,
-        }),
-
-        Tickets = Roact.createElement(CurrencyItem, {
-            Position = UDim2.new(0.5, 0, 0, 0),
-            BackgroundTransparency = 1,
+        CurrencyIcon = Roact.createElement("Frame", {
+            AnchorPoint = Vector2.new(0, 0.5),
+            Size = UDim2.new(0, 32, 0, 32),
+            Position = UDim2.new(0, 0, 0.5, 0),
+            BackgroundTransparency = 0,
             BorderSizePixel = 0,
-            LayoutOrder = 0,
 
-            Text = self.state.currencies[GameEnum.CurrencyType.Tickets],
-            Image = "rbxassetid://327284812",
-        }),
+            BackgroundColor3 = currencyColor,
+        }, {
+            UICorner = Roact.createElement(StandardComponents.UICorner),
 
-        Points = (serverType == GameEnum.ServerType.Game) and
-            Roact.createElement(CurrencyItem, {
-                Position = UDim2.new(0.5, 0, 0, 0),
+            Icon = Roact.createElement("ImageLabel", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(0, Style.Constants.StandardIconSize, 0, Style.Constants.StandardIconSize),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
-                LayoutOrder = 1,
 
-                Text = self.state.currencies[GameEnum.CurrencyType.Points],
-                Image = "rbxassetid://7539615442",
+                Image = Style.Images[currencyType .. "CurrencyIcon"],
+
+                ImageColor3 = Color.from("Color3", currencyColor):bestContrastingColor(
+                    Color.new(0, 0, 0),
+                    Color.new(1, 1, 1)
+                ):to("Color3")
             })
-        or nil
+        }),
+
+        AmountLabel = Roact.createElement(StandardComponents.TextLabel, {
+            AnchorPoint = Vector2.new(1, 0.5),
+            Size = UDim2.new(1, -32, 1, 0),
+            Position = UDim2.new(1, 0, 0.5, 0),
+
+            Text = self.state.amount,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextStrokeTransparency = Style.Constants.StandardTextStrokeTransparency,
+
+            TextStrokeColor3 = Color3.new(1, 1, 1)
+        })
     })
+end
+
+--
+
+--[[
+    props
+
+        currencies: array<CurrencyType>
+]]
+
+local CurrencyBar = Roact.PureComponent:extend("CurrencyBar")
+
+CurrencyBar.render = function(self)
+    local currencies = self.props.currencies
+    local currencyBarElements = {}
+
+    for i = 1, #currencies do
+        local currency = currencies[i]
+
+        currencyBarElements[currency] = Roact.createElement(CurrencyBarItem, {
+            LayoutOrder = i,
+
+            currencyType = currency,
+        })
+    end
+
+    currencyBarElements.UIListLayout = Roact.createElement(StandardComponents.UIListLayout, {
+        FillDirection = Enum.FillDirection.Horizontal,
+    })
+    
+    return Roact.createElement("Frame", {
+        AnchorPoint = Vector2.new(0.5, 1),
+        Size = UDim2.new(1, 0, 0, Style.Constants.StandardIconSize + Style.Constants.SpaciousElementPadding),
+        Position = UDim2.new(0.5, 0, 1, -Style.Constants.MajorElementPadding),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+    }, currencyBarElements)
 end
 
 return CurrencyBar

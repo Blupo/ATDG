@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterGui = game:GetService("StarterGui")
 
 ---
 
@@ -14,10 +13,13 @@ local PlayerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 local ClientScripts = PlayerScripts:WaitForChild("ClientScripts")
 
 local GameUIModules = PlayerScripts:WaitForChild("GameUIModules")
-local GameUI = GameUIModules:WaitForChild("GameUI")
-local LobbyUI = GameUIModules:WaitForChild("LobbyUI")
+local GameServerUI = GameUIModules:WaitForChild("GameServerUI")
+local LobbyServerUI = GameUIModules:WaitForChild("LobbyServerUI")
 local LoadingUI = require(GameUIModules:WaitForChild("LoadingUI"))
 local Roact = require(GameUIModules:WaitForChild("Roact"))
+
+local PlayerModules = PlayerScripts:WaitForChild("PlayerModules")
+local Notifications = require(PlayerModules:WaitForChild("Notifications"))
 
 local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
 
@@ -25,7 +27,6 @@ local ServerMaster = SystemCoordinator.waitForSystem("ServerMaster")
 
 local clientScripts = {
     [GameEnum.ServerType.Game] = {
-        HotbarKeybinds = true,
         TowerUnitUI = true,
         UnitAnimator = true,
         UnitBillboards = true,
@@ -51,16 +52,21 @@ local initClientScripts = function(serverType: string)
     end
 
     if (serverType == GameEnum.ServerType.Lobby) then
-        clientUI = require(LobbyUI)
+        clientUI = require(LobbyServerUI)
     elseif (serverType == GameEnum.ServerType.Game) then
-        clientUI = require(GameUI)
+        clientUI = require(GameServerUI)
     end
 
     Roact.update(loadingUI, Roact.createElement(LoadingUI, {
         enabled = false
     }))
 
-    Roact.mount(Roact.createElement(clientUI), PlayerGui, "ClientUI")
+    Roact.mount(Roact.createElement("ScreenGui", {
+        ResetOnSpawn = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Global,
+    }, {
+        Roact.createElement(clientUI)
+    }), PlayerGui, "ClientUI")
 
     task.delay(5, function()
         Roact.unmount(loadingUI)
@@ -79,9 +85,9 @@ else
 end
 
 ServerMaster.GameInitFailureNotification:Connect(function()
-    StarterGui:SetCore("SendNotification", {
-        Title = "Game Error",
-        Text = "There was a problem initialising your game. You are being teleported back to the lobby.",
-        Icon = "rbxassetid://6868396182",
-    })
+    Notifications.SendCoreNotification(
+        "Game Error",
+        "There was a problem initialising your game. You are being teleported back to the lobby.",
+        "Game"
+    )
 end)
